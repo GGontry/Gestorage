@@ -1,0 +1,14 @@
+{
+	"container.gestorage.large_ender": "Large Ender Chest",
+	"container.gestorage.extra_large_ender": "Extra Large Ender Chest",
+	"gestorage.config.title": "Gestorage Settings",
+	"gestorage.config.info": "Configure Gestorage mod options",
+	"gestorage.config.done": "Done",
+	"gestorage.config.press_key": "[Press a key]",
+	"gestorage.config.refill_threshold": "Refill Threshold",
+	"gestorage.config.enabled": "ON",
+	"gestorage.config.disabled": "OFF",
+	"commands.gestorage.endersize.success": "Ender chest size set to: %s",
+	"commands.gestorage.endersize.query": "Current ender chest size: %s",
+	"commands.gestorage.endersize.invalid": "Invalid size. Use: normal, large, or extra_large"
+}

@@ -1,0 +1,43 @@
+{
+	"schemaVersion": 1,
+	"id": "gestorage",
+	"version": "${version}",
+	"name": "Gestorage",
+	"description": "Improved storage for Minecraft - Enhanced ender chest with multiple sizes",
+	"authors": [
+		"gontry"
+	],
+	"contact": {
+		"homepage": ""
+	},
+	"license": "MIT",
+	"icon": "assets/gestorage/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"com.gontry.gestorage.Gestorage"
+		],
+		"client": [
+			"com.gontry.gestorage.client.GestorageClient"
+		],
+		"modmenu": [
+			"com.gontry.gestorage.client.ModMenuIntegration"
+		]
+	},
+	"mixins": [
+		"gestorage.mixins.json",
+		{
+			"config": "gestorage.client.mixins.json",
+			"environment": "client"
+		}
+	],
+	"depends": {
+		"fabricloader": ">=0.16.10",
+		"minecraft": "~1.21.1",
+		"java": ">=21",
+		"fabric-api": "*"
+	},
+	"suggests": {
+		"modmenu": "*"
+	}
+}
