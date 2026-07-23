@@ -43,16 +43,13 @@ public class ShulkerRefillRenderer {
 
 	static String getSlotType(Slot slot, HandledScreen<?> screen) {
 		if (slot.inventory instanceof net.minecraft.entity.player.PlayerInventory) return "player";
+		if (slot.inventory instanceof net.minecraft.inventory.EnderChestInventory) return "ender_normal";
 
 		if (screen instanceof LargeEnderScreen) {
-			if (!(slot.inventory instanceof net.minecraft.entity.player.PlayerInventory)) {
-				return "ender_large";
-			}
+			return "ender_large";
 		}
 		if (screen instanceof ExtraLargeEnderScreen) {
-			if (!(slot.inventory instanceof net.minecraft.entity.player.PlayerInventory)) {
-				return "ender_xlarge";
-			}
+			return "ender_xlarge";
 		}
 
 		return null;

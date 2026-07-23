@@ -1,6 +1,7 @@
 package com.gontry.gestorage.network;
 
-import com.gontry.gestorage.inventory.EnhancedEnderChestInventory;
+import com.gontry.gestorage.ModConstants;
+import com.gontry.gestorage.inventory.EnderChestFactory;
 import com.gontry.gestorage.refill.ShulkerRefillManager;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.component.DataComponentTypes;
@@ -35,7 +36,7 @@ public class RefillRequestC2SPacket {
 			ContainerComponent container = sourceStack.get(DataComponentTypes.CONTAINER);
 			if (container == null) return;
 
-			DefaultedList<ItemStack> shulkerContents = DefaultedList.ofSize(27, ItemStack.EMPTY);
+			DefaultedList<ItemStack> shulkerContents = DefaultedList.ofSize(ModConstants.SHULKER_BOX_SIZE, ItemStack.EMPTY);
 			container.copyTo(shulkerContents);
 
 			ItemStack targetTypeStack = null;
@@ -96,16 +97,9 @@ public class RefillRequestC2SPacket {
 	private static Inventory getSourceInventory(ServerPlayerEntity player, String type) {
 		return switch (type) {
 			case "ender_normal" -> player.getEnderChestInventory();
-			case "ender_large" -> getEnhancedInventory(player, 54);
-			case "ender_xlarge" -> getEnhancedInventory(player, 228);
+			case "ender_large" -> EnderChestFactory.createForPlayer(player, ModConstants.LARGE_ENDER_SIZE);
+			case "ender_xlarge" -> EnderChestFactory.createForPlayer(player, ModConstants.EXTRA_LARGE_ENDER_SIZE);
 			default -> player.getInventory();
 		};
-	}
-
-	private static EnhancedEnderChestInventory getEnhancedInventory(ServerPlayerEntity player, int size) {
-		var stateManager = player.getWorld().getServer().getOverworld().getPersistentStateManager();
-		return new EnhancedEnderChestInventory(
-			player.getEnderChestInventory(), size, stateManager, player.getUuid()
-		);
 	}
 }

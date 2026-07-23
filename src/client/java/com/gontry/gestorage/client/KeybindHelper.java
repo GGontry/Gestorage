@@ -103,7 +103,7 @@ public class KeybindHelper {
 		if ((requiredMods & MOD_SUPER) == 0 && super_) return false;
 
 		if (keyCode < 0) {
-			int mouseButton = -keyCode;
+			int mouseButton = -keyCode - 1;
 			return GLFW.glfwGetMouseButton(windowHandle, mouseButton) == GLFW.GLFW_PRESS;
 		} else {
 			return GLFW.glfwGetKey(windowHandle, keyCode) == GLFW.GLFW_PRESS;
@@ -115,7 +115,7 @@ public class KeybindHelper {
 		String display = keybind.toUpperCase().replace("+", " + ");
 		if (display.contains("MOUSE.")) {
 			int mouseIdx = Integer.parseInt(display.substring(display.indexOf("MOUSE.") + 6));
-			display = display.substring(0, display.indexOf("MOUSE.")) + "MB" + (mouseIdx + 1);
+			display = display.substring(0, display.indexOf("MOUSE.")) + "MB" + mouseIdx;
 		}
 		return display;
 	}

@@ -13,30 +13,37 @@ public class EnhancedEnderChestInventory implements Inventory {
 	private final SimpleInventory overflow;
 	private final int totalSize;
 	private final int overflowStart;
-	private EnderOverflowState overflowState;
-	private boolean dirty = false;
+	private final EnderOverflowState overflowState;
 
 	public EnhancedEnderChestInventory(Inventory vanillaEnderChest, int totalSize) {
 		this.vanillaEnderChest = vanillaEnderChest;
 		this.totalSize = totalSize;
 		this.overflowStart = vanillaEnderChest.size();
 		this.overflow = new SimpleInventory(totalSize - vanillaEnderChest.size());
+		this.overflowState = null;
 	}
 
 	public EnhancedEnderChestInventory(Inventory vanillaEnderChest, int totalSize, PersistentStateManager stateManager, UUID playerUuid) {
 		this.vanillaEnderChest = vanillaEnderChest;
 		this.totalSize = totalSize;
 		this.overflowStart = vanillaEnderChest.size();
-		this.overflow = new SimpleInventory(totalSize - vanillaEnderChest.size());
 
 		if (stateManager != null && playerUuid != null && totalSize > vanillaEnderChest.size()) {
 			this.overflowState = EnderOverflowState.load(stateManager, playerUuid);
-			if (this.overflowState.inventory != null) {
-				for (int i = 0; i < Math.min(this.overflow.size(), this.overflowState.inventory.size()); i++) {
-					this.overflow.setStack(i, this.overflowState.inventory.getStack(i));
+			int neededSize = totalSize - vanillaEnderChest.size();
+			if (this.overflowState.inventory == null || this.overflowState.inventory.size() < neededSize) {
+				SimpleInventory newInv = new SimpleInventory(neededSize);
+				if (this.overflowState.inventory != null) {
+					for (int i = 0; i < Math.min(newInv.size(), this.overflowState.inventory.size()); i++) {
+						newInv.setStack(i, this.overflowState.inventory.getStack(i));
+					}
 				}
+				this.overflowState.inventory = newInv;
 			}
-			this.overflowState.inventory = this.overflow;
+			this.overflow = this.overflowState.inventory;
+		} else {
+			this.overflow = new SimpleInventory(totalSize - vanillaEnderChest.size());
+			this.overflowState = null;
 		}
 	}
 
@@ -66,7 +73,6 @@ public class EnhancedEnderChestInventory implements Inventory {
 
 	@Override
 	public ItemStack removeStack(int slot, int amount) {
-		dirty = true;
 		if (slot < overflowStart) {
 			return vanillaEnderChest.removeStack(slot, amount);
 		}
@@ -75,7 +81,6 @@ public class EnhancedEnderChestInventory implements Inventory {
 
 	@Override
 	public ItemStack removeStack(int slot) {
-		dirty = true;
 		if (slot < overflowStart) {
 			return vanillaEnderChest.removeStack(slot);
 		}
@@ -84,7 +89,6 @@ public class EnhancedEnderChestInventory implements Inventory {
 
 	@Override
 	public void setStack(int slot, ItemStack stack) {
-		dirty = true;
 		if (slot < overflowStart) {
 			vanillaEnderChest.setStack(slot, stack);
 		} else {
@@ -94,7 +98,6 @@ public class EnhancedEnderChestInventory implements Inventory {
 
 	@Override
 	public void markDirty() {
-		dirty = true;
 		vanillaEnderChest.markDirty();
 		overflow.markDirty();
 		if (overflowState != null) {
@@ -117,20 +120,20 @@ public class EnhancedEnderChestInventory implements Inventory {
 	public void onClose(PlayerEntity player) {
 		vanillaEnderChest.onClose(player);
 		overflow.onClose(player);
+		markDirty();
 	}
 
 	@Override
 	public void clear() {
-		dirty = true;
 		vanillaEnderChest.clear();
 		overflow.clear();
 	}
 
-	public boolean isDirty() {
-		return dirty;
+	public Inventory getVanillaInventory() {
+		return vanillaEnderChest;
 	}
 
-	public void clearDirty() {
-		dirty = false;
+	public Inventory getOverflowInventory() {
+		return overflow;
 	}
 }

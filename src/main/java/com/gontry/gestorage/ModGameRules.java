@@ -16,6 +16,11 @@ public class ModGameRules {
 	}
 
 	public static int getEnderChestSize(GameRules gameRules) {
-		return gameRules.get(ENDER_CHEST_SIZE).get();
+		int raw = gameRules.get(ENDER_CHEST_SIZE).get();
+		if (raw < ModConstants.MODE_NORMAL || raw > ModConstants.MODE_EXTRA_LARGE) {
+			Gestorage.LOGGER.warn("EnderChestSize GameRule has invalid value {}, clamping to MODE_NORMAL", raw);
+			return ModConstants.MODE_NORMAL;
+		}
+		return raw;
 	}
 }

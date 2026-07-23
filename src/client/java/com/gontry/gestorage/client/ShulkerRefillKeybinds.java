@@ -12,6 +12,7 @@ import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.text.Text;
 import net.minecraft.item.ItemStack;
+import org.lwjgl.glfw.GLFW;
 
 public class ShulkerRefillKeybinds {
 	private static int markedSlot = -1;
@@ -25,6 +26,18 @@ public class ShulkerRefillKeybinds {
 
 			long handle = client.getWindow().getHandle();
 			if (handle == 0) return;
+
+			if (markedSlot >= 0 && !(client.currentScreen instanceof HandledScreen<?>)) {
+				reset();
+			}
+
+			if (markedSlot >= 0 && GLFW.glfwGetKey(handle, GLFW.GLFW_KEY_ESCAPE) == GLFW.GLFW_PRESS) {
+				reset();
+				if (client.player != null) {
+					client.player.sendMessage(Text.literal("§cShulker marking cancelled."), false);
+				}
+				return;
+			}
 
 			boolean pressed = KeybindHelper.isPressed(ModConfig.get().getShulkerRefillKey(), handle);
 			if (pressed && !wasPressed) {
@@ -85,6 +98,7 @@ public class ShulkerRefillKeybinds {
 
 	private static String getInventoryType(Slot slot, HandledScreen<?> screen) {
 		if (slot.inventory instanceof net.minecraft.entity.player.PlayerInventory) return "player";
+		if (slot.inventory instanceof net.minecraft.inventory.EnderChestInventory) return "ender_normal";
 
 		if (screen instanceof LargeEnderScreen) {
 			return "ender_large";

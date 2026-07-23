@@ -1,5 +1,6 @@
 package com.gontry.gestorage.menu;
 
+import com.gontry.gestorage.ModConstants;
 import com.gontry.gestorage.ModMenus;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
@@ -11,7 +12,7 @@ import net.minecraft.screen.slot.Slot;
 public class ExtraLargeEnderMenu extends ScreenHandler {
 	private static final int CHEST_COLS = 19;
 	private static final int CHEST_ROWS = 12;
-	private static final int CHEST_SIZE = CHEST_COLS * CHEST_ROWS;
+	private static final int CHEST_SIZE = ModConstants.EXTRA_LARGE_ENDER_SIZE;
 	private static final int PLAYER_INV_START = CHEST_SIZE;
 	private static final int PLAYER_INV_END = PLAYER_INV_START + 36;
 
@@ -21,8 +22,7 @@ public class ExtraLargeEnderMenu extends ScreenHandler {
 	private static final int PLAYER_INV_Y = 246;
 	private static final int HOTBAR_Y = 304;
 
-	private static final int BATCH_SIZE = 54;
-	private static final int INITIAL_SYNC_DELAY_TICKS = 5;
+	private static final int INITIAL_SYNC_DELAY_TICKS = ModConstants.MAX_SYNC_DELAY_TICKS;
 
 	private final Inventory inventory;
 	private int ticksSinceOpen = 0;

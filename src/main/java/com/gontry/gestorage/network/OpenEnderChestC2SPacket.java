@@ -1,7 +1,8 @@
 package com.gontry.gestorage.network;
 
+import com.gontry.gestorage.ModConstants;
 import com.gontry.gestorage.ModGameRules;
-import com.gontry.gestorage.inventory.EnhancedEnderChestInventory;
+import com.gontry.gestorage.inventory.EnderChestFactory;
 import com.gontry.gestorage.menu.ExtraLargeEnderMenu;
 import com.gontry.gestorage.menu.LargeEnderMenu;
 import io.netty.buffer.Unpooled;
@@ -23,11 +24,8 @@ public class OpenEnderChestC2SPacket {
 			int sizeMode = ModGameRules.getEnderChestSize(gameRules);
 
 			switch (sizeMode) {
-				case 1 -> {
-					var stateManager = player.getWorld().getServer().getOverworld().getPersistentStateManager();
-					var enhancedInv = new EnhancedEnderChestInventory(
-							player.getEnderChestInventory(), 54, stateManager, player.getUuid()
-					);
+				case ModConstants.MODE_LARGE -> {
+					var enhancedInv = EnderChestFactory.createForPlayer(player, ModConstants.LARGE_ENDER_SIZE);
 					player.openHandledScreen(new ExtendedScreenHandlerFactory<>() {
 						@Override
 						public PacketByteBuf getScreenOpeningData(ServerPlayerEntity player1) {
@@ -45,11 +43,8 @@ public class OpenEnderChestC2SPacket {
 						}
 					});
 				}
-				case 2 -> {
-					var stateManager = player.getWorld().getServer().getOverworld().getPersistentStateManager();
-					var enhancedInv = new EnhancedEnderChestInventory(
-							player.getEnderChestInventory(), 228, stateManager, player.getUuid()
-					);
+				case ModConstants.MODE_EXTRA_LARGE -> {
+					var enhancedInv = EnderChestFactory.createForPlayer(player, ModConstants.EXTRA_LARGE_ENDER_SIZE);
 					player.openHandledScreen(new ExtendedScreenHandlerFactory<>() {
 						@Override
 						public PacketByteBuf getScreenOpeningData(ServerPlayerEntity player1) {

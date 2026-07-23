@@ -86,7 +86,7 @@ public class ModMenuIntegration implements ModMenuApi {
 		@Override
 		public boolean mouseClicked(double mouseX, double mouseY, int button) {
 			if (waitingForKey != -1) {
-				int mouseCode = -button;
+				int mouseCode = -(button + 1);
 				setKeybind(waitingForKey, KeybindHelper.encode(mouseCode, capturedMods));
 				waitingForKey = -1;
 				return true;

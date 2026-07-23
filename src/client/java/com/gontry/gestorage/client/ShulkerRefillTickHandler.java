@@ -17,7 +17,7 @@ import java.util.List;
 
 public class ShulkerRefillTickHandler {
 	private static int tickCounter = 0;
-	private static final int TICK_INTERVAL = 5;
+	private static final int TICK_INTERVAL = 1;
 
 	public static void register() {
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
@@ -74,16 +74,13 @@ public class ShulkerRefillTickHandler {
 
 	static String getSlotType(Slot slot, HandledScreen<?> screen) {
 		if (slot.inventory instanceof PlayerInventory) return "player";
+		if (slot.inventory instanceof net.minecraft.inventory.EnderChestInventory) return "ender_normal";
 
 		if (screen instanceof LargeEnderScreen) {
-			if (!(slot.inventory instanceof PlayerInventory)) {
-				return "ender_large";
-			}
+			return "ender_large";
 		}
 		if (screen instanceof ExtraLargeEnderScreen) {
-			if (!(slot.inventory instanceof PlayerInventory)) {
-				return "ender_xlarge";
-			}
+			return "ender_xlarge";
 		}
 
 		return null;

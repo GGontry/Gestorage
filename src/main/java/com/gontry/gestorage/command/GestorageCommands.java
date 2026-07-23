@@ -1,5 +1,6 @@
 package com.gontry.gestorage.command;
 
+import com.gontry.gestorage.ModConstants;
 import com.gontry.gestorage.ModGameRules;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
@@ -14,6 +15,7 @@ import net.minecraft.util.Formatting;
 
 public class GestorageCommands {
 	private static final String[] SIZE_MODES = {"normal", "large", "extra_large"};
+	private static final int[] SIZE_VALUES = {ModConstants.NORMAL_ENDER_SIZE, ModConstants.LARGE_ENDER_SIZE, ModConstants.EXTRA_LARGE_ENDER_SIZE};
 
 	public static void register() {
 		CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
@@ -36,9 +38,9 @@ public class GestorageCommands {
 									ServerCommandSource source = context.getSource();
 
 									int mode = switch (size) {
-										case "normal" -> 0;
-										case "large" -> 1;
-										case "extra_large" -> 2;
+										case "normal" -> ModConstants.MODE_NORMAL;
+										case "large" -> ModConstants.MODE_LARGE;
+										case "extra_large" -> ModConstants.MODE_EXTRA_LARGE;
 										default -> -1;
 									};
 
@@ -48,13 +50,19 @@ public class GestorageCommands {
 									}
 
 									source.getWorld().getGameRules().get(ModGameRules.ENDER_CHEST_SIZE).set(mode, source.getServer());
-									source.sendFeedback(() -> Text.literal("Ender chest size set to: " + size), true);
 
-									if (mode == 2) {
+									MutableText confirm = Text.empty();
+									confirm.append(Text.literal("[Gestorage] ").styled(s -> s.withColor(TextColor.fromFormatting(Formatting.GREEN))));
+									confirm.append(Text.literal("Ender chest size set to ").styled(s -> s.withColor(TextColor.fromFormatting(Formatting.WHITE))));
+									confirm.append(Text.literal(size.toUpperCase()).styled(s -> s.withColor(TextColor.fromFormatting(Formatting.YELLOW)).withBold(true)));
+									confirm.append(Text.literal(" (" + SIZE_VALUES[mode] + " slots)").styled(s -> s.withColor(TextColor.fromFormatting(Formatting.GRAY))));
+									source.sendFeedback(() -> confirm, true);
+
+									if (mode == ModConstants.MODE_EXTRA_LARGE) {
 										source.sendFeedback(() -> {
 											MutableText warning = Text.empty();
 											warning.append(Text.literal("[Gestorage] ").styled(s -> s.withColor(TextColor.fromFormatting(Formatting.YELLOW))));
-											warning.append(Text.literal("WARNING: Extra Large mode (228 slots) is experimental. ").styled(s -> s.withColor(TextColor.fromFormatting(Formatting.RED))));
+											warning.append(Text.literal("WARNING: Extra Large mode (" + ModConstants.EXTRA_LARGE_ENDER_SIZE + " slots) is experimental. ").styled(s -> s.withColor(TextColor.fromFormatting(Formatting.RED))));
 											warning.append(Text.literal("It may cause lag or crashes with large amounts of shulker box data. Use at your own risk!").styled(s -> s.withColor(TextColor.fromFormatting(Formatting.RED))));
 											return warning;
 										}, false);
@@ -66,7 +74,7 @@ public class GestorageCommands {
 						.executes(context -> {
 							ServerCommandSource source = context.getSource();
 							int current = ModGameRules.getEnderChestSize(source.getWorld().getGameRules());
-							source.sendFeedback(() -> Text.literal("Current ender chest size: " + SIZE_MODES[current]), false);
+							source.sendFeedback(() -> Text.literal("Current ender chest size: " + SIZE_MODES[current] + " (" + SIZE_VALUES[current] + " slots)"), false);
 							return 1;
 						})
 				)

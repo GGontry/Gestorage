@@ -1,7 +1,8 @@
 package com.gontry.gestorage.mixin;
 
+import com.gontry.gestorage.ModConstants;
 import com.gontry.gestorage.ModGameRules;
-import com.gontry.gestorage.inventory.EnhancedEnderChestInventory;
+import com.gontry.gestorage.inventory.EnderChestFactory;
 import com.gontry.gestorage.menu.ExtraLargeEnderMenu;
 import com.gontry.gestorage.menu.LargeEnderMenu;
 import io.netty.buffer.Unpooled;
@@ -30,7 +31,7 @@ public class EnderChestBlockMixin {
 		if (world.isClient()) return;
 
 		int sizeMode = ModGameRules.getEnderChestSize(world.getGameRules());
-		if (sizeMode == 0) return;
+		if (sizeMode == ModConstants.MODE_NORMAL) return;
 
 		cir.setReturnValue(ActionResult.success(world.isClient));
 
@@ -39,13 +40,12 @@ public class EnderChestBlockMixin {
 			enderChest.setActiveBlockEntity(blockEntity);
 		}
 
-		int targetSize = sizeMode == 1 ? 54 : 228;
-		var stateManager = world.getServer().getOverworld().getPersistentStateManager();
-		EnhancedEnderChestInventory enhancedInv = new EnhancedEnderChestInventory(
-				enderChest, targetSize, stateManager, player.getUuid()
+		int targetSize = ModConstants.getEnderSizeForMode(sizeMode);
+		var enhancedInv = EnderChestFactory.createForPlayer(
+				player, targetSize, world.getServer().getOverworld().getPersistentStateManager()
 		);
 
-		if (sizeMode == 1) {
+		if (sizeMode == ModConstants.MODE_LARGE) {
 			player.openHandledScreen(new ExtendedScreenHandlerFactory<>() {
 				@Override
 				public PacketByteBuf getScreenOpeningData(ServerPlayerEntity player1) {
@@ -62,7 +62,7 @@ public class EnderChestBlockMixin {
 					return Text.translatable("container.gestorage.large_ender");
 				}
 			});
-		} else if (sizeMode == 2) {
+		} else if (sizeMode == ModConstants.MODE_EXTRA_LARGE) {
 			player.openHandledScreen(new ExtendedScreenHandlerFactory<>() {
 				@Override
 				public PacketByteBuf getScreenOpeningData(ServerPlayerEntity player1) {
