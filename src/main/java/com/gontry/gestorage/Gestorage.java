@@ -1,6 +1,7 @@
 package com.gontry.gestorage;
 
 import com.gontry.gestorage.command.GestorageCommands;
+import com.gontry.gestorage.config.ShulkerStackServerConfig;
 import com.gontry.gestorage.network.ModNetworking;
 import net.fabricmc.api.ModInitializer;
 import org.slf4j.Logger;
@@ -16,6 +17,7 @@ public class Gestorage implements ModInitializer {
 		ModMenus.register();
 		ModNetworking.register();
 		GestorageCommands.register();
+		ShulkerStackServerConfig.load();
 
 		LOGGER.info("Gestorage initialized!");
 	}

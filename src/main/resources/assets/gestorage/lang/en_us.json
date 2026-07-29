@@ -6,6 +6,8 @@
 	"gestorage.config.module.ender_chest.desc": "Enhanced ender chest with multiple size tiers",
 	"gestorage.config.module.shulker_restock": "Shulker Restock",
 	"gestorage.config.module.shulker_restock.desc": "Auto-refill from shulker boxes",
+	"gestorage.config.module.shulker_stack": "Stackable Shulkers",
+	"gestorage.config.module.shulker_stack.desc": "Shulkers stack up to 64",
 	"gestorage.config.enabled": "Enabled: %s",
 	"gestorage.config.disabled": "Disabled",
 	"commands.gestorage.endersize.success": "Ender chest size set to: %s",

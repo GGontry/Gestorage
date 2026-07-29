@@ -3,7 +3,7 @@
 	"id": "gestorage",
 	"version": "${version}",
 	"name": "Gestorage",
-	"description": "Improved storage for Minecraft - Enhanced ender chest with multiple sizes",
+	"description": "A modular mod that improves every aspect of storage and inventory management.",
 	"authors": [
 		"gontry"
 	],

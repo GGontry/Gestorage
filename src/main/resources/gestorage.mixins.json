@@ -3,7 +3,8 @@
 	"package": "com.gontry.gestorage.mixin",
 	"compatibilityLevel": "JAVA_21",
 	"mixins": [
-		"EnderChestBlockMixin"
+		"EnderChestBlockMixin",
+		"ItemStackMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

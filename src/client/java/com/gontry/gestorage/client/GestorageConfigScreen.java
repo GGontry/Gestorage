@@ -34,6 +34,8 @@ public class GestorageConfigScreen extends Screen {
 	private ButtonWidget shulkerKeyBtn;
 	private ButtonWidget enderKeyKeybindBtn;
 	private ButtonWidget shulkerKeyKeybindBtn;
+	private ButtonWidget stackEnabledBtn;
+	private ButtonWidget stackOnlyEmptyBtn;
 
 	private static final int TAB_WIDTH = 70;
 	private static final int LEFT_WIDTH = 130;
@@ -141,6 +143,8 @@ public class GestorageConfigScreen extends Screen {
 		if (shulkerKeyBtn != null) { remove(shulkerKeyBtn); shulkerKeyBtn = null; }
 		if (enderKeyKeybindBtn != null) { remove(enderKeyKeybindBtn); enderKeyKeybindBtn = null; }
 		if (shulkerKeyKeybindBtn != null) { remove(shulkerKeyKeybindBtn); shulkerKeyKeybindBtn = null; }
+		if (stackEnabledBtn != null) { remove(stackEnabledBtn); stackEnabledBtn = null; }
+		if (stackOnlyEmptyBtn != null) { remove(stackOnlyEmptyBtn); stackOnlyEmptyBtn = null; }
 	}
 
 	private boolean moduleMatchesSearch(int idx) {
@@ -151,7 +155,7 @@ public class GestorageConfigScreen extends Screen {
 	}
 
 	private int findFirstVisibleModule(int startFrom) {
-		for (int i = startFrom; i < 2; i++) {
+		for (int i = startFrom; i < 3; i++) {
 			if (moduleMatchesSearch(i)) return i;
 		}
 		return -1;
@@ -165,7 +169,7 @@ public class GestorageConfigScreen extends Screen {
 
 		moduleButtons.clear();
 		int visibleIdx = 0;
-		for (int i = 0; i < 2; i++) {
+		for (int i = 0; i < 3; i++) {
 			if (!moduleMatchesSearch(i)) continue;
 			int idx = i;
 			String label = (i == selectedModule ? "> " : "  ") + getModuleTitle(i);
@@ -178,7 +182,7 @@ public class GestorageConfigScreen extends Screen {
 			visibleIdx++;
 		}
 
-		if (selectedModule >= 0 && selectedModule < 2 && moduleMatchesSearch(selectedModule)) {
+		if (selectedModule >= 0 && selectedModule < 3 && moduleMatchesSearch(selectedModule)) {
 			if (selectedModule == 0) {
 				int optY = contentY + 68;
 				enderEnabledBtn = ButtonWidget.builder(
@@ -217,6 +221,32 @@ public class GestorageConfigScreen extends Screen {
 
 				addDrawableChild(shulkerEnabledBtn);
 				addDrawableChild(shulkerKeyBtn);
+			} else if (selectedModule == 2) {
+				int optY = contentY + 68;
+				stackEnabledBtn = ButtonWidget.builder(
+						Text.literal("Enabled: " + (ModuleConfig.shulkerStack().enabled() ? "ON" : "OFF")),
+						b -> {
+							boolean now = !ModuleConfig.shulkerStack().enabled();
+							ModuleConfig.shulkerStack().enabled(now);
+							ModuleConfig.shulkerStack().save();
+							com.gontry.gestorage.config.ShulkerStackServerConfig.load();
+							b.setMessage(Text.literal("Enabled: " + (now ? "ON" : "OFF")));
+						}
+				).dimensions(rightX, optY, 120, 20).build();
+
+				stackOnlyEmptyBtn = ButtonWidget.builder(
+						Text.literal("Empty only: " + (ModuleConfig.shulkerStack().stackOnlyEmpty() ? "ON" : "OFF")),
+						b -> {
+							boolean now = !ModuleConfig.shulkerStack().stackOnlyEmpty();
+							ModuleConfig.shulkerStack().stackOnlyEmpty(now);
+							ModuleConfig.shulkerStack().save();
+							com.gontry.gestorage.config.ShulkerStackServerConfig.load();
+							b.setMessage(Text.literal("Empty only: " + (now ? "ON" : "OFF")));
+						}
+				).dimensions(rightX + 125, optY, 120, 20).build();
+
+				addDrawableChild(stackEnabledBtn);
+				addDrawableChild(stackOnlyEmptyBtn);
 			}
 		}
 	}
@@ -441,6 +471,7 @@ public class GestorageConfigScreen extends Screen {
 		return switch (idx) {
 			case 0 -> "Ender Key";
 			case 1 -> "Shulker Restock";
+			case 2 -> "Stackable Shulkers";
 			default -> "";
 		};
 	}
@@ -449,6 +480,7 @@ public class GestorageConfigScreen extends Screen {
 		return switch (idx) {
 			case 0 -> "Keybind to open ender chest with any size";
 			case 1 -> "Auto-refill from shulker boxes";
+			case 2 -> "Shulkers stack up to 64";
 			default -> "";
 		};
 	}
