@@ -18,7 +18,7 @@ import java.util.Map;
 
 public class ShulkerLinkManager {
 	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
-	private static final Path CONFIG_PATH = Path.of("config", "gestorage_links.json");
+	private static final Path CONFIG_PATH = Path.of("config", "gestorage", "links.json");
 	private static final Type MAP_TYPE = new TypeToken<Map<String, List<ShulkerLink>>>() {}.getType();
 	private static final int CURRENT_VERSION = 1;
 
@@ -86,7 +86,7 @@ public class ShulkerLinkManager {
 	private static void createBackup() {
 		try {
 			if (Files.exists(CONFIG_PATH)) {
-				Path backup = CONFIG_PATH.getParent().resolve("gestorage_links.json.backup_v" + CURRENT_VERSION);
+				Path backup = CONFIG_PATH.getParent().resolve("links.json.backup_v" + CURRENT_VERSION);
 				Files.copy(CONFIG_PATH, backup, StandardCopyOption.REPLACE_EXISTING);
 				Gestorage.LOGGER.debug("Created links backup: {}", backup.getFileName());
 			}

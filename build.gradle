@@ -11,6 +11,13 @@ repositories {
 		name = "Terraformers"
 		url = "https://maven.terraformersmc.com/"
 	}
+	maven {
+		name = "Wisp Forest"
+		url = "https://maven.wispforest.io/releases/"
+	}
+	maven {
+		url = "https://jitpack.io"
+	}
 }
 
 loom {
@@ -33,6 +40,10 @@ dependencies {
 
 	// ModMenu
 	modCompileOnly "com.terraformersmc:modmenu:${project.mod_menu_version}"
+
+	// owo-lib
+	modImplementation(annotationProcessor("io.wispforest:owo-lib:${project.owo_version}"))
+	include "io.wispforest:owo-sentinel:${project.owo_version}"
 }
 
 processResources {

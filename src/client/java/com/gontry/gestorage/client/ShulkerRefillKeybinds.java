@@ -1,11 +1,11 @@
 package com.gontry.gestorage.client;
 
+import com.gontry.gestorage.client.config.ModuleConfig;
 import com.gontry.gestorage.mixin.HandledScreenAccessor;
 import com.gontry.gestorage.refill.ShulkerLink;
 import com.gontry.gestorage.refill.ShulkerLinkManager;
 import com.gontry.gestorage.refill.ShulkerRefillManager;
-import com.gontry.gestorage.screen.ExtraLargeEnderScreen;
-import com.gontry.gestorage.screen.LargeEnderScreen;
+import com.gontry.gestorage.screen.InventoryTypeProvider;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
@@ -21,6 +21,7 @@ public class ShulkerRefillKeybinds {
 
 	public static void register() {
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
+			if (!ModuleConfig.shulkerRefill().enabled()) return;
 			if (client.player == null) return;
 			if (client.getWindow() == null) return;
 
@@ -39,7 +40,7 @@ public class ShulkerRefillKeybinds {
 				return;
 			}
 
-			boolean pressed = KeybindHelper.isPressed(ModConfig.get().getShulkerRefillKey(), handle);
+			boolean pressed = KeybindHelper.isPressed(ModuleConfig.shulkerRefill().shulkerRefillKey(), handle);
 			if (pressed && !wasPressed) {
 				onKeyPress(client);
 			}
@@ -100,11 +101,8 @@ public class ShulkerRefillKeybinds {
 		if (slot.inventory instanceof net.minecraft.entity.player.PlayerInventory) return "player";
 		if (slot.inventory instanceof net.minecraft.inventory.EnderChestInventory) return "ender_normal";
 
-		if (screen instanceof LargeEnderScreen) {
-			return "ender_large";
-		}
-		if (screen instanceof ExtraLargeEnderScreen) {
-			return "ender_xlarge";
+		if (screen instanceof InventoryTypeProvider provider) {
+			return provider.getInventoryType();
 		}
 
 		return null;

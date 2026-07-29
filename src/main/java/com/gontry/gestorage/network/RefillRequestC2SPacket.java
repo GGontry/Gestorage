@@ -1,5 +1,6 @@
 package com.gontry.gestorage.network;
 
+import com.gontry.gestorage.Gestorage;
 import com.gontry.gestorage.ModConstants;
 import com.gontry.gestorage.inventory.EnderChestFactory;
 import com.gontry.gestorage.refill.ShulkerRefillManager;
@@ -23,12 +24,21 @@ public class RefillRequestC2SPacket {
 			boolean sameInv = sourceType.equals(targetType);
 
 			Inventory sourceInv = getSourceInventory(player, sourceType);
-			if (sourceInv == null) return;
+			if (sourceInv == null) {
+				Gestorage.LOGGER.warn("[Refill] Source inventory not found: type={}, player={}", sourceType, player.getUuid());
+				return;
+			}
 
 			Inventory targetInv = sameInv ? sourceInv : getSourceInventory(player, targetType);
-			if (targetInv == null) return;
+			if (targetInv == null) {
+				Gestorage.LOGGER.warn("[Refill] Target inventory not found: type={}, player={}", targetType, player.getUuid());
+				return;
+			}
 
-			if (payload.sourceSlot() < 0 || payload.sourceSlot() >= sourceInv.size()) return;
+			if (payload.sourceSlot() < 0 || payload.sourceSlot() >= sourceInv.size()) {
+				Gestorage.LOGGER.warn("[Refill] Invalid source slot {} (size={})", payload.sourceSlot(), sourceInv.size());
+				return;
+			}
 
 			ItemStack sourceStack = sourceInv.getStack(payload.sourceSlot());
 			if (sourceStack.isEmpty() || !ShulkerRefillManager.isShulkerBox(sourceStack)) return;
@@ -49,7 +59,10 @@ public class RefillRequestC2SPacket {
 			}
 			if (targetTypeStack == null) return;
 
-			if (payload.targetSlot() < 0 || payload.targetSlot() >= targetInv.size()) return;
+			if (payload.targetSlot() < 0 || payload.targetSlot() >= targetInv.size()) {
+				Gestorage.LOGGER.warn("[Refill] Invalid target slot {} (size={})", payload.targetSlot(), targetInv.size());
+				return;
+			}
 
 			ItemStack targetStack = targetInv.getStack(payload.targetSlot());
 
@@ -91,6 +104,8 @@ public class RefillRequestC2SPacket {
 			if (!sameInv) {
 				targetInv.markDirty();
 			}
+
+			Gestorage.LOGGER.debug("[Refill] Moved {}x {} from {}:{} to {}:{}", toGive, targetTypeStack.getItem(), sourceType, payload.sourceSlot(), targetType, payload.targetSlot());
 		});
 	}
 

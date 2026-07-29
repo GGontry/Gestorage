@@ -14,10 +14,13 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class EnderOverflowState extends PersistentState {
 	private static final int CURRENT_VERSION = 1;
+	private static final Set<UUID> backedUpThisSession = ConcurrentHashMap.newKeySet();
 	public SimpleInventory inventory;
 
 	public EnderOverflowState() {
@@ -37,7 +40,7 @@ public class EnderOverflowState extends PersistentState {
 		if (version == 0) {
 			size = nbt.getInt("Size");
 			items = nbt.contains("Items") ? nbt.getList("Items", 10) : new NbtList();
-			Gestorage.LOGGER.info("Loaded legacy overflow data (version 0), {} slots, {} items", size, items.size());
+			Gestorage.LOGGER.info("[Overflow] Loaded legacy data (version 0), size={}, entries={}", size, items.size());
 		} else {
 			size = nbt.getInt("Size");
 			items = nbt.contains("Items") ? nbt.getList("Items", 10) : new NbtList();
@@ -45,21 +48,28 @@ public class EnderOverflowState extends PersistentState {
 
 		if (size <= 0) {
 			size = 201;
-			Gestorage.LOGGER.warn("Invalid overflow size {}, using default 201", nbt.getInt("Size"));
+			Gestorage.LOGGER.warn("[Overflow] Invalid size {} in NBT, defaulting to 201", nbt.getInt("Size"));
 		}
 
 		if (size > ModConstants.EXTRA_LARGE_ENDER_SIZE) {
+			Gestorage.LOGGER.warn("[Overflow] Size {} exceeds max {}, clamping", size, ModConstants.EXTRA_LARGE_ENDER_SIZE);
 			size = ModConstants.EXTRA_LARGE_ENDER_SIZE;
-			Gestorage.LOGGER.warn("Overflow size {} exceeds maximum {}, clamping", size, ModConstants.EXTRA_LARGE_ENDER_SIZE);
+		}
+
+		int expectedOverflow = ModConstants.EXTRA_LARGE_ENDER_SIZE - ModConstants.VANILLA_ENDER_SIZE;
+		if (size != expectedOverflow) {
+			Gestorage.LOGGER.warn("[Overflow] Size {} differs from expected overflow size {} — possible version mismatch", size, expectedOverflow);
 		}
 
 		SimpleInventory inv = new SimpleInventory(size);
 		int loadedCount = 0;
+		int skippedCount = 0;
 		for (int i = 0; i < items.size(); i++) {
 			NbtCompound itemNbt = items.getCompound(i);
 			int slot = itemNbt.getInt("Slot");
 			if (slot < 0 || slot >= size) {
-				Gestorage.LOGGER.warn("Invalid slot index {} (size={}), skipping", slot, size);
+				Gestorage.LOGGER.warn("[Overflow] Slot index {} out of range [0,{}), skipping item", slot, size);
+				skippedCount++;
 				continue;
 			}
 			ItemStack stack = ItemStack.fromNbtOrEmpty(lookup, itemNbt);
@@ -68,7 +78,11 @@ public class EnderOverflowState extends PersistentState {
 				loadedCount++;
 			}
 		}
-		Gestorage.LOGGER.info("Loaded {}/{} items from overflow (version {})", loadedCount, items.size(), version);
+		if (skippedCount > 0) {
+			Gestorage.LOGGER.warn("[Overflow] Skipped {} items due to invalid slots (loaded {}/{})", skippedCount, loadedCount, items.size());
+		} else {
+			Gestorage.LOGGER.info("[Overflow] Loaded {}/{} items (version {})", loadedCount, items.size(), version);
+		}
 
 		return new EnderOverflowState(inv);
 	}
@@ -89,7 +103,7 @@ public class EnderOverflowState extends PersistentState {
 			}
 		}
 		nbt.put("Items", items);
-		Gestorage.LOGGER.debug("Saved {} items to overflow (version {})", savedCount, CURRENT_VERSION);
+		Gestorage.LOGGER.debug("[Overflow] Saving {} items (size={}, version={})", savedCount, inventory.size(), CURRENT_VERSION);
 		return nbt;
 	}
 
@@ -117,10 +131,29 @@ public class EnderOverflowState extends PersistentState {
 			if (Files.exists(source)) {
 				Path backup = dataDir.resolve(key + ".dat.backup_v" + CURRENT_VERSION);
 				Files.copy(source, backup, StandardCopyOption.REPLACE_EXISTING);
-				Gestorage.LOGGER.info("Created backup: {}", backup.getFileName());
+				Gestorage.LOGGER.info("[Overflow] Created backup for {}: {}", playerUuid, backup.getFileName());
 			}
 		} catch (IOException e) {
-			Gestorage.LOGGER.error("Failed to create backup for player {}", playerUuid, e);
+			Gestorage.LOGGER.error("[Overflow] Failed to create backup for player {}", playerUuid, e);
+		}
+	}
+
+	public static void sessionBackup(Path worldDir, UUID playerUuid) {
+		if (!backedUpThisSession.add(playerUuid)) {
+			return;
+		}
+		try {
+			Path dataDir = worldDir.resolve("data");
+			Files.createDirectories(dataDir);
+			String key = getKey(playerUuid);
+			Path source = dataDir.resolve(key + ".dat");
+			if (Files.exists(source)) {
+				Path backup = dataDir.resolve(key + ".dat.session_backup");
+				Files.copy(source, backup, StandardCopyOption.REPLACE_EXISTING);
+				Gestorage.LOGGER.info("[Overflow] Session backup created for {}: {}", playerUuid, backup.getFileName());
+			}
+		} catch (IOException e) {
+			Gestorage.LOGGER.warn("[Overflow] Could not create session backup for {}: {}", playerUuid, e.getMessage());
 		}
 	}
 }

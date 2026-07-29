@@ -8,7 +8,7 @@ import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
-public class ExtraLargeEnderScreen extends HandledScreen<ExtraLargeEnderMenu> {
+public class ExtraLargeEnderScreen extends HandledScreen<ExtraLargeEnderMenu> implements InventoryTypeProvider {
 	private static final Identifier TEXTURE = Identifier.of(Gestorage.MOD_ID, "textures/gui/container/extra_large_ender.png");
 	private static final int CHEST_ROWS = 12;
 	private static final int CHEST_COLS = 19;
@@ -42,5 +42,10 @@ public class ExtraLargeEnderScreen extends HandledScreen<ExtraLargeEnderMenu> {
 	public void render(DrawContext context, int mouseX, int mouseY, float delta) {
 		super.render(context, mouseX, mouseY, delta);
 		this.drawMouseoverTooltip(context, mouseX, mouseY);
+	}
+
+	@Override
+	public String getInventoryType() {
+		return "ender_xlarge";
 	}
 }

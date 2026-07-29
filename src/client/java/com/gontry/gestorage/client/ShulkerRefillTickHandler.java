@@ -1,9 +1,9 @@
 package com.gontry.gestorage.client;
 
+import com.gontry.gestorage.client.config.ModuleConfig;
 import com.gontry.gestorage.refill.ShulkerLink;
 import com.gontry.gestorage.refill.ShulkerLinkManager;
-import com.gontry.gestorage.screen.ExtraLargeEnderScreen;
-import com.gontry.gestorage.screen.LargeEnderScreen;
+import com.gontry.gestorage.screen.InventoryTypeProvider;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.MinecraftClient;
@@ -21,6 +21,7 @@ public class ShulkerRefillTickHandler {
 
 	public static void register() {
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
+			if (!ModuleConfig.shulkerRefill().enabled()) return;
 			if (client.player == null) return;
 			if (client.world == null) return;
 
@@ -55,8 +56,6 @@ public class ShulkerRefillTickHandler {
 							sendRefill(link);
 						}
 					}
-				} else {
-					sendRefill(link);
 				}
 			}
 		});
@@ -76,11 +75,8 @@ public class ShulkerRefillTickHandler {
 		if (slot.inventory instanceof PlayerInventory) return "player";
 		if (slot.inventory instanceof net.minecraft.inventory.EnderChestInventory) return "ender_normal";
 
-		if (screen instanceof LargeEnderScreen) {
-			return "ender_large";
-		}
-		if (screen instanceof ExtraLargeEnderScreen) {
-			return "ender_xlarge";
+		if (screen instanceof InventoryTypeProvider provider) {
+			return provider.getInventoryType();
 		}
 
 		return null;

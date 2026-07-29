@@ -1,5 +1,6 @@
 package com.gontry.gestorage.inventory;
 
+import com.gontry.gestorage.Gestorage;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.inventory.SimpleInventory;
@@ -31,20 +32,35 @@ public class EnhancedEnderChestInventory implements Inventory {
 		if (stateManager != null && playerUuid != null && totalSize > vanillaEnderChest.size()) {
 			this.overflowState = EnderOverflowState.load(stateManager, playerUuid);
 			int neededSize = totalSize - vanillaEnderChest.size();
-			if (this.overflowState.inventory == null || this.overflowState.inventory.size() < neededSize) {
+			if (this.overflowState.inventory == null) {
+				this.overflowState.inventory = new SimpleInventory(neededSize);
+				Gestorage.LOGGER.info("[EnderChest] Created new overflow (size={}) for {}", neededSize, playerUuid);
+			} else if (this.overflowState.inventory.size() < neededSize) {
+				int oldSize = this.overflowState.inventory.size();
 				SimpleInventory newInv = new SimpleInventory(neededSize);
-				if (this.overflowState.inventory != null) {
-					for (int i = 0; i < Math.min(newInv.size(), this.overflowState.inventory.size()); i++) {
-						newInv.setStack(i, this.overflowState.inventory.getStack(i));
-					}
+				for (int i = 0; i < Math.min(newInv.size(), this.overflowState.inventory.size()); i++) {
+					newInv.setStack(i, this.overflowState.inventory.getStack(i));
 				}
 				this.overflowState.inventory = newInv;
+				Gestorage.LOGGER.info("[EnderChest] Resized overflow from {} to {} for {}", oldSize, neededSize, playerUuid);
+			} else if (this.overflowState.inventory.size() > neededSize) {
+				Gestorage.LOGGER.info("[EnderChest] Overflow has {} slots but mode only needs {} — extra slots preserved for {}", this.overflowState.inventory.size(), neededSize, playerUuid);
 			}
 			this.overflow = this.overflowState.inventory;
+			int itemCount = countItems(this.overflow);
+			Gestorage.LOGGER.info("[EnderChest] Opened for {} — totalSize={}, overflowStart={}, overflowSlots={}, itemCount={}", playerUuid, totalSize, overflowStart, this.overflow.size(), itemCount);
 		} else {
 			this.overflow = new SimpleInventory(totalSize - vanillaEnderChest.size());
 			this.overflowState = null;
 		}
+	}
+
+	private static int countItems(Inventory inv) {
+		int count = 0;
+		for (int i = 0; i < inv.size(); i++) {
+			if (!inv.getStack(i).isEmpty()) count++;
+		}
+		return count;
 	}
 
 	@Override
@@ -121,6 +137,8 @@ public class EnhancedEnderChestInventory implements Inventory {
 		vanillaEnderChest.onClose(player);
 		overflow.onClose(player);
 		markDirty();
+		int itemCount = countItems(overflow);
+		Gestorage.LOGGER.info("[EnderChest] Closed for {} — overflow items={}", player.getUuid(), itemCount);
 	}
 
 	@Override

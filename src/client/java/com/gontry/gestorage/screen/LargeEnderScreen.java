@@ -8,7 +8,7 @@ import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
-public class LargeEnderScreen extends HandledScreen<LargeEnderMenu> {
+public class LargeEnderScreen extends HandledScreen<LargeEnderMenu> implements InventoryTypeProvider {
 	private static final Identifier TEXTURE = Identifier.ofVanilla("textures/gui/container/generic_54.png");
 
 	public LargeEnderScreen(LargeEnderMenu handler, PlayerInventory inventory, Text title) {
@@ -27,5 +27,10 @@ public class LargeEnderScreen extends HandledScreen<LargeEnderMenu> {
 	public void render(DrawContext context, int mouseX, int mouseY, float delta) {
 		super.render(context, mouseX, mouseY, delta);
 		this.drawMouseoverTooltip(context, mouseX, mouseY);
+	}
+
+	@Override
+	public String getInventoryType() {
+		return "ender_large";
 	}
 }

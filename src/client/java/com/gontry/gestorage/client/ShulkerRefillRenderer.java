@@ -1,9 +1,9 @@
 package com.gontry.gestorage.client;
 
+import com.gontry.gestorage.client.config.ModuleConfig;
 import com.gontry.gestorage.refill.ShulkerLink;
 import com.gontry.gestorage.refill.ShulkerLinkManager;
-import com.gontry.gestorage.screen.ExtraLargeEnderScreen;
-import com.gontry.gestorage.screen.LargeEnderScreen;
+import com.gontry.gestorage.screen.InventoryTypeProvider;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
@@ -16,6 +16,7 @@ public class ShulkerRefillRenderer {
 	private static final int MARKED_BORDER_COLOR = 0xCC00FF00;
 
 	public static void renderSlotBorder(DrawContext context, Slot slot, HandledScreen<?> screen) {
+		if (!ModuleConfig.shulkerRefill().enabled()) return;
 		MinecraftClient client = MinecraftClient.getInstance();
 		if (client.world == null) return;
 
@@ -45,11 +46,8 @@ public class ShulkerRefillRenderer {
 		if (slot.inventory instanceof net.minecraft.entity.player.PlayerInventory) return "player";
 		if (slot.inventory instanceof net.minecraft.inventory.EnderChestInventory) return "ender_normal";
 
-		if (screen instanceof LargeEnderScreen) {
-			return "ender_large";
-		}
-		if (screen instanceof ExtraLargeEnderScreen) {
-			return "ender_xlarge";
+		if (screen instanceof InventoryTypeProvider provider) {
+			return provider.getInventoryType();
 		}
 
 		return null;
