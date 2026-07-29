@@ -23,11 +23,9 @@ public class ItemStackMixin {
 		if (!(item instanceof BlockItem blockItem)) return;
 		if (!(blockItem.getBlock() instanceof ShulkerBoxBlock)) return;
 
-		if (ShulkerStackServerConfig.stackOnlyEmpty) {
-			ContainerComponent container = self.get(DataComponentTypes.CONTAINER);
-			if (container != null && container.streamNonEmpty().findAny().isPresent()) {
-				return;
-			}
+		ContainerComponent container = self.get(DataComponentTypes.CONTAINER);
+		if (container != null && container.streamNonEmpty().findAny().isPresent()) {
+			return;
 		}
 
 		cir.setReturnValue(64);

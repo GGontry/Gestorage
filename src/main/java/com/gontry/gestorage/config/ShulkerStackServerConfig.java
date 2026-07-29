@@ -13,8 +13,7 @@ public final class ShulkerStackServerConfig {
 	private static final Path CONFIG_PATH = Path.of("config", "gestorage", "shulker_stack.json");
 	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
-	public static boolean enabled = true;
-	public static boolean stackOnlyEmpty = true;
+	public static volatile boolean enabled = false;
 
 	private ShulkerStackServerConfig() {}
 
@@ -24,15 +23,19 @@ public final class ShulkerStackServerConfig {
 				save();
 				return;
 			}
-			JsonObject json = GSON.fromJson(Files.newBufferedReader(CONFIG_PATH), JsonObject.class);
+			String content = Files.readString(CONFIG_PATH);
+			if (content.isBlank()) {
+				save();
+				return;
+			}
+			JsonObject json = GSON.fromJson(content, JsonObject.class);
 			if (json == null) {
 				save();
 				return;
 			}
-			enabled = json.get("enabled") != null ? json.get("enabled").getAsBoolean() : true;
-			stackOnlyEmpty = json.get("stackOnlyEmpty") != null ? json.get("stackOnlyEmpty").getAsBoolean() : true;
-			Gestorage.LOGGER.info("ShulkerStack config loaded");
-		} catch (IOException e) {
+			enabled = json.get("enabled") != null ? json.get("enabled").getAsBoolean() : false;
+			Gestorage.LOGGER.info("ShulkerStack config loaded, enabled={}", enabled);
+		} catch (Exception e) {
 			Gestorage.LOGGER.error("Failed to load shulker_stack config", e);
 		}
 	}
@@ -43,7 +46,6 @@ public final class ShulkerStackServerConfig {
 			JsonObject json = new JsonObject();
 			json.addProperty("version", 1);
 			json.addProperty("enabled", enabled);
-			json.addProperty("stackOnlyEmpty", stackOnlyEmpty);
 			Files.writeString(CONFIG_PATH, GSON.toJson(json));
 		} catch (IOException e) {
 			Gestorage.LOGGER.error("Failed to save shulker_stack config", e);

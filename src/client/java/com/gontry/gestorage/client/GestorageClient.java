@@ -3,6 +3,7 @@ package com.gontry.gestorage.client;
 import com.gontry.gestorage.Gestorage;
 import com.gontry.gestorage.ModMenus;
 import com.gontry.gestorage.client.config.ModuleConfig;
+import com.gontry.gestorage.config.ShulkerStackServerConfig;
 import com.gontry.gestorage.refill.ShulkerLinkManager;
 import com.gontry.gestorage.screen.ExtraLargeEnderScreen;
 import com.gontry.gestorage.screen.LargeEnderScreen;
@@ -13,6 +14,7 @@ public class GestorageClient implements ClientModInitializer {
 	@Override
 	public void onInitializeClient() {
 		ModuleConfig.initialize();
+		ShulkerStackServerConfig.load();
 		ShulkerLinkManager.load();
 
 		if (ModuleConfig.enderChest().enabled()) {

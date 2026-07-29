@@ -1,6 +1,7 @@
 package com.gontry.gestorage.client;
 
 import com.gontry.gestorage.client.config.ModuleConfig;
+import com.gontry.gestorage.config.ShulkerStackServerConfig;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
@@ -35,7 +36,6 @@ public class GestorageConfigScreen extends Screen {
 	private ButtonWidget enderKeyKeybindBtn;
 	private ButtonWidget shulkerKeyKeybindBtn;
 	private ButtonWidget stackEnabledBtn;
-	private ButtonWidget stackOnlyEmptyBtn;
 
 	private static final int TAB_WIDTH = 70;
 	private static final int LEFT_WIDTH = 130;
@@ -144,7 +144,7 @@ public class GestorageConfigScreen extends Screen {
 		if (enderKeyKeybindBtn != null) { remove(enderKeyKeybindBtn); enderKeyKeybindBtn = null; }
 		if (shulkerKeyKeybindBtn != null) { remove(shulkerKeyKeybindBtn); shulkerKeyKeybindBtn = null; }
 		if (stackEnabledBtn != null) { remove(stackEnabledBtn); stackEnabledBtn = null; }
-		if (stackOnlyEmptyBtn != null) { remove(stackOnlyEmptyBtn); stackOnlyEmptyBtn = null; }
+
 	}
 
 	private boolean moduleMatchesSearch(int idx) {
@@ -224,29 +224,16 @@ public class GestorageConfigScreen extends Screen {
 			} else if (selectedModule == 2) {
 				int optY = contentY + 68;
 				stackEnabledBtn = ButtonWidget.builder(
-						Text.literal("Enabled: " + (ModuleConfig.shulkerStack().enabled() ? "ON" : "OFF")),
+						Text.literal("Enabled: " + (ShulkerStackServerConfig.enabled ? "ON" : "OFF")),
 						b -> {
-							boolean now = !ModuleConfig.shulkerStack().enabled();
-							ModuleConfig.shulkerStack().enabled(now);
-							ModuleConfig.shulkerStack().save();
-							com.gontry.gestorage.config.ShulkerStackServerConfig.load();
+							boolean now = !ShulkerStackServerConfig.enabled;
+							ShulkerStackServerConfig.enabled = now;
+							ShulkerStackServerConfig.save();
 							b.setMessage(Text.literal("Enabled: " + (now ? "ON" : "OFF")));
 						}
 				).dimensions(rightX, optY, 120, 20).build();
 
-				stackOnlyEmptyBtn = ButtonWidget.builder(
-						Text.literal("Empty only: " + (ModuleConfig.shulkerStack().stackOnlyEmpty() ? "ON" : "OFF")),
-						b -> {
-							boolean now = !ModuleConfig.shulkerStack().stackOnlyEmpty();
-							ModuleConfig.shulkerStack().stackOnlyEmpty(now);
-							ModuleConfig.shulkerStack().save();
-							com.gontry.gestorage.config.ShulkerStackServerConfig.load();
-							b.setMessage(Text.literal("Empty only: " + (now ? "ON" : "OFF")));
-						}
-				).dimensions(rightX + 125, optY, 120, 20).build();
-
 				addDrawableChild(stackEnabledBtn);
-				addDrawableChild(stackOnlyEmptyBtn);
 			}
 		}
 	}
