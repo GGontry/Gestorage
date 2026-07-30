@@ -64,6 +64,39 @@ public class ShulkerLinkManager {
 					save();
 					Gestorage.LOGGER.info("Migrated links from version {} to {}", version, CURRENT_VERSION);
 				}
+
+				// Migrate old dimension-specific keys to dimension-agnostic format
+				// Old: saveId:dimNamespace:dimPath  New: saveId
+				boolean keysMigrated = false;
+				Map<String, List<ShulkerLink>> migratedLinks = new HashMap<>();
+				for (Map.Entry<String, List<ShulkerLink>> entry : allLinks.entrySet()) {
+					String key = entry.getKey();
+					int lastColon = key.lastIndexOf(':');
+					int secondLastColon = key.lastIndexOf(':', lastColon - 1);
+					if (secondLastColon >= 0) {
+						String dimPart = key.substring(secondLastColon + 1);
+						if (dimPart.contains(":")) {
+							String saveId = key.substring(0, secondLastColon);
+							migratedLinks.merge(saveId, entry.getValue(), (existing, incoming) -> {
+								List<ShulkerLink> merged = new ArrayList<>(existing);
+								for (ShulkerLink link : incoming) {
+									if (merged.stream().noneMatch(l -> l.equals(link))) {
+										merged.add(link);
+									}
+								}
+								return merged;
+							});
+							keysMigrated = true;
+							continue;
+						}
+					}
+					migratedLinks.put(key, entry.getValue());
+				}
+				if (keysMigrated) {
+					allLinks = migratedLinks;
+					save();
+					Gestorage.LOGGER.info("Migrated {} world keys to dimension-independent format", allLinks.size());
+				}
 			} catch (Exception e) {
 				Gestorage.LOGGER.error("Failed to load shulker links, starting fresh", e);
 				allLinks = new HashMap<>();
