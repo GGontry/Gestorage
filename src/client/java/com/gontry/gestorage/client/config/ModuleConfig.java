@@ -10,17 +10,14 @@ import java.nio.file.StandardCopyOption;
 public final class ModuleConfig {
 	private static EnderChestConfig ENDER_CHEST;
 	private static ShulkerRefillConfig SHULKER_REFILL;
-	private static ShulkerStackConfig SHULKER_STACK;
 
 	private ModuleConfig() {}
 
 	public static void initialize() {
 		createBackup(Path.of("config", "gestorage", "ender_chest.json"));
 		createBackup(Path.of("config", "gestorage", "shulker_refill.json"));
-		createBackup(Path.of("config", "gestorage", "shulker_stack.json"));
 		ENDER_CHEST = EnderChestConfig.createAndLoad();
 		SHULKER_REFILL = ShulkerRefillConfig.createAndLoad();
-		SHULKER_STACK = ShulkerStackConfig.createAndLoad();
 		Gestorage.LOGGER.info("Module configs initialized");
 	}
 
@@ -30,10 +27,6 @@ public final class ModuleConfig {
 
 	public static ShulkerRefillConfig shulkerRefill() {
 		return SHULKER_REFILL;
-	}
-
-	public static ShulkerStackConfig shulkerStack() {
-		return SHULKER_STACK;
 	}
 
 	static void createBackup(Path configPath) {

@@ -120,8 +120,6 @@ public class GestorageConfigScreen extends Screen {
 		buildSearchField();
 		buildTabs();
 		buildContent();
-		searchField.setFocused(true);
-		this.setFocused(searchField);
 	}
 
 	private void buildContent() {
@@ -223,15 +221,18 @@ public class GestorageConfigScreen extends Screen {
 				addDrawableChild(shulkerKeyBtn);
 			} else if (selectedModule == 2) {
 				int optY = contentY + 68;
+				boolean remote = this.client != null && this.client.world != null && !this.client.isIntegratedServerRunning();
+				String suffix = remote ? " (Server)" : "";
 				stackEnabledBtn = ButtonWidget.builder(
-						Text.literal("Enabled: " + (ShulkerStackServerConfig.enabled ? "ON" : "OFF")),
+						Text.literal("Enabled: " + (ShulkerStackServerConfig.enabled ? "ON" : "OFF") + suffix),
 						b -> {
 							boolean now = !ShulkerStackServerConfig.enabled;
 							ShulkerStackServerConfig.enabled = now;
 							ShulkerStackServerConfig.save();
-							b.setMessage(Text.literal("Enabled: " + (now ? "ON" : "OFF")));
+							b.setMessage(Text.literal("Enabled: " + (now ? "ON" : "OFF") + suffix));
 						}
 				).dimensions(rightX, optY, 120, 20).build();
+				stackEnabledBtn.active = !remote;
 
 				addDrawableChild(stackEnabledBtn);
 			}
@@ -242,7 +243,8 @@ public class GestorageConfigScreen extends Screen {
 		if (searchText.isEmpty()) return true;
 		return sectionTitle.toLowerCase().contains(searchText)
 				|| label.toLowerCase().contains(searchText)
-				|| keybind.toLowerCase().contains(searchText);
+				|| keybind.toLowerCase().contains(searchText)
+				|| KeybindHelper.getKeyName(keybind).toLowerCase().contains(searchText);
 	}
 
 	private void buildKeybindsTab() {
