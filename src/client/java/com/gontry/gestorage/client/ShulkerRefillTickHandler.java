@@ -21,11 +21,18 @@ import java.util.List;
 import java.util.Map;
 
 public class ShulkerRefillTickHandler {
-	private static int tickCounter = 0;
+	private static final int MAX_BACKOFF = 20;
 	private static int loopTick = 0;
-	private static final int TICK_INTERVAL = 1;
-	private static final int BLIND_THROTTLE = 20;
-	private static final Map<String, Integer> lastSentTick = new HashMap<>();
+	private static boolean lastScreenOpen = false;
+	private static String lastScreenType = null;
+	private static final Map<String, LinkState> linkStates = new HashMap<>();
+
+	private static final class LinkState {
+		int lastSeenCount = -1;
+		int lastSent = -1;
+		int backoff = 1;
+		ItemStack cachedSource;
+	}
 
 	public static void register() {
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
@@ -33,37 +40,71 @@ public class ShulkerRefillTickHandler {
 			if (client.player == null) return;
 			if (client.world == null) return;
 
-			tickCounter++;
-			if (tickCounter < TICK_INTERVAL) return;
-			tickCounter = 0;
 			loopTick++;
 
 			String worldKey = WorldKeyHelper.getFullWorldKey(client);
 			if (worldKey == null) return;
 			List<ShulkerLink> links = ShulkerLinkManager.getLinksForWorld(worldKey);
-			if (links.isEmpty()) return;
+			if (links.isEmpty()) {
+				linkStates.clear();
+				lastScreenOpen = false;
+				lastScreenType = null;
+				return;
+			}
 
 			Inventory playerInv = client.player.getInventory();
 			HandledScreen<?> screen = client.currentScreen instanceof HandledScreen<?> s ? s : null;
+			String screenType = screenType(screen);
 
-			lastSentTick.keySet().removeIf(key -> links.stream().noneMatch(l -> linkKey(l).equals(key)));
+			if (lastScreenOpen && lastScreenType != null && !lastScreenType.equals(screenType)) {
+				topOffBlindTargets(links, lastScreenType);
+			}
+			lastScreenOpen = screen != null;
+			lastScreenType = screenType;
+
+			linkStates.keySet().removeIf(key -> links.stream().noneMatch(l -> linkKey(l).equals(key)));
 
 			for (ShulkerLink link : links) {
 				ItemStack source = findClientStack(screen, link.sourceSlot(), link.sourceType(), playerInv);
 				ItemStack target = findClientStack(screen, link.targetSlot(), link.targetType(), playerInv);
-
-				if (target != null && !shouldRefill(target)) continue;
-				if (source != null && !sourceCanFill(source, target)) continue;
-
-				int interval = source == null || target == null ? BLIND_THROTTLE : 1;
 				String key = linkKey(link);
-				int last = lastSentTick.getOrDefault(key, -1);
-				if (last >= 0 && loopTick - last < interval) continue;
+				LinkState state = linkStates.computeIfAbsent(key, k -> new LinkState());
+
+				if (source != null) {
+					state.cachedSource = source.copy();
+				}
+				if (target == null) continue;
+
+				int count = target.isEmpty() ? 0 : target.getCount();
+				boolean consumed = count < state.lastSeenCount;
+				state.lastSeenCount = count;
+
+				if (!shouldRefill(target)) {
+					state.backoff = 1;
+					continue;
+				}
+
+				ItemStack effectiveSource = source != null ? source : state.cachedSource;
+				if (effectiveSource != null && !sourceCanFill(effectiveSource, target) && !consumed) continue;
+
+				int interval = consumed ? 1 : state.backoff;
+				if (state.lastSent >= 0 && loopTick - state.lastSent < interval) continue;
 
 				sendRefill(link);
-				lastSentTick.put(key, loopTick);
+				state.lastSent = loopTick;
+				state.backoff = Math.min(state.backoff * 2, MAX_BACKOFF);
 			}
 		});
+	}
+
+	private static void topOffBlindTargets(List<ShulkerLink> links, String closedType) {
+		for (ShulkerLink link : links) {
+			if (!link.targetType().equals("player") && link.targetType().equals(closedType)) {
+				sendRefill(link);
+				LinkState state = linkStates.computeIfAbsent(linkKey(link), k -> new LinkState());
+				state.lastSent = loopTick;
+			}
+		}
 	}
 
 	private static boolean shouldRefill(ItemStack target) {
@@ -103,6 +144,15 @@ public class ShulkerRefillTickHandler {
 
 	private static String linkKey(ShulkerLink link) {
 		return link.sourceSlot() + ":" + link.sourceType() + ">" + link.targetSlot() + ":" + link.targetType();
+	}
+
+	private static String screenType(HandledScreen<?> screen) {
+		if (screen == null) return null;
+		for (Slot slot : screen.getScreenHandler().slots) {
+			String type = getSlotType(slot, screen);
+			if (type != null && !type.equals("player")) return type;
+		}
+		return null;
 	}
 
 	private static Slot findSlot(HandledScreen<?> screen, int slotIndex, String type) {

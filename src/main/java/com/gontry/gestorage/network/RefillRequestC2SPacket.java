@@ -49,16 +49,6 @@ public class RefillRequestC2SPacket {
 			DefaultedList<ItemStack> shulkerContents = DefaultedList.ofSize(ModConstants.SHULKER_BOX_SIZE, ItemStack.EMPTY);
 			container.copyTo(shulkerContents);
 
-			ItemStack targetTypeStack = null;
-			for (ItemStack stack : shulkerContents) {
-				if (!stack.isEmpty()) {
-					targetTypeStack = stack.copy();
-					targetTypeStack.setCount(1);
-					break;
-				}
-			}
-			if (targetTypeStack == null) return;
-
 			if (payload.targetSlot() < 0 || payload.targetSlot() >= targetInv.size()) {
 				Gestorage.LOGGER.warn("[Refill] Invalid target slot {} (size={})", payload.targetSlot(), targetInv.size());
 				return;
@@ -66,11 +56,29 @@ public class RefillRequestC2SPacket {
 
 			ItemStack targetStack = targetInv.getStack(payload.targetSlot());
 
-			if (!targetStack.isEmpty() && targetStack.getItem() != targetTypeStack.getItem()) return;
+			ItemStack targetTypeStack = null;
+			if (targetStack.isEmpty()) {
+				for (ItemStack stack : shulkerContents) {
+					if (!stack.isEmpty()) {
+						targetTypeStack = stack.copy();
+						targetTypeStack.setCount(1);
+						break;
+					}
+				}
+			} else {
+				for (ItemStack stack : shulkerContents) {
+					if (!stack.isEmpty() && ItemStack.areItemsAndComponentsEqual(targetStack, stack)) {
+						targetTypeStack = stack.copy();
+						targetTypeStack.setCount(1);
+						break;
+					}
+				}
+			}
+			if (targetTypeStack == null) return;
 
 			int available = 0;
 			for (ItemStack stack : shulkerContents) {
-				if (!stack.isEmpty() && stack.getItem() == targetTypeStack.getItem()) {
+				if (!stack.isEmpty() && ItemStack.areItemsAndComponentsEqual(targetTypeStack, stack)) {
 					available += stack.getCount();
 				}
 			}
@@ -86,7 +94,7 @@ public class RefillRequestC2SPacket {
 			int remaining = toGive;
 			for (int i = 0; i < shulkerContents.size() && remaining > 0; i++) {
 				ItemStack stack = shulkerContents.get(i);
-				if (!stack.isEmpty() && stack.getItem() == targetTypeStack.getItem()) {
+				if (!stack.isEmpty() && ItemStack.areItemsAndComponentsEqual(targetTypeStack, stack)) {
 					int toRemove = Math.min(remaining, stack.getCount());
 					stack.decrement(toRemove);
 					remaining -= toRemove;
