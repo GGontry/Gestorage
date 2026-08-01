@@ -22,6 +22,7 @@ public class GestorageConfigScreen extends Screen {
 	private ButtonWidget waitingButton = null;
 	private String searchText = "";
 	private String originalSearchText = "";
+	private boolean rebuilding = false;
 
 	private TextFieldWidget searchField;
 	private ButtonWidget clearBtn;
@@ -36,6 +37,8 @@ public class GestorageConfigScreen extends Screen {
 	private ButtonWidget enderKeyKeybindBtn;
 	private ButtonWidget shulkerKeyKeybindBtn;
 	private ButtonWidget stackEnabledBtn;
+	private ButtonWidget overlayEnabledBtn;
+	private final List<ButtonWidget> overlayOptionButtons = new ArrayList<>();
 
 	private static final int TAB_WIDTH = 70;
 	private static final int LEFT_WIDTH = 130;
@@ -59,30 +62,37 @@ public class GestorageConfigScreen extends Screen {
 	}
 
 	private void buildSearchField() {
-		int fieldW = Math.min(300, this.width - 80);
-		int fieldX = (this.width - fieldW) / 2;
-		int btnX = fieldX + fieldW;
+		rebuilding = true;
+		try {
+			int fieldW = Math.min(300, this.width - 80);
+			int fieldX = (this.width - fieldW) / 2;
+			int btnX = fieldX + fieldW;
 
-		searchField = new TextFieldWidget(this.textRenderer, fieldX, SEARCH_Y, fieldW, 18, Text.literal(""));
-		searchField.setPlaceholder(Text.literal("Search modules or keybinds..."));
-		searchField.setEditableColor(0xFFFFFFFF);
-		searchField.setUneditableColor(0xFF808080);
-		searchField.setDrawsBackground(true);
-		searchField.setText(originalSearchText);
-		searchField.setMaxLength(64);
-		searchField.setChangedListener(text -> {
-			originalSearchText = text;
-			searchText = text.toLowerCase();
-			onSearchChanged();
-		});
-		addDrawableChild(searchField);
+			searchField = new TextFieldWidget(this.textRenderer, fieldX, SEARCH_Y, fieldW, 18, Text.literal(""));
+			searchField.setPlaceholder(Text.literal("Search modules or keybinds..."));
+			searchField.setEditableColor(0xFFFFFFFF);
+			searchField.setUneditableColor(0xFF808080);
+			searchField.setDrawsBackground(true);
+			searchField.setMaxLength(64);
+			searchField.setText(originalSearchText);
+			searchField.setChangedListener(text -> {
+				originalSearchText = text;
+				searchText = text.toLowerCase();
+				if (!rebuilding) {
+					onSearchChanged();
+				}
+			});
+			addDrawableChild(searchField);
 
-		clearBtn = ButtonWidget.builder(Text.literal("X"), b -> {
-			searchField.setText("");
-			searchField.setFocused(true);
-			this.setFocused(searchField);
-		}).dimensions(btnX + 2, SEARCH_Y, 18, 18).build();
-		addDrawableChild(clearBtn);
+			clearBtn = ButtonWidget.builder(Text.literal("X"), b -> {
+				searchField.setText("");
+				searchField.setFocused(true);
+				this.setFocused(searchField);
+			}).dimensions(btnX + 2, SEARCH_Y, 18, 18).build();
+			addDrawableChild(clearBtn);
+		} finally {
+			rebuilding = false;
+		}
 	}
 
 	private void onSearchChanged() {
@@ -142,6 +152,11 @@ public class GestorageConfigScreen extends Screen {
 		if (enderKeyKeybindBtn != null) { remove(enderKeyKeybindBtn); enderKeyKeybindBtn = null; }
 		if (shulkerKeyKeybindBtn != null) { remove(shulkerKeyKeybindBtn); shulkerKeyKeybindBtn = null; }
 		if (stackEnabledBtn != null) { remove(stackEnabledBtn); stackEnabledBtn = null; }
+		if (overlayEnabledBtn != null) { remove(overlayEnabledBtn); overlayEnabledBtn = null; }
+		for (ButtonWidget btn : overlayOptionButtons) {
+			remove(btn);
+		}
+		overlayOptionButtons.clear();
 
 	}
 
@@ -153,7 +168,7 @@ public class GestorageConfigScreen extends Screen {
 	}
 
 	private int findFirstVisibleModule(int startFrom) {
-		for (int i = startFrom; i < 3; i++) {
+		for (int i = startFrom; i < 4; i++) {
 			if (moduleMatchesSearch(i)) return i;
 		}
 		return -1;
@@ -166,8 +181,9 @@ public class GestorageConfigScreen extends Screen {
 		int rightX = leftX + LEFT_WIDTH + 8;
 
 		moduleButtons.clear();
+		overlayOptionButtons.clear();
 		int visibleIdx = 0;
-		for (int i = 0; i < 3; i++) {
+		for (int i = 0; i < 4; i++) {
 			if (!moduleMatchesSearch(i)) continue;
 			int idx = i;
 			String label = (i == selectedModule ? "> " : "  ") + getModuleTitle(i);
@@ -180,7 +196,7 @@ public class GestorageConfigScreen extends Screen {
 			visibleIdx++;
 		}
 
-		if (selectedModule >= 0 && selectedModule < 3 && moduleMatchesSearch(selectedModule)) {
+		if (selectedModule >= 0 && selectedModule < 4 && moduleMatchesSearch(selectedModule)) {
 			if (selectedModule == 0) {
 				int optY = contentY + 68;
 				enderEnabledBtn = ButtonWidget.builder(
@@ -235,6 +251,43 @@ public class GestorageConfigScreen extends Screen {
 				stackEnabledBtn.active = !remote;
 
 				addDrawableChild(stackEnabledBtn);
+			} else if (selectedModule == 3) {
+				int optY = contentY + 68;
+				overlayEnabledBtn = ButtonWidget.builder(
+						Text.literal("Enabled: " + (ModuleConfig.storageOverlay().enabled() ? "ON" : "OFF")),
+						b -> {
+							boolean now = !ModuleConfig.storageOverlay().enabled();
+							ModuleConfig.storageOverlay().enabled(now);
+							ModuleConfig.storageOverlay().save();
+							b.setMessage(Text.literal("Enabled: " + (now ? "ON" : "OFF")));
+						}
+				).dimensions(rightX, optY, 120, 20).build();
+				addDrawableChild(overlayEnabledBtn);
+
+				int subX = rightX + 4;
+				int subY = optY + 26;
+				overlayOptionButtons.add(buildOverlayToggle(
+						"Inventory Name", () -> ModuleConfig.storageOverlay().showInventoryName(),
+						v -> ModuleConfig.storageOverlay().showInventoryName(v), subX, subY));
+				overlayOptionButtons.add(buildOverlayToggle(
+						"Item Name", () -> ModuleConfig.storageOverlay().showItemName(),
+						v -> ModuleConfig.storageOverlay().showItemName(v), subX, subY + 22));
+				overlayOptionButtons.add(buildOverlayToggle(
+						"Item Icon", () -> ModuleConfig.storageOverlay().showItemIcon(),
+						v -> ModuleConfig.storageOverlay().showItemIcon(v), subX, subY + 44));
+				overlayOptionButtons.add(buildOverlayToggle(
+						"Stacks", () -> ModuleConfig.storageOverlay().showStackCount(),
+						v -> ModuleConfig.storageOverlay().showStackCount(v), subX, subY + 66));
+				overlayOptionButtons.add(buildOverlayToggle(
+						"Items", () -> ModuleConfig.storageOverlay().showItemCount(),
+						v -> ModuleConfig.storageOverlay().showItemCount(v), subX, subY + 88));
+				overlayOptionButtons.add(buildOverlayToggle(
+						"Free Slots", () -> ModuleConfig.storageOverlay().showFreeSlots(),
+						v -> ModuleConfig.storageOverlay().showFreeSlots(v), subX, subY + 110));
+
+				for (ButtonWidget btn : overlayOptionButtons) {
+					addDrawableChild(btn);
+				}
 			}
 		}
 	}
@@ -273,8 +326,24 @@ public class GestorageConfigScreen extends Screen {
 	private void buildSettingsTab() {
 	}
 
-	private void selectModule(int idx) {
-		selectedModule = idx;
+	private static ButtonWidget buildOverlayToggle(String label, java.util.function.BooleanSupplier getter,
+			java.util.function.Consumer<Boolean> setter, int x, int y) {
+		return ButtonWidget.builder(
+				Text.literal(toggleLabel(label, getter.getAsBoolean())),
+				b -> {
+					boolean now = !getter.getAsBoolean();
+					setter.accept(now);
+					ModuleConfig.storageOverlay().save();
+					b.setMessage(Text.literal(toggleLabel(label, now)));
+				}
+		).dimensions(x, y, 170, 20).build();
+	}
+
+	private static String toggleLabel(String label, boolean on) {
+		return (on ? "[X] " : "[ ] ") + label;
+	}
+
+	private void selectModule(int idx) {		selectedModule = idx;
 		waitingForKey = false;
 		keybindTarget = -1;
 		waitingButton = null;
@@ -461,6 +530,7 @@ public class GestorageConfigScreen extends Screen {
 			case 0 -> "Ender Key";
 			case 1 -> "Shulker Restock";
 			case 2 -> "Stackable Shulkers";
+			case 3 -> "Storage Overlay";
 			default -> "";
 		};
 	}
@@ -470,6 +540,7 @@ public class GestorageConfigScreen extends Screen {
 			case 0 -> "Keybind to open ender chest with any size";
 			case 1 -> "Auto-refill from shulker boxes";
 			case 2 -> "Shulkers stack up to 64";
+			case 3 -> "Informational overlay next to any inventory";
 			default -> "";
 		};
 	}

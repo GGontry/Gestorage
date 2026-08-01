@@ -1,6 +1,7 @@
 package com.gontry.gestorage.mixin;
 
 import com.gontry.gestorage.client.ShulkerRefillRenderer;
+import com.gontry.gestorage.client.StorageOverlayRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.screen.slot.Slot;
@@ -15,5 +16,11 @@ public class HandledScreenMixin {
 	private void gestorage_onDrawSlot(DrawContext context, Slot slot, CallbackInfo ci) {
 		HandledScreen<?> screen = (HandledScreen<?>) (Object) this;
 		ShulkerRefillRenderer.renderSlotBorder(context, slot, screen);
+	}
+
+	@Inject(at = @At("TAIL"), method = "render")
+	private void gestorage_onRender(DrawContext context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
+		HandledScreen<?> screen = (HandledScreen<?>) (Object) this;
+		StorageOverlayRenderer.render(context, screen, mouseX, mouseY);
 	}
 }

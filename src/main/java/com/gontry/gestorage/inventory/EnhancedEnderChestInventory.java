@@ -9,11 +9,15 @@ import net.minecraft.world.PersistentStateManager;
 import java.util.UUID;
 
 public class EnhancedEnderChestInventory implements Inventory {
+	private static final long FLUSH_INTERVAL_MS = 2000L;
+
 	private final Inventory vanillaEnderChest;
 	private final SimpleInventory overflow;
 	private final int totalSize;
 	private final int overflowStart;
 	private final EnderOverflowState overflowState;
+	private final PersistentStateManager stateManager;
+	private long lastFlushMs = 0L;
 
 	public EnhancedEnderChestInventory(Inventory vanillaEnderChest, int totalSize) {
 		this.vanillaEnderChest = vanillaEnderChest;
@@ -21,12 +25,14 @@ public class EnhancedEnderChestInventory implements Inventory {
 		this.overflowStart = vanillaEnderChest.size();
 		this.overflow = new SimpleInventory(totalSize - vanillaEnderChest.size());
 		this.overflowState = null;
+		this.stateManager = null;
 	}
 
 	public EnhancedEnderChestInventory(Inventory vanillaEnderChest, int totalSize, PersistentStateManager stateManager, UUID playerUuid) {
 		this.vanillaEnderChest = vanillaEnderChest;
 		this.totalSize = totalSize;
 		this.overflowStart = vanillaEnderChest.size();
+		this.stateManager = stateManager;
 
 		if (stateManager != null && playerUuid != null && totalSize > vanillaEnderChest.size()) {
 			this.overflowState = EnderOverflowState.load(stateManager, playerUuid);
@@ -103,6 +109,18 @@ public class EnhancedEnderChestInventory implements Inventory {
 		if (overflowState != null) {
 			overflowState.markDirty();
 		}
+		flushIfNeeded();
+	}
+
+	private void flushIfNeeded() {
+		if (overflowState == null || stateManager == null) {
+			return;
+		}
+		long now = System.currentTimeMillis();
+		if (now - lastFlushMs >= FLUSH_INTERVAL_MS) {
+			lastFlushMs = now;
+			overflowState.flush(stateManager);
+		}
 	}
 
 	@Override
@@ -121,6 +139,9 @@ public class EnhancedEnderChestInventory implements Inventory {
 		vanillaEnderChest.onClose(player);
 		overflow.onClose(player);
 		markDirty();
+		if (overflowState != null && stateManager != null) {
+			overflowState.flush(stateManager);
+		}
 	}
 
 	@Override

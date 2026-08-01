@@ -111,6 +111,14 @@ public class EnderOverflowState extends PersistentState {
 		return "gestorage_ender_overflow_" + playerUuid.toString();
 	}
 
+	public void flush(PersistentStateManager manager) {
+		if (manager == null || !isDirty()) {
+			return;
+		}
+		manager.save();
+		Gestorage.LOGGER.debug("[Overflow] Flushed state to disk");
+	}
+
 	public static EnderOverflowState load(PersistentStateManager manager, UUID playerUuid) {
 		return manager.getOrCreate(
 				new PersistentState.Type<>(
