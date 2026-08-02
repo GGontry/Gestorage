@@ -15,16 +15,6 @@
 
 ---
 
-## Future Roadmap
-
-Gestorage is designed to grow into a comprehensive utility suite. Planned features include:
-
-- [ ] **Smart Tool Hotkeys:** Quick-access shortcuts to swap and manage essential tools effortlessly.
-- [ ] **Advanced Inventory Info Overlay:** Real-time tooltips showing total item counts, stack breakdowns, and inventory metrics for hovered items.
-- [ ] **Expanded Automation & Sorting Utilities:** Further integrations to smooth out large-scale building and technical storage workflows.
-
----
-
 ## Installation
 
 1. Ensure you have **Fabric Loader** and **Fabric API** installed for your target Minecraft version.
