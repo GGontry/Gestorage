@@ -7,7 +7,7 @@ public class StorageOverlayConfigModel {
 	public boolean enabled = false;
 	public boolean showInventoryName = true;
 	public boolean showItemName = true;
-	public boolean showItemIcon = false;
+	public boolean showItemIcon = true;
 	public boolean showStackCount = true;
 	public boolean showItemCount = true;
 	public boolean showFreeSlots = true;

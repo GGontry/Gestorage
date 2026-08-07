@@ -21,8 +21,14 @@ public class ModNetworking {
 	public static final CustomPayload.Id<RefillRequestC2S> REFILL_REQUEST =
 			new CustomPayload.Id<>(Identifier.of(Gestorage.MOD_ID, "refill_request"));
 
+	public static final CustomPayload.Id<OpenConfigScreenS2C> OPEN_CONFIG_SCREEN =
+			new CustomPayload.Id<>(Identifier.of(Gestorage.MOD_ID, "open_config_screen"));
+
 	public static final PacketCodec<PacketByteBuf, OpenEnderChestC2S> OPEN_ENDER_CHEST_CODEC =
 			PacketCodec.unit(new OpenEnderChestC2S());
+
+	public static final PacketCodec<PacketByteBuf, OpenConfigScreenS2C> OPEN_CONFIG_SCREEN_CODEC =
+			PacketCodec.unit(new OpenConfigScreenS2C());
 
 	public static final PacketCodec<PacketByteBuf, OpenEnderScreenS2C> OPEN_ENDER_SCREEN_CODEC =
 			PacketCodec.of(
@@ -56,6 +62,7 @@ public class ModNetworking {
 		PayloadTypeRegistry.playC2S().register(OPEN_ENDER_CHEST, OPEN_ENDER_CHEST_CODEC);
 		PayloadTypeRegistry.playS2C().register(OPEN_ENDER_SCREEN, OPEN_ENDER_SCREEN_CODEC);
 		PayloadTypeRegistry.playS2C().register(ENDER_SIZE_CHANGED, ENDER_SIZE_CHANGED_CODEC);
+		PayloadTypeRegistry.playS2C().register(OPEN_CONFIG_SCREEN, OPEN_CONFIG_SCREEN_CODEC);
 		PayloadTypeRegistry.playC2S().register(REFILL_REQUEST, REFILL_REQUEST_CODEC);
 
 		ServerPlayNetworking.registerGlobalReceiver(OPEN_ENDER_CHEST, OpenEnderChestC2SPacket::handle);
@@ -66,6 +73,13 @@ public class ModNetworking {
 		@Override
 		public Id<? extends CustomPayload> getId() {
 			return OPEN_ENDER_CHEST;
+		}
+	}
+
+	public record OpenConfigScreenS2C() implements CustomPayload {
+		@Override
+		public Id<? extends CustomPayload> getId() {
+			return OPEN_CONFIG_SCREEN;
 		}
 	}
 

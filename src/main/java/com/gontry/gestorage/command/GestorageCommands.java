@@ -2,11 +2,14 @@ package com.gontry.gestorage.command;
 
 import com.gontry.gestorage.ModConstants;
 import com.gontry.gestorage.ModGameRules;
+import com.gontry.gestorage.network.ModNetworking;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
@@ -25,6 +28,19 @@ public class GestorageCommands {
 
 	private static void registerCommands(CommandDispatcher<ServerCommandSource> dispatcher) {
 		dispatcher.register(CommandManager.literal("gestorage")
+				.then(CommandManager.literal("config")
+						.executes(context -> {
+							ServerCommandSource source = context.getSource();
+							ServerPlayerEntity player = source.getPlayer();
+							if (player == null) {
+								source.sendError(Text.literal("[Gestorage] This command must be run by a player"));
+								return 0;
+							}
+							ServerPlayNetworking.send(player, new ModNetworking.OpenConfigScreenS2C());
+							source.sendFeedback(() -> Text.literal("[Gestorage] Opening config screen..."), false);
+							return 1;
+						})
+				)
 				.then(CommandManager.literal("endersize")
 						.then(CommandManager.argument("size", StringArgumentType.word())
 								.suggests((context, builder) -> {

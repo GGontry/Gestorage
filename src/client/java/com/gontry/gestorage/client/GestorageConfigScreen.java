@@ -26,6 +26,7 @@ public class GestorageConfigScreen extends Screen {
 	private boolean waitingForKey = false;
 	private int keybindTarget = -1;
 	private int capturedMods = 0;
+	private boolean swallowNextChar = false;
 	private String searchText = "";
 	private String originalSearchText = "";
 	private int scrollOffset = 0;
@@ -291,9 +292,10 @@ public class GestorageConfigScreen extends Screen {
 
 	@Override
 	public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+		swallowNextChar = false;
 		if (waitingForKey) {
 			if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
-				cancelKeybind();
+				clearKeybind();
 				return true;
 			}
 			if (isModifier(keyCode)) {
@@ -309,6 +311,10 @@ public class GestorageConfigScreen extends Screen {
 
 	@Override
 	public boolean charTyped(char chr, int modifiers) {
+		if (swallowNextChar) {
+			swallowNextChar = false;
+			return true;
+		}
 		if (waitingForKey) return true;
 		return super.charTyped(chr, modifiers);
 	}
@@ -351,10 +357,18 @@ public class GestorageConfigScreen extends Screen {
 		}
 		waitingForKey = false;
 		keybindTarget = -1;
+		swallowNextChar = true;
 		selectModule(selectedModule);
 	}
 
-	private void cancelKeybind() {
+	private void clearKeybind() {
+		if (keybindTarget == 0) {
+			ModuleConfig.enderChest().openEnderChestKey("");
+			ModuleConfig.enderChest().save();
+		} else if (keybindTarget == 1) {
+			ModuleConfig.shulkerRefill().shulkerRefillKey("");
+			ModuleConfig.shulkerRefill().save();
+		}
 		waitingForKey = false;
 		keybindTarget = -1;
 		capturedMods = 0;
