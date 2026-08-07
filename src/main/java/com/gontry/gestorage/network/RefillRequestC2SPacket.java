@@ -67,7 +67,9 @@ public class RefillRequestC2SPacket {
 				}
 			} else {
 				for (ItemStack stack : shulkerContents) {
-					if (!stack.isEmpty() && ItemStack.areItemsAndComponentsEqual(targetStack, stack)) {
+					if (!stack.isEmpty()
+							&& targetStack.isOf(stack.getItem())
+							&& targetStack.getMaxCount() == stack.getMaxCount()) {
 						targetTypeStack = stack.copy();
 						targetTypeStack.setCount(1);
 						break;

@@ -124,7 +124,7 @@ public class ShulkerRefillTickHandler {
 			if (target == null || target.isEmpty()
 					|| (target.isOf(stack.getItem())
 						&& target.getCount() < target.getMaxCount()
-						&& ItemStack.areItemsAndComponentsEqual(target, stack))) {
+						&& target.getMaxCount() == stack.getMaxCount())) {
 				return true;
 			}
 		}
