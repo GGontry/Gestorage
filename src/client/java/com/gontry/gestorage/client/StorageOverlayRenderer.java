@@ -7,6 +7,7 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
+import net.minecraft.client.gui.screen.recipebook.RecipeBookProvider;
 import net.minecraft.item.ItemStack;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.text.Text;
@@ -57,10 +58,15 @@ public class StorageOverlayRenderer {
 		var config = ModuleConfig.storageOverlay();
 		int screenX = accessor.gestorage_getX();
 		int screenY = accessor.gestorage_getY();
-		int x = screenX - panelWidth - GAP + config.offsetX();
 		int y = screenY + config.offsetY();
-		if (x < 2) {
+		int x;
+		if (isRecipeBookOpen(screen)) {
 			x = screenX + accessor.gestorage_getBackgroundWidth() + GAP + config.offsetX();
+		} else {
+			x = screenX - panelWidth - GAP + config.offsetX();
+			if (x < 2) {
+				x = screenX + accessor.gestorage_getBackgroundWidth() + GAP + config.offsetX();
+			}
 		}
 
 		drawPanel(context, x, y, panelWidth, panelHeight);
@@ -82,6 +88,10 @@ public class StorageOverlayRenderer {
 				textY += LINE_HEIGHT;
 			}
 		}
+	}
+
+	private static boolean isRecipeBookOpen(HandledScreen<?> screen) {
+		return screen instanceof RecipeBookProvider provider && provider.getRecipeBookWidget().isOpen();
 	}
 
 	private static Counts countInventory(HandledScreen<?> screen, Slot focused) {
