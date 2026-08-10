@@ -11,6 +11,7 @@
 	"gestorage.config.module.storage_overlay": "Storage Overlay",
 	"gestorage.config.module.storage_overlay.desc": "Informational overlay next to any inventory",
 	"overlay.gestorage.stacks": "Stacks: %s",
+	"overlay.gestorage.stacks_remainder": "Stacks: %s + %s",
 	"overlay.gestorage.items": "Items: %s",
 	"overlay.gestorage.free": "Free: %s/%s",
 	"gestorage.config.enabled": "Enabled: %s",

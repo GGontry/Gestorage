@@ -88,7 +88,6 @@ public class StorageOverlayRenderer {
 		net.minecraft.inventory.Inventory target = focused.inventory;
 		int totalSlots = 0;
 		int freeSlots = 0;
-		int matchingStacks = 0;
 		int matchingItems = 0;
 		ItemStack focusedStack = focused.getStack();
 
@@ -101,11 +100,20 @@ public class StorageOverlayRenderer {
 				continue;
 			}
 			if (!focusedStack.isEmpty() && stack.isOf(focusedStack.getItem())) {
-				matchingStacks++;
 				matchingItems += stack.getCount();
 			}
 		}
-		return new Counts(totalSlots, freeSlots, matchingStacks, matchingItems);
+		return new Counts(totalSlots, freeSlots, matchingItems);
+	}
+
+	private static Text stacksLine(ItemStack focusedStack, Counts counts) {
+		int maxCount = Math.max(focusedStack.getMaxCount(), 1);
+		int fullStacks = counts.matchingItems() / maxCount;
+		int remainder = counts.matchingItems() % maxCount;
+		if (remainder > 0) {
+			return Text.translatable("overlay.gestorage.stacks_remainder", fullStacks, remainder);
+		}
+		return Text.translatable("overlay.gestorage.stacks", fullStacks);
 	}
 
 	private static List<Text> buildLines(HandledScreen<?> screen, ItemStack focusedStack, Counts counts, boolean iconMode) {
@@ -115,7 +123,7 @@ public class StorageOverlayRenderer {
 		if (iconMode) {
 			lines.add(focusedStack.getName());
 			if (config.showStackCount()) {
-				lines.add(Text.translatable("overlay.gestorage.stacks", counts.matchingStacks()));
+				lines.add(stacksLine(focusedStack, counts));
 			}
 			if (config.showItemCount()) {
 				lines.add(Text.translatable("overlay.gestorage.items", counts.matchingItems()));
@@ -134,7 +142,7 @@ public class StorageOverlayRenderer {
 				lines.add(focusedStack.getName());
 			}
 			if (config.showStackCount()) {
-				lines.add(Text.translatable("overlay.gestorage.stacks", counts.matchingStacks()));
+				lines.add(stacksLine(focusedStack, counts));
 			}
 			if (config.showItemCount()) {
 				lines.add(Text.translatable("overlay.gestorage.items", counts.matchingItems()));
@@ -166,5 +174,5 @@ public class StorageOverlayRenderer {
 		context.drawTexture(PANEL_TEXTURE, right, bottom, BORDER, BORDER, 16 - BORDER, 16 - BORDER, BORDER, BORDER, 16, 16);
 	}
 
-	private record Counts(int totalSlots, int freeSlots, int matchingStacks, int matchingItems) {}
+	private record Counts(int totalSlots, int freeSlots, int matchingItems) {}
 }
