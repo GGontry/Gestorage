@@ -29,6 +29,8 @@ public class GestorageClient implements ClientModInitializer {
 		ShulkerRefillKeybinds.register();
 		ShulkerRefillTickHandler.register();
 
+		InventorySortingKeybinds.register();
+
 		Gestorage.LOGGER.info("Gestorage client initialized!");
 	}
 }

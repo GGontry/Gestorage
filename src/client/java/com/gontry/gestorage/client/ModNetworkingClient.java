@@ -12,4 +12,8 @@ public class ModNetworkingClient {
 	public static void sendOpenEnderChest() {
 		ClientPlayNetworking.send(new ModNetworking.OpenEnderChestC2S());
 	}
+
+	public static void sendSortInventory(boolean mergeStacks, boolean sortByName, boolean sortDescending) {
+		ClientPlayNetworking.send(new ModNetworking.SortInventoryC2S(mergeStacks, sortByName, sortDescending));
+	}
 }

@@ -21,6 +21,9 @@ public class ModNetworking {
 	public static final CustomPayload.Id<RefillRequestC2S> REFILL_REQUEST =
 			new CustomPayload.Id<>(Identifier.of(Gestorage.MOD_ID, "refill_request"));
 
+	public static final CustomPayload.Id<SortInventoryC2S> SORT_INVENTORY =
+			new CustomPayload.Id<>(Identifier.of(Gestorage.MOD_ID, "sort_inventory"));
+
 	public static final CustomPayload.Id<OpenConfigScreenS2C> OPEN_CONFIG_SCREEN =
 			new CustomPayload.Id<>(Identifier.of(Gestorage.MOD_ID, "open_config_screen"));
 
@@ -40,6 +43,20 @@ public class ModNetworking {
 			PacketCodec.of(
 					(EnderSizeChangedS2C p, PacketByteBuf buf) -> buf.writeInt(p.sizeMode()),
 					buf -> new EnderSizeChangedS2C(buf.readInt())
+			);
+
+	public static final PacketCodec<PacketByteBuf, SortInventoryC2S> SORT_INVENTORY_CODEC =
+			PacketCodec.of(
+					(SortInventoryC2S p, PacketByteBuf buf) -> {
+						buf.writeBoolean(p.mergeStacks());
+						buf.writeBoolean(p.sortByName());
+						buf.writeBoolean(p.sortDescending());
+					},
+					buf -> new SortInventoryC2S(
+						buf.readBoolean(),
+						buf.readBoolean(),
+						buf.readBoolean()
+					)
 			);
 
 	public static final PacketCodec<PacketByteBuf, RefillRequestC2S> REFILL_REQUEST_CODEC =
@@ -64,9 +81,11 @@ public class ModNetworking {
 		PayloadTypeRegistry.playS2C().register(ENDER_SIZE_CHANGED, ENDER_SIZE_CHANGED_CODEC);
 		PayloadTypeRegistry.playS2C().register(OPEN_CONFIG_SCREEN, OPEN_CONFIG_SCREEN_CODEC);
 		PayloadTypeRegistry.playC2S().register(REFILL_REQUEST, REFILL_REQUEST_CODEC);
+		PayloadTypeRegistry.playC2S().register(SORT_INVENTORY, SORT_INVENTORY_CODEC);
 
 		ServerPlayNetworking.registerGlobalReceiver(OPEN_ENDER_CHEST, OpenEnderChestC2SPacket::handle);
 		ServerPlayNetworking.registerGlobalReceiver(REFILL_REQUEST, RefillRequestC2SPacket::handle);
+		ServerPlayNetworking.registerGlobalReceiver(SORT_INVENTORY, SortInventoryC2SPacket::handle);
 	}
 
 	public record OpenEnderChestC2S() implements CustomPayload {
@@ -101,6 +120,13 @@ public class ModNetworking {
 		@Override
 		public Id<? extends CustomPayload> getId() {
 			return REFILL_REQUEST;
+		}
+	}
+
+	public record SortInventoryC2S(boolean mergeStacks, boolean sortByName, boolean sortDescending) implements CustomPayload {
+		@Override
+		public Id<? extends CustomPayload> getId() {
+			return SORT_INVENTORY;
 		}
 	}
 }

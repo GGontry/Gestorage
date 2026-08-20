@@ -116,7 +116,7 @@ public class GestorageConfigScreen extends Screen {
 
 	private void buildContent() {
 		int y = bodyY;
-		for (int i = 0; i < 4; i++) {
+		for (int i = 0; i < 5; i++) {
 			if (!moduleMatchesSearch(i)) continue;
 			int idx = i;
 			ConfigButton btn = new ConfigButton(searchX, y, LEFT_W, ROW_H,
@@ -127,7 +127,7 @@ public class GestorageConfigScreen extends Screen {
 			y += ROW_H + ROW_GAP;
 		}
 
-		if (selectedModule >= 0 && selectedModule < 4 && moduleMatchesSearch(selectedModule)) {
+		if (selectedModule >= 0 && selectedModule < 5 && moduleMatchesSearch(selectedModule)) {
 			buildDetail(selectedModule);
 		}
 		positionRows();
@@ -236,6 +236,57 @@ public class GestorageConfigScreen extends Screen {
 						v -> ModuleConfig.storageOverlay().showFreeSlots(v),
 						ModuleConfig.storageOverlay()::save);
 			}
+			case 4 -> {
+				addCheckbox(baseY, Text.literal("Enabled"),
+						() -> ModuleConfig.inventorySorting().enabled(),
+						v -> ModuleConfig.inventorySorting().enabled(v),
+						ModuleConfig.inventorySorting()::save);
+				baseY += ROW_H + ROW_GAP;
+				addCheckbox(baseY, Text.literal("Show Buttons"),
+						() -> ModuleConfig.inventorySorting().showButtons(),
+						v -> ModuleConfig.inventorySorting().showButtons(v),
+						ModuleConfig.inventorySorting()::save);
+				baseY += ROW_H + ROW_GAP;
+				keybindButton = new ConfigButton(detailX, optionsTop, detailW, ROW_H,
+						Text.literal("Key: " + KeybindHelper.getKeyName(ModuleConfig.inventorySorting().sortKey())),
+						() -> startKeybindCapture(2));
+				detailRows.add(new DetailRow(keybindButton, baseY));
+				baseY += ROW_H + ROW_GAP;
+				addCheckbox(baseY, Text.literal("Merge Stacks"),
+						() -> ModuleConfig.inventorySorting().mergeStacks(),
+						v -> ModuleConfig.inventorySorting().mergeStacks(v),
+						ModuleConfig.inventorySorting()::save);
+				baseY += ROW_H + ROW_GAP;
+				addCheckbox(baseY, Text.literal("Sort By Name"),
+						() -> ModuleConfig.inventorySorting().sortByName(),
+						v -> ModuleConfig.inventorySorting().sortByName(v),
+						ModuleConfig.inventorySorting()::save);
+				baseY += ROW_H + ROW_GAP;
+				addCheckbox(baseY, Text.literal("Sort Descending"),
+						() -> ModuleConfig.inventorySorting().sortDescending(),
+						v -> ModuleConfig.inventorySorting().sortDescending(v),
+						ModuleConfig.inventorySorting()::save);
+				baseY += ROW_H + ROW_GAP;
+				addCheckbox(baseY, Text.literal("Block Player Inventory"),
+						() -> ModuleConfig.inventorySorting().blockPlayer(),
+						v -> ModuleConfig.inventorySorting().blockPlayer(v),
+						ModuleConfig.inventorySorting()::save);
+				baseY += ROW_H + ROW_GAP;
+				addCheckbox(baseY, Text.literal("Block Ender Chest"),
+						() -> ModuleConfig.inventorySorting().blockEnderChest(),
+						v -> ModuleConfig.inventorySorting().blockEnderChest(v),
+						ModuleConfig.inventorySorting()::save);
+				baseY += ROW_H + ROW_GAP;
+				addCheckbox(baseY, Text.literal("Block Shulker Box"),
+						() -> ModuleConfig.inventorySorting().blockShulkerBox(),
+						v -> ModuleConfig.inventorySorting().blockShulkerBox(v),
+						ModuleConfig.inventorySorting()::save);
+				baseY += ROW_H + ROW_GAP;
+				addCheckbox(baseY, Text.literal("Block Chest/Barrel"),
+						() -> ModuleConfig.inventorySorting().blockGenericContainer(),
+						v -> ModuleConfig.inventorySorting().blockGenericContainer(v),
+						ModuleConfig.inventorySorting()::save);
+			}
 		}
 	}
 
@@ -275,7 +326,7 @@ public class GestorageConfigScreen extends Screen {
 	}
 
 	private int findFirstVisibleModule(int startFrom) {
-		for (int i = startFrom; i < 4; i++) {
+		for (int i = startFrom; i < 5; i++) {
 			if (moduleMatchesSearch(i)) return i;
 		}
 		return -1;
@@ -354,6 +405,9 @@ public class GestorageConfigScreen extends Screen {
 		} else if (keybindTarget == 1) {
 			ModuleConfig.shulkerRefill().shulkerRefillKey(encoded);
 			ModuleConfig.shulkerRefill().save();
+		} else if (keybindTarget == 2) {
+			ModuleConfig.inventorySorting().sortKey(encoded);
+			ModuleConfig.inventorySorting().save();
 		}
 		waitingForKey = false;
 		keybindTarget = -1;
@@ -368,6 +422,9 @@ public class GestorageConfigScreen extends Screen {
 		} else if (keybindTarget == 1) {
 			ModuleConfig.shulkerRefill().shulkerRefillKey("");
 			ModuleConfig.shulkerRefill().save();
+		} else if (keybindTarget == 2) {
+			ModuleConfig.inventorySorting().sortKey("");
+			ModuleConfig.inventorySorting().save();
 		}
 		waitingForKey = false;
 		keybindTarget = -1;
@@ -406,7 +463,7 @@ public class GestorageConfigScreen extends Screen {
 		int titleX = windowX + windowW / 2;
 		drawCenteredText(context, Text.literal("Gestorage Settings"), titleX, windowY + PAD + 4, 0xFFFFFFFF);
 
-		if (selectedModule >= 0 && selectedModule < 4 && moduleMatchesSearch(selectedModule)) {
+		if (selectedModule >= 0 && selectedModule < 5 && moduleMatchesSearch(selectedModule)) {
 			context.drawText(this.textRenderer, Text.literal(getModuleTitle(selectedModule)), detailX, bodyY, 0xFFFFFFFF, false);
 			List<OrderedText> descLines = this.textRenderer.wrapLines(Text.literal(getModuleDesc(selectedModule)), detailW);
 			int descY = bodyY + 10;
@@ -432,7 +489,9 @@ public class GestorageConfigScreen extends Screen {
 		if (maxScroll <= 0) return;
 		int trackH = viewportH - 8;
 		int thumbH = Math.max(8, viewportH * viewportH / detailContentHeight());
-		int thumbY = optionsTop + (maxScroll == 0 ? 0 : (int) ((long) scrollOffset * trackH / maxScroll));
+		int scrollRange = Math.max(1, trackH - thumbH);
+		int thumbY = optionsTop + (int) ((long) scrollOffset * scrollRange / maxScroll);
+		thumbY = Math.min(thumbY, optionsTop + scrollRange);
 		context.fill(detailX + detailW - 2, thumbY, detailX + detailW, thumbY + thumbH, 0xFF9A9A9A);
 	}
 
@@ -447,6 +506,7 @@ public class GestorageConfigScreen extends Screen {
 			case 1 -> "Shulker Restock";
 			case 2 -> "Stackable Shulkers";
 			case 3 -> "Storage Overlay";
+			case 4 -> "Inventory Sorting";
 			default -> "";
 		};
 	}
@@ -457,6 +517,7 @@ public class GestorageConfigScreen extends Screen {
 			case 1 -> "Auto-refill from shulker boxes";
 			case 2 -> "Shulkers stack up to 64";
 			case 3 -> "Informational overlay next to any inventory";
+			case 4 -> "Sort items in inventories";
 			default -> "";
 		};
 	}

@@ -11,6 +11,7 @@ public final class ModuleConfig {
 	private static EnderChestConfig ENDER_CHEST;
 	private static ShulkerRefillConfig SHULKER_REFILL;
 	private static StorageOverlayConfig STORAGE_OVERLAY;
+	private static InventorySortingConfig INVENTORY_SORTING;
 
 	private ModuleConfig() {}
 
@@ -18,9 +19,11 @@ public final class ModuleConfig {
 		createBackup(Path.of("config", "gestorage", "ender_chest.json"));
 		createBackup(Path.of("config", "gestorage", "shulker_refill.json"));
 		createBackup(Path.of("config", "gestorage", "storage_overlay.json"));
+		createBackup(Path.of("config", "gestorage", "inventory_sorting.json"));
 		ENDER_CHEST = EnderChestConfig.createAndLoad();
 		SHULKER_REFILL = ShulkerRefillConfig.createAndLoad();
 		STORAGE_OVERLAY = StorageOverlayConfig.createAndLoad();
+		INVENTORY_SORTING = InventorySortingConfig.createAndLoad();
 		Gestorage.LOGGER.info("Module configs initialized");
 	}
 
@@ -34,6 +37,10 @@ public final class ModuleConfig {
 
 	public static StorageOverlayConfig storageOverlay() {
 		return STORAGE_OVERLAY;
+	}
+
+	public static InventorySortingConfig inventorySorting() {
+		return INVENTORY_SORTING;
 	}
 
 	static void createBackup(Path configPath) {
