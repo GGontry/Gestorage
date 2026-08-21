@@ -5,6 +5,7 @@ import com.gontry.gestorage.client.ui.ConfigButton;
 import com.gontry.gestorage.client.ui.ConfigCheckbox;
 import com.gontry.gestorage.client.ui.ConfigIconButton;
 import com.gontry.gestorage.client.ui.ConfigTextures;
+import com.gontry.gestorage.client.CarefulBreakKeybinds;
 import com.gontry.gestorage.config.ShulkerStackServerConfig;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
@@ -54,6 +55,7 @@ public class GestorageConfigScreen extends Screen {
 	private static final int COL_GAP = 10;
 	private static final int ROW_H = 20;
 	private static final int ROW_GAP = 4;
+	private static final int KEY_W = 84;
 	private static final int DETAIL_HEADER_H = 32;
 	private static final int CHROME_H = PAD * 2 + HEADER_H + HEADER_GAP + SEARCH_H + SEARCH_GAP;
 	private static final int DESIGNED_WINDOW_H = CHROME_H + 7 * ROW_H + 6 * ROW_GAP + DETAIL_HEADER_H;
@@ -116,7 +118,7 @@ public class GestorageConfigScreen extends Screen {
 
 	private void buildContent() {
 		int y = bodyY;
-		for (int i = 0; i < 5; i++) {
+		for (int i = 0; i < 6; i++) {
 			if (!moduleMatchesSearch(i)) continue;
 			int idx = i;
 			ConfigButton btn = new ConfigButton(searchX, y, LEFT_W, ROW_H,
@@ -127,7 +129,7 @@ public class GestorageConfigScreen extends Screen {
 			y += ROW_H + ROW_GAP;
 		}
 
-		if (selectedModule >= 0 && selectedModule < 5 && moduleMatchesSearch(selectedModule)) {
+		if (selectedModule >= 0 && selectedModule < 6 && moduleMatchesSearch(selectedModule)) {
 			buildDetail(selectedModule);
 		}
 		positionRows();
@@ -169,123 +171,164 @@ public class GestorageConfigScreen extends Screen {
 		int baseY = 0;
 		switch (module) {
 			case 0 -> {
-				addCheckbox(baseY, Text.literal("Enabled"),
+				addOptionWithKey(baseY, "Enabled",
 						() -> ModuleConfig.enderChest().enabled(),
 						v -> ModuleConfig.enderChest().enabled(v),
-						ModuleConfig.enderChest()::save);
+						ModuleConfig.enderChest()::save,
+						ModuleConfig.enderChest().toggleEnabledKey(), 20);
 				baseY += ROW_H + ROW_GAP;
 				keybindButton = new ConfigButton(detailX, optionsTop, detailW, ROW_H,
-						Text.literal("Key: " + KeybindHelper.getKeyName(ModuleConfig.enderChest().openEnderChestKey())),
+						Text.literal("Open Key: " + KeybindHelper.getKeyName(ModuleConfig.enderChest().openEnderChestKey())),
 						() -> startKeybindCapture(0));
-				detailRows.add(new DetailRow(keybindButton, baseY));
+				detailRows.add(new DetailRow(keybindButton, 0, detailW, baseY));
 			}
 			case 1 -> {
-				addCheckbox(baseY, Text.literal("Enabled"),
+				addOptionWithKey(baseY, "Enabled",
 						() -> ModuleConfig.shulkerRefill().enabled(),
 						v -> ModuleConfig.shulkerRefill().enabled(v),
-						ModuleConfig.shulkerRefill()::save);
+						ModuleConfig.shulkerRefill()::save,
+						ModuleConfig.shulkerRefill().toggleEnabledKey(), 21);
 				baseY += ROW_H + ROW_GAP;
 				keybindButton = new ConfigButton(detailX, optionsTop, detailW, ROW_H,
-						Text.literal("Key: " + KeybindHelper.getKeyName(ModuleConfig.shulkerRefill().shulkerRefillKey())),
+						Text.literal("Mark Key: " + KeybindHelper.getKeyName(ModuleConfig.shulkerRefill().shulkerRefillKey())),
 						() -> startKeybindCapture(1));
-				detailRows.add(new DetailRow(keybindButton, baseY));
+				detailRows.add(new DetailRow(keybindButton, 0, detailW, baseY));
 			}
 			case 2 -> {
 				boolean remote = this.client != null && this.client.world != null && !this.client.isIntegratedServerRunning();
-				ConfigCheckbox cb = new ConfigCheckbox(detailX, optionsTop, detailW, ROW_H,
+				int cbW = detailW - KEY_W - 4;
+				ConfigCheckbox cb = new ConfigCheckbox(detailX, optionsTop, cbW, ROW_H,
 						Text.literal(remote ? "Enabled (Server)" : "Enabled"),
 						() -> ShulkerStackServerConfig.enabled,
 						v -> ShulkerStackServerConfig.enabled = v,
-						ShulkerStackServerConfig::save);
+						() -> {
+							ShulkerStackServerConfig.save();
+							if (this.client != null && this.client.player != null) {
+								this.client.player.sendMessage(Text.literal(
+										"§7Stackable Shulkers: " + (ShulkerStackServerConfig.enabled ? "§aON" : "§cOFF")), true);
+							}
+						});
 				cb.active = !remote;
-				detailRows.add(new DetailRow(cb, baseY));
+				detailRows.add(new DetailRow(cb, 0, cbW, baseY));
+				attachKeyButton(baseY, ShulkerStackKeybinds.toggleEnabledKey, 22);
 			}
 			case 3 -> {
-				addCheckbox(baseY, Text.literal("Enabled"),
+				addOptionWithKey(baseY, "Enabled",
 						() -> ModuleConfig.storageOverlay().enabled(),
 						v -> ModuleConfig.storageOverlay().enabled(v),
-						ModuleConfig.storageOverlay()::save);
+						ModuleConfig.storageOverlay()::save,
+						ModuleConfig.storageOverlay().toggleEnabledKey(), 23);
 				baseY += ROW_H + ROW_GAP;
-				addCheckbox(baseY, Text.literal("Inventory Name"),
+				addOptionWithKey(baseY, "Inventory Name",
 						() -> ModuleConfig.storageOverlay().showInventoryName(),
 						v -> ModuleConfig.storageOverlay().showInventoryName(v),
-						ModuleConfig.storageOverlay()::save);
+						ModuleConfig.storageOverlay()::save,
+						ModuleConfig.storageOverlay().toggleInventoryNameKey(), 24);
 				baseY += ROW_H + ROW_GAP;
-				addCheckbox(baseY, Text.literal("Item Name"),
+				addOptionWithKey(baseY, "Item Name",
 						() -> ModuleConfig.storageOverlay().showItemName(),
 						v -> ModuleConfig.storageOverlay().showItemName(v),
-						ModuleConfig.storageOverlay()::save);
+						ModuleConfig.storageOverlay()::save,
+						ModuleConfig.storageOverlay().toggleItemNameKey(), 25);
 				baseY += ROW_H + ROW_GAP;
-				addCheckbox(baseY, Text.literal("Item Icon"),
+				addOptionWithKey(baseY, "Item Icon",
 						() -> ModuleConfig.storageOverlay().showItemIcon(),
 						v -> ModuleConfig.storageOverlay().showItemIcon(v),
-						ModuleConfig.storageOverlay()::save);
+						ModuleConfig.storageOverlay()::save,
+						ModuleConfig.storageOverlay().toggleItemIconKey(), 26);
 				baseY += ROW_H + ROW_GAP;
-				addCheckbox(baseY, Text.literal("Stacks"),
+				addOptionWithKey(baseY, "Stacks",
 						() -> ModuleConfig.storageOverlay().showStackCount(),
 						v -> ModuleConfig.storageOverlay().showStackCount(v),
-						ModuleConfig.storageOverlay()::save);
+						ModuleConfig.storageOverlay()::save,
+						ModuleConfig.storageOverlay().toggleStackCountKey(), 27);
 				baseY += ROW_H + ROW_GAP;
-				addCheckbox(baseY, Text.literal("Items"),
+				addOptionWithKey(baseY, "Items",
 						() -> ModuleConfig.storageOverlay().showItemCount(),
 						v -> ModuleConfig.storageOverlay().showItemCount(v),
-						ModuleConfig.storageOverlay()::save);
+						ModuleConfig.storageOverlay()::save,
+						ModuleConfig.storageOverlay().toggleItemCountKey(), 28);
 				baseY += ROW_H + ROW_GAP;
-				addCheckbox(baseY, Text.literal("Free Slots"),
+				addOptionWithKey(baseY, "Free Slots",
 						() -> ModuleConfig.storageOverlay().showFreeSlots(),
 						v -> ModuleConfig.storageOverlay().showFreeSlots(v),
-						ModuleConfig.storageOverlay()::save);
+						ModuleConfig.storageOverlay()::save,
+						ModuleConfig.storageOverlay().toggleFreeSlotsKey(), 29);
 			}
 			case 4 -> {
-				addCheckbox(baseY, Text.literal("Enabled"),
+				addOptionWithKey(baseY, "Enabled",
 						() -> ModuleConfig.inventorySorting().enabled(),
 						v -> ModuleConfig.inventorySorting().enabled(v),
-						ModuleConfig.inventorySorting()::save);
+						ModuleConfig.inventorySorting()::save,
+						ModuleConfig.inventorySorting().toggleEnabledKey(), 30);
 				baseY += ROW_H + ROW_GAP;
-				addCheckbox(baseY, Text.literal("Show Buttons"),
+				addOptionWithKey(baseY, "Show Buttons",
 						() -> ModuleConfig.inventorySorting().showButtons(),
 						v -> ModuleConfig.inventorySorting().showButtons(v),
-						ModuleConfig.inventorySorting()::save);
+						ModuleConfig.inventorySorting()::save,
+						ModuleConfig.inventorySorting().toggleShowButtonsKey(), 31);
 				baseY += ROW_H + ROW_GAP;
 				keybindButton = new ConfigButton(detailX, optionsTop, detailW, ROW_H,
-						Text.literal("Key: " + KeybindHelper.getKeyName(ModuleConfig.inventorySorting().sortKey())),
+						Text.literal("Sort Key: " + KeybindHelper.getKeyName(ModuleConfig.inventorySorting().sortKey())),
 						() -> startKeybindCapture(2));
-				detailRows.add(new DetailRow(keybindButton, baseY));
+				detailRows.add(new DetailRow(keybindButton, 0, detailW, baseY));
 				baseY += ROW_H + ROW_GAP;
-				addCheckbox(baseY, Text.literal("Merge Stacks"),
+				addOptionWithKey(baseY, "Merge Stacks",
 						() -> ModuleConfig.inventorySorting().mergeStacks(),
 						v -> ModuleConfig.inventorySorting().mergeStacks(v),
-						ModuleConfig.inventorySorting()::save);
+						ModuleConfig.inventorySorting()::save,
+						ModuleConfig.inventorySorting().toggleMergeStacksKey(), 32);
 				baseY += ROW_H + ROW_GAP;
-				addCheckbox(baseY, Text.literal("Sort By Name"),
+				addOptionWithKey(baseY, "Sort By Name",
 						() -> ModuleConfig.inventorySorting().sortByName(),
 						v -> ModuleConfig.inventorySorting().sortByName(v),
-						ModuleConfig.inventorySorting()::save);
+						ModuleConfig.inventorySorting()::save,
+						ModuleConfig.inventorySorting().toggleSortByNameKey(), 33);
 				baseY += ROW_H + ROW_GAP;
-				addCheckbox(baseY, Text.literal("Sort Descending"),
+				addOptionWithKey(baseY, "Sort Descending",
 						() -> ModuleConfig.inventorySorting().sortDescending(),
 						v -> ModuleConfig.inventorySorting().sortDescending(v),
-						ModuleConfig.inventorySorting()::save);
+						ModuleConfig.inventorySorting()::save,
+						ModuleConfig.inventorySorting().toggleSortDescendingKey(), 34);
 				baseY += ROW_H + ROW_GAP;
-				addCheckbox(baseY, Text.literal("Block Player Inventory"),
+				addOptionWithKey(baseY, "Block Player Inventory",
 						() -> ModuleConfig.inventorySorting().blockPlayer(),
 						v -> ModuleConfig.inventorySorting().blockPlayer(v),
-						ModuleConfig.inventorySorting()::save);
+						ModuleConfig.inventorySorting()::save,
+						ModuleConfig.inventorySorting().toggleBlockPlayerKey(), 35);
 				baseY += ROW_H + ROW_GAP;
-				addCheckbox(baseY, Text.literal("Block Ender Chest"),
+				addOptionWithKey(baseY, "Block Ender Chest",
 						() -> ModuleConfig.inventorySorting().blockEnderChest(),
 						v -> ModuleConfig.inventorySorting().blockEnderChest(v),
-						ModuleConfig.inventorySorting()::save);
+						ModuleConfig.inventorySorting()::save,
+						ModuleConfig.inventorySorting().toggleBlockEnderChestKey(), 36);
 				baseY += ROW_H + ROW_GAP;
-				addCheckbox(baseY, Text.literal("Block Shulker Box"),
+				addOptionWithKey(baseY, "Block Shulker Box",
 						() -> ModuleConfig.inventorySorting().blockShulkerBox(),
 						v -> ModuleConfig.inventorySorting().blockShulkerBox(v),
-						ModuleConfig.inventorySorting()::save);
+						ModuleConfig.inventorySorting()::save,
+						ModuleConfig.inventorySorting().toggleBlockShulkerBoxKey(), 37);
 				baseY += ROW_H + ROW_GAP;
-				addCheckbox(baseY, Text.literal("Block Chest/Barrel"),
+				addOptionWithKey(baseY, "Block Chest/Barrel",
 						() -> ModuleConfig.inventorySorting().blockGenericContainer(),
 						v -> ModuleConfig.inventorySorting().blockGenericContainer(v),
-						ModuleConfig.inventorySorting()::save);
+						ModuleConfig.inventorySorting()::save,
+						ModuleConfig.inventorySorting().toggleBlockGenericContainerKey(), 38);
+			}
+			case 5 -> {
+				addServerOptionWithKey(baseY, "Enabled", 6, CarefulBreakKeybinds.enabledKey, 16);
+				baseY += ROW_H + ROW_GAP;
+				addServerOptionWithKey(baseY, "Careful Break", 0, CarefulBreakKeybinds.carefulBreakKey, 10);
+				baseY += ROW_H + ROW_GAP;
+				addServerOptionWithKey(baseY, "Careful Drop", 1, CarefulBreakKeybinds.carefulDropKey, 11);
+				baseY += ROW_H + ROW_GAP;
+				addServerOptionWithKey(baseY, "Always Careful", 2, CarefulBreakKeybinds.alwaysCarefulKey, 12);
+				baseY += ROW_H + ROW_GAP;
+				addServerOptionWithKey(baseY, "Tree Capitator", 3, CarefulBreakKeybinds.treeCapitatorKey, 13);
+				baseY += ROW_H + ROW_GAP;
+				addServerOptionWithKey(baseY, "Better Harvesting", 4, CarefulBreakKeybinds.betterHarvestingKey, 14);
+				baseY += ROW_H + ROW_GAP;
+				addServerOptionWithKey(baseY, "Auto Replant", 5, CarefulBreakKeybinds.autoReplantKey, 15);
 			}
 		}
 	}
@@ -293,12 +336,66 @@ public class GestorageConfigScreen extends Screen {
 	private void addCheckbox(int baseY, Text label, BooleanSupplier getter,
 			Consumer<Boolean> setter, Runnable onToggle) {
 		ConfigCheckbox cb = new ConfigCheckbox(detailX, optionsTop, detailW, ROW_H, label, getter, setter, onToggle);
-		detailRows.add(new DetailRow(cb, baseY));
+		detailRows.add(new DetailRow(cb, 0, detailW, baseY));
+	}
+
+	private void addOptionWithKey(int baseY, String label, BooleanSupplier getter,
+			Consumer<Boolean> setter, Runnable onSave, String currentKey, int targetId) {
+		int cbW = detailW - KEY_W - 4;
+		ConfigCheckbox cb = new ConfigCheckbox(detailX, optionsTop, cbW, ROW_H,
+				Text.literal(label), getter, setter, onSave);
+		detailRows.add(new DetailRow(cb, 0, cbW, baseY));
+		attachKeyButton(baseY, currentKey, targetId);
+	}
+
+	private void attachKeyButton(int baseY, String currentKey, int targetId) {
+		ConfigButton[] ref = new ConfigButton[1];
+		ConfigButton btn = new ConfigButton(detailX + detailW - KEY_W, optionsTop, KEY_W, ROW_H,
+				Text.literal(KeybindHelper.getKeyName(currentKey).replace(" ", "")),
+				() -> {
+					keybindButton = ref[0];
+					startKeybindCapture(targetId);
+				});
+		ref[0] = btn;
+		detailRows.add(new DetailRow(btn, detailW - KEY_W, KEY_W, baseY));
+	}
+
+	private void addServerCheckbox(int baseY, String label, int optionId) {
+		ConfigCheckbox cb = new ConfigCheckbox(detailX, optionsTop, detailW, ROW_H,
+				Text.literal(label),
+				() -> serverOptionState(optionId),
+				v -> {},
+				() -> ModNetworkingClient.sendToggleCarefulBreak(optionId));
+		detailRows.add(new DetailRow(cb, 0, detailW, baseY));
+	}
+
+	private static boolean serverOptionState(int optionId) {
+		return switch (optionId) {
+			case 0 -> ClientCarefulBreakState.carefulBreak;
+			case 1 -> ClientCarefulBreakState.carefulDrop;
+			case 2 -> ClientCarefulBreakState.alwaysCareful;
+			case 3 -> ClientCarefulBreakState.treeCapitator;
+			case 4 -> ClientCarefulBreakState.betterHarvesting;
+			case 5 -> ClientCarefulBreakState.autoReplant;
+			default -> ClientCarefulBreakState.enabled;
+		};
+	}
+
+	private void addServerOptionWithKey(int baseY, String label, int optionId, String currentKey, int targetId) {
+		int cbW = detailW - KEY_W - 4;
+		ConfigCheckbox cb = new ConfigCheckbox(detailX, optionsTop, cbW, ROW_H,
+				Text.literal(label),
+				() -> serverOptionState(optionId),
+				v -> {},
+				() -> ModNetworkingClient.sendToggleCarefulBreak(optionId));
+		detailRows.add(new DetailRow(cb, 0, cbW, baseY));
+		attachKeyButton(baseY, currentKey, targetId);
 	}
 
 	private void positionRows() {
 		for (DetailRow row : detailRows) {
-			row.widget.setX(detailX);
+			row.widget.setX(detailX + row.offsetX);
+			row.widget.setWidth(row.width);
 			row.widget.setY(optionsTop + row.baseY - scrollOffset);
 		}
 	}
@@ -311,7 +408,11 @@ public class GestorageConfigScreen extends Screen {
 
 	private int detailContentHeight() {
 		if (detailRows.isEmpty()) return 0;
-		return detailRows.size() * ROW_H + (detailRows.size() - 1) * ROW_GAP;
+		int maxBase = 0;
+		for (DetailRow row : detailRows) {
+			maxBase = Math.max(maxBase, row.baseY);
+		}
+		return maxBase + ROW_H;
 	}
 
 	private boolean withinViewport(double mouseX, double mouseY) {
@@ -326,7 +427,7 @@ public class GestorageConfigScreen extends Screen {
 	}
 
 	private int findFirstVisibleModule(int startFrom) {
-		for (int i = startFrom; i < 5; i++) {
+		for (int i = startFrom; i < 6; i++) {
 			if (moduleMatchesSearch(i)) return i;
 		}
 		return -1;
@@ -373,6 +474,10 @@ public class GestorageConfigScreen extends Screen {
 	@Override
 	public boolean mouseClicked(double mouseX, double mouseY, int button) {
 		if (waitingForKey) {
+			if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
+				cancelKeybindCapture();
+				return true;
+			}
 			int mouseCode = -(button + 1);
 			String encoded = KeybindHelper.encode(mouseCode, capturedMods);
 			applyKeybind(encoded);
@@ -398,17 +503,18 @@ public class GestorageConfigScreen extends Screen {
 		return super.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount);
 	}
 
-	private void applyKeybind(String encoded) {
-		if (keybindTarget == 0) {
-			ModuleConfig.enderChest().openEnderChestKey(encoded);
-			ModuleConfig.enderChest().save();
-		} else if (keybindTarget == 1) {
-			ModuleConfig.shulkerRefill().shulkerRefillKey(encoded);
-			ModuleConfig.shulkerRefill().save();
-		} else if (keybindTarget == 2) {
-			ModuleConfig.inventorySorting().sortKey(encoded);
-			ModuleConfig.inventorySorting().save();
+	private void cancelKeybindCapture() {
+		waitingForKey = false;
+		keybindTarget = -1;
+		capturedMods = 0;
+		if (this.client != null && this.client.player != null) {
+			this.client.player.sendMessage(Text.literal("§7Keybind capture cancelled."), false);
 		}
+		selectModule(selectedModule);
+	}
+
+	private void applyKeybind(String encoded) {
+		writeKeybind(keybindTarget, encoded);
 		waitingForKey = false;
 		keybindTarget = -1;
 		swallowNextChar = true;
@@ -416,20 +522,52 @@ public class GestorageConfigScreen extends Screen {
 	}
 
 	private void clearKeybind() {
-		if (keybindTarget == 0) {
-			ModuleConfig.enderChest().openEnderChestKey("");
-			ModuleConfig.enderChest().save();
-		} else if (keybindTarget == 1) {
-			ModuleConfig.shulkerRefill().shulkerRefillKey("");
-			ModuleConfig.shulkerRefill().save();
-		} else if (keybindTarget == 2) {
-			ModuleConfig.inventorySorting().sortKey("");
-			ModuleConfig.inventorySorting().save();
-		}
+		writeKeybind(keybindTarget, "");
 		waitingForKey = false;
 		keybindTarget = -1;
 		capturedMods = 0;
 		selectModule(selectedModule);
+	}
+
+	private void writeKeybind(int target, String encoded) {
+		switch (target) {
+			case 0 -> { ModuleConfig.enderChest().openEnderChestKey(encoded); ModuleConfig.enderChest().save(); }
+			case 1 -> { ModuleConfig.shulkerRefill().shulkerRefillKey(encoded); ModuleConfig.shulkerRefill().save(); }
+			case 2 -> { ModuleConfig.inventorySorting().sortKey(encoded); ModuleConfig.inventorySorting().save(); }
+			case 16 -> { CarefulBreakKeybinds.enabledKey = encoded; CarefulBreakKeybinds.save(); }
+			case 20 -> { ModuleConfig.enderChest().toggleEnabledKey(encoded); ModuleConfig.enderChest().save(); }
+			case 21 -> { ModuleConfig.shulkerRefill().toggleEnabledKey(encoded); ModuleConfig.shulkerRefill().save(); }
+			case 22 -> { ShulkerStackKeybinds.toggleEnabledKey = encoded; ShulkerStackKeybinds.save(); }
+			case 23 -> { ModuleConfig.storageOverlay().toggleEnabledKey(encoded); ModuleConfig.storageOverlay().save(); }
+			case 24 -> { ModuleConfig.storageOverlay().toggleInventoryNameKey(encoded); ModuleConfig.storageOverlay().save(); }
+			case 25 -> { ModuleConfig.storageOverlay().toggleItemNameKey(encoded); ModuleConfig.storageOverlay().save(); }
+			case 26 -> { ModuleConfig.storageOverlay().toggleItemIconKey(encoded); ModuleConfig.storageOverlay().save(); }
+			case 27 -> { ModuleConfig.storageOverlay().toggleStackCountKey(encoded); ModuleConfig.storageOverlay().save(); }
+			case 28 -> { ModuleConfig.storageOverlay().toggleItemCountKey(encoded); ModuleConfig.storageOverlay().save(); }
+			case 29 -> { ModuleConfig.storageOverlay().toggleFreeSlotsKey(encoded); ModuleConfig.storageOverlay().save(); }
+			case 30 -> { ModuleConfig.inventorySorting().toggleEnabledKey(encoded); ModuleConfig.inventorySorting().save(); }
+			case 31 -> { ModuleConfig.inventorySorting().toggleShowButtonsKey(encoded); ModuleConfig.inventorySorting().save(); }
+			case 32 -> { ModuleConfig.inventorySorting().toggleMergeStacksKey(encoded); ModuleConfig.inventorySorting().save(); }
+			case 33 -> { ModuleConfig.inventorySorting().toggleSortByNameKey(encoded); ModuleConfig.inventorySorting().save(); }
+			case 34 -> { ModuleConfig.inventorySorting().toggleSortDescendingKey(encoded); ModuleConfig.inventorySorting().save(); }
+			case 35 -> { ModuleConfig.inventorySorting().toggleBlockPlayerKey(encoded); ModuleConfig.inventorySorting().save(); }
+			case 36 -> { ModuleConfig.inventorySorting().toggleBlockEnderChestKey(encoded); ModuleConfig.inventorySorting().save(); }
+			case 37 -> { ModuleConfig.inventorySorting().toggleBlockShulkerBoxKey(encoded); ModuleConfig.inventorySorting().save(); }
+			case 38 -> { ModuleConfig.inventorySorting().toggleBlockGenericContainerKey(encoded); ModuleConfig.inventorySorting().save(); }
+			default -> applyCBKeybind(encoded);
+		}
+	}
+
+	private void applyCBKeybind(String encoded) {
+		switch (keybindTarget) {
+			case 10 -> CarefulBreakKeybinds.carefulBreakKey = encoded;
+			case 11 -> CarefulBreakKeybinds.carefulDropKey = encoded;
+			case 12 -> CarefulBreakKeybinds.alwaysCarefulKey = encoded;
+			case 13 -> CarefulBreakKeybinds.treeCapitatorKey = encoded;
+			case 14 -> CarefulBreakKeybinds.betterHarvestingKey = encoded;
+			case 15 -> CarefulBreakKeybinds.autoReplantKey = encoded;
+		}
+		CarefulBreakKeybinds.save();
 	}
 
 	private boolean isModifier(int keyCode) {
@@ -463,7 +601,7 @@ public class GestorageConfigScreen extends Screen {
 		int titleX = windowX + windowW / 2;
 		drawCenteredText(context, Text.literal("Gestorage Settings"), titleX, windowY + PAD + 4, 0xFFFFFFFF);
 
-		if (selectedModule >= 0 && selectedModule < 5 && moduleMatchesSearch(selectedModule)) {
+		if (selectedModule >= 0 && selectedModule < 6 && moduleMatchesSearch(selectedModule)) {
 			context.drawText(this.textRenderer, Text.literal(getModuleTitle(selectedModule)), detailX, bodyY, 0xFFFFFFFF, false);
 			List<OrderedText> descLines = this.textRenderer.wrapLines(Text.literal(getModuleDesc(selectedModule)), detailW);
 			int descY = bodyY + 10;
@@ -507,6 +645,7 @@ public class GestorageConfigScreen extends Screen {
 			case 2 -> "Stackable Shulkers";
 			case 3 -> "Storage Overlay";
 			case 4 -> "Inventory Sorting";
+			case 5 -> "Careful Break";
 			default -> "";
 		};
 	}
@@ -518,11 +657,12 @@ public class GestorageConfigScreen extends Screen {
 			case 2 -> "Shulkers stack up to 64";
 			case 3 -> "Informational overlay next to any inventory";
 			case 4 -> "Sort items in inventories";
+			case 5 -> "Collect blocks and drops directly to inventory";
 			default -> "";
 		};
 	}
 
-	private record DetailRow(PressableWidget widget, int baseY) {}
+	private record DetailRow(PressableWidget widget, int offsetX, int width, int baseY) {}
 
 	private static class CenteredSearchField extends TextFieldWidget {
 		CenteredSearchField(TextRenderer textRenderer, int x, int y, int width, int height, Text text) {

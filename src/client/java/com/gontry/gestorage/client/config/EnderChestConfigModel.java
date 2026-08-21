@@ -6,4 +6,5 @@ import io.wispforest.owo.config.annotation.Config;
 public class EnderChestConfigModel {
 	public boolean enabled = false;
 	public String openEnderChestKey = "";
+	public String toggleEnabledKey = "";
 }

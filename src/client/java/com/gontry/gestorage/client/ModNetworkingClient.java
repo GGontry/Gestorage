@@ -7,6 +7,7 @@ public class ModNetworkingClient {
 	public static void register() {
 		ClientPlayNetworking.registerGlobalReceiver(ModNetworking.OPEN_ENDER_SCREEN, OpenEnderScreenS2CPacket::handle);
 		ClientPlayNetworking.registerGlobalReceiver(ModNetworking.ENDER_SIZE_CHANGED, EnderSizeChangedS2CPacket::handle);
+		ClientPlayNetworking.registerGlobalReceiver(ModNetworking.CAREFUL_BREAK_STATE, CarefulBreakStateS2CPacket::handle);
 	}
 
 	public static void sendOpenEnderChest() {
@@ -15,5 +16,9 @@ public class ModNetworkingClient {
 
 	public static void sendSortInventory(boolean mergeStacks, boolean sortByName, boolean sortDescending) {
 		ClientPlayNetworking.send(new ModNetworking.SortInventoryC2S(mergeStacks, sortByName, sortDescending));
+	}
+
+	public static void sendToggleCarefulBreak(int option) {
+		ClientPlayNetworking.send(new ModNetworking.ToggleCarefulBreakC2S(option));
 	}
 }

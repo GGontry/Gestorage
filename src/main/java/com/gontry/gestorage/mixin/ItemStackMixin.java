@@ -7,6 +7,7 @@ import net.minecraft.component.type.ContainerComponent;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.ItemStack;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
@@ -24,10 +25,18 @@ public class ItemStackMixin {
 		if (!(blockItem.getBlock() instanceof ShulkerBoxBlock)) return;
 
 		ContainerComponent container = self.get(DataComponentTypes.CONTAINER);
-		if (container != null && container.streamNonEmpty().findAny().isPresent()) {
+		if (container != null && hasItems(container)) {
 			return;
 		}
 
 		cir.setReturnValue(64);
+	}
+
+	@Unique
+	private static boolean hasItems(ContainerComponent container) {
+		for (ItemStack ignored : container.iterateNonEmpty()) {
+			return true;
+		}
+		return false;
 	}
 }

@@ -114,8 +114,6 @@ public class RefillRequestC2SPacket {
 			if (!sameInv) {
 				targetInv.markDirty();
 			}
-
-			Gestorage.LOGGER.debug("[Refill] Moved {}x {} from {}:{} to {}:{}", toGive, targetTypeStack.getItem(), sourceType, payload.sourceSlot(), targetType, payload.targetSlot());
 		});
 	}
 

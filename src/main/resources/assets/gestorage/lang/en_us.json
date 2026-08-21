@@ -12,6 +12,8 @@
 	"gestorage.config.module.storage_overlay.desc": "Informational overlay next to any inventory",
 	"gestorage.config.module.inventory_sorting": "Inventory Sorting",
 	"gestorage.config.module.inventory_sorting.desc": "Sort items in inventories",
+	"gestorage.config.module.careful_break": "Careful Break",
+	"gestorage.config.module.careful_break.desc": "Collect blocks and drops directly to inventory",
 	"overlay.gestorage.stacks": "Stacks: %s",
 	"overlay.gestorage.stacks_remainder": "Stacks: %s + %s",
 	"overlay.gestorage.items": "Items: %s",

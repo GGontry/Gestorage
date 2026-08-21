@@ -31,6 +31,12 @@ public class GestorageClient implements ClientModInitializer {
 
 		InventorySortingKeybinds.register();
 
+		CarefulBreakKeybinds.register();
+
+		ShulkerStackKeybinds.register();
+
+		StorageOverlayKeybinds.register();
+
 		Gestorage.LOGGER.info("Gestorage client initialized!");
 	}
 }

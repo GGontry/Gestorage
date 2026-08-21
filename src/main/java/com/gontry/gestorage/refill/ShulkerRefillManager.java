@@ -5,10 +5,11 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.registry.Registries;
 
-import java.util.IdentityHashMap;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class ShulkerRefillManager {
-	private static final IdentityHashMap<Item, Boolean> SHULKER_CACHE = new IdentityHashMap<>();
+	private static final Map<Item, Boolean> SHULKER_CACHE = new ConcurrentHashMap<>();
 
 	public static boolean isShulkerBox(ItemStack stack) {
 		Item item = stack.getItem();

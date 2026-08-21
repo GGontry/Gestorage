@@ -103,7 +103,6 @@ public class EnderOverflowState extends PersistentState {
 			}
 		}
 		nbt.put("Items", items);
-		Gestorage.LOGGER.debug("[Overflow] Saving {} items (size={}, version={})", savedCount, inventory.size(), CURRENT_VERSION);
 		return nbt;
 	}
 
@@ -116,7 +115,6 @@ public class EnderOverflowState extends PersistentState {
 			return;
 		}
 		manager.save();
-		Gestorage.LOGGER.debug("[Overflow] Flushed state to disk");
 	}
 
 	public static EnderOverflowState load(PersistentStateManager manager, UUID playerUuid) {

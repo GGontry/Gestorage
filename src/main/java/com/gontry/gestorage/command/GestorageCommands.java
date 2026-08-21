@@ -43,6 +43,7 @@ public class GestorageCommands {
 				)
 				.then(CommandManager.literal("endersize")
 						.then(CommandManager.argument("size", StringArgumentType.word())
+								.requires(source -> source.hasPermissionLevel(2))
 								.suggests((context, builder) -> {
 									for (String mode : SIZE_MODES) {
 										builder.suggest(mode);

@@ -13,4 +13,12 @@ public class StorageOverlayConfigModel {
 	public boolean showFreeSlots = true;
 	public int offsetX = 0;
 	public int offsetY = 0;
+
+	public String toggleEnabledKey = "";
+	public String toggleInventoryNameKey = "";
+	public String toggleItemNameKey = "";
+	public String toggleItemIconKey = "";
+	public String toggleStackCountKey = "";
+	public String toggleItemCountKey = "";
+	public String toggleFreeSlotsKey = "";
 }

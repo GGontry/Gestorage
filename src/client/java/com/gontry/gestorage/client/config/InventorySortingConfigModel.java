@@ -16,4 +16,14 @@ public class InventorySortingConfigModel {
 	public boolean blockEnderChest = false;
 	public boolean blockShulkerBox = false;
 	public boolean blockGenericContainer = false;
+
+	public String toggleEnabledKey = "";
+	public String toggleShowButtonsKey = "";
+	public String toggleMergeStacksKey = "";
+	public String toggleSortByNameKey = "";
+	public String toggleSortDescendingKey = "";
+	public String toggleBlockPlayerKey = "";
+	public String toggleBlockEnderChestKey = "";
+	public String toggleBlockShulkerBoxKey = "";
+	public String toggleBlockGenericContainerKey = "";
 }

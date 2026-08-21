@@ -27,11 +27,45 @@ public class ModNetworking {
 	public static final CustomPayload.Id<OpenConfigScreenS2C> OPEN_CONFIG_SCREEN =
 			new CustomPayload.Id<>(Identifier.of(Gestorage.MOD_ID, "open_config_screen"));
 
+	public static final CustomPayload.Id<ToggleCarefulBreakC2S> TOGGLE_CAREFUL_BREAK =
+			new CustomPayload.Id<>(Identifier.of(Gestorage.MOD_ID, "toggle_careful_break"));
+
+	public static final CustomPayload.Id<CarefulBreakStateS2C> CAREFUL_BREAK_STATE =
+			new CustomPayload.Id<>(Identifier.of(Gestorage.MOD_ID, "careful_break_state"));
+
 	public static final PacketCodec<PacketByteBuf, OpenEnderChestC2S> OPEN_ENDER_CHEST_CODEC =
 			PacketCodec.unit(new OpenEnderChestC2S());
 
 	public static final PacketCodec<PacketByteBuf, OpenConfigScreenS2C> OPEN_CONFIG_SCREEN_CODEC =
 			PacketCodec.unit(new OpenConfigScreenS2C());
+
+	public static final PacketCodec<PacketByteBuf, ToggleCarefulBreakC2S> TOGGLE_CAREFUL_BREAK_CODEC =
+			PacketCodec.of(
+					(ToggleCarefulBreakC2S p, PacketByteBuf buf) -> buf.writeInt(p.option()),
+					buf -> new ToggleCarefulBreakC2S(buf.readInt())
+			);
+
+	public static final PacketCodec<PacketByteBuf, CarefulBreakStateS2C> CAREFUL_BREAK_STATE_CODEC =
+			PacketCodec.of(
+					(CarefulBreakStateS2C p, PacketByteBuf buf) -> {
+						buf.writeBoolean(p.enabled());
+						buf.writeBoolean(p.carefulBreak());
+						buf.writeBoolean(p.carefulDrop());
+						buf.writeBoolean(p.alwaysCareful());
+						buf.writeBoolean(p.treeCapitator());
+						buf.writeBoolean(p.betterHarvesting());
+						buf.writeBoolean(p.autoReplant());
+					},
+					buf -> new CarefulBreakStateS2C(
+						buf.readBoolean(),
+						buf.readBoolean(),
+						buf.readBoolean(),
+						buf.readBoolean(),
+						buf.readBoolean(),
+						buf.readBoolean(),
+						buf.readBoolean()
+					)
+			);
 
 	public static final PacketCodec<PacketByteBuf, OpenEnderScreenS2C> OPEN_ENDER_SCREEN_CODEC =
 			PacketCodec.of(
@@ -82,10 +116,13 @@ public class ModNetworking {
 		PayloadTypeRegistry.playS2C().register(OPEN_CONFIG_SCREEN, OPEN_CONFIG_SCREEN_CODEC);
 		PayloadTypeRegistry.playC2S().register(REFILL_REQUEST, REFILL_REQUEST_CODEC);
 		PayloadTypeRegistry.playC2S().register(SORT_INVENTORY, SORT_INVENTORY_CODEC);
+		PayloadTypeRegistry.playC2S().register(TOGGLE_CAREFUL_BREAK, TOGGLE_CAREFUL_BREAK_CODEC);
+		PayloadTypeRegistry.playS2C().register(CAREFUL_BREAK_STATE, CAREFUL_BREAK_STATE_CODEC);
 
 		ServerPlayNetworking.registerGlobalReceiver(OPEN_ENDER_CHEST, OpenEnderChestC2SPacket::handle);
 		ServerPlayNetworking.registerGlobalReceiver(REFILL_REQUEST, RefillRequestC2SPacket::handle);
 		ServerPlayNetworking.registerGlobalReceiver(SORT_INVENTORY, SortInventoryC2SPacket::handle);
+		ServerPlayNetworking.registerGlobalReceiver(TOGGLE_CAREFUL_BREAK, ToggleCarefulBreakC2SPacket::handle);
 	}
 
 	public record OpenEnderChestC2S() implements CustomPayload {
@@ -127,6 +164,22 @@ public class ModNetworking {
 		@Override
 		public Id<? extends CustomPayload> getId() {
 			return SORT_INVENTORY;
+		}
+	}
+
+	public record ToggleCarefulBreakC2S(int option) implements CustomPayload {
+		@Override
+		public Id<? extends CustomPayload> getId() {
+			return TOGGLE_CAREFUL_BREAK;
+		}
+	}
+
+	public record CarefulBreakStateS2C(boolean enabled, boolean carefulBreak, boolean carefulDrop,
+			boolean alwaysCareful, boolean treeCapitator, boolean betterHarvesting,
+			boolean autoReplant) implements CustomPayload {
+		@Override
+		public Id<? extends CustomPayload> getId() {
+			return CAREFUL_BREAK_STATE;
 		}
 	}
 }

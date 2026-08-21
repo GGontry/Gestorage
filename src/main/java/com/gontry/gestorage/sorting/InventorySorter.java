@@ -1,6 +1,4 @@
 package com.gontry.gestorage.sorting;
-
-import com.gontry.gestorage.Gestorage;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -51,9 +49,6 @@ public class InventorySorter {
 			inventory.setStack(slotIndex, stack);
 			slotIndex++;
 		}
-
-		Gestorage.LOGGER.debug("[Sort] Sorted {} slots ({}-{}), {} stacks placed",
-				endSlot - startSlot + 1, startSlot, endSlot, stacks.size());
 	}
 
 	private static List<ItemStack> merge(List<ItemStack> stacks) {

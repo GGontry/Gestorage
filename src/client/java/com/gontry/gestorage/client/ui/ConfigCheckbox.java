@@ -14,7 +14,6 @@ public class ConfigCheckbox extends PressableWidget {
 	private final BooleanSupplier getter;
 	private final Consumer<Boolean> setter;
 	private final Runnable onToggle;
-	private boolean selected;
 
 	public ConfigCheckbox(int x, int y, int width, int height, Text label,
 			BooleanSupplier getter, Consumer<Boolean> setter, Runnable onToggle) {
@@ -22,13 +21,12 @@ public class ConfigCheckbox extends PressableWidget {
 		this.getter = getter;
 		this.setter = setter;
 		this.onToggle = onToggle;
-		this.selected = getter.getAsBoolean();
 	}
 
 	@Override
 	public void onPress() {
-		this.selected = !this.selected;
-		this.setter.accept(this.selected);
+		boolean newValue = !getter.getAsBoolean();
+		this.setter.accept(newValue);
 		if (this.onToggle != null) {
 			this.onToggle.run();
 		}
@@ -43,7 +41,7 @@ public class ConfigCheckbox extends PressableWidget {
 	protected void renderWidget(DrawContext context, int mouseX, int mouseY, float delta) {
 		int iconY = this.getY() + (this.height - 12) / 2;
 		RenderSystem.setShaderColor(1f, 1f, 1f, this.active ? 1f : 0.4f);
-		ConfigTextures.drawCheckbox(context, this.selected, this.getX(), iconY);
+		ConfigTextures.drawCheckbox(context, getter.getAsBoolean(), this.getX(), iconY);
 		RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
 
 		int color = !this.active ? 0xFF8A8A8A : (this.isHovered() ? 0xFFFFFFFF : 0xFFD9D9D9);

@@ -18,30 +18,47 @@ public class ShulkerRefillKeybinds {
 	private static int markedSlot = -1;
 	private static String markedSlotType = "";
 	private static boolean wasPressed = false;
+	private static boolean wasTogglePressed = false;
 
 	public static void register() {
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
-			if (!ModuleConfig.shulkerRefill().enabled()) return;
-			if (client.player == null) return;
-			if (client.getWindow() == null) return;
+			long handle = client.getWindow() != null ? client.getWindow().getHandle() : 0;
+			boolean inGame = client.player != null
+					&& client.currentScreen == null
+					&& handle != 0;
 
-			long handle = client.getWindow().getHandle();
-			if (handle == 0) return;
+			boolean togglePressed = inGame && !ModuleConfig.shulkerRefill().toggleEnabledKey().isEmpty()
+					&& KeybindHelper.isPressed(ModuleConfig.shulkerRefill().toggleEnabledKey(), handle);
+			if (togglePressed && !wasTogglePressed) {
+				boolean newState = !ModuleConfig.shulkerRefill().enabled();
+				ModuleConfig.shulkerRefill().enabled(newState);
+				ModuleConfig.shulkerRefill().save();
+				client.player.sendMessage(Text.literal(
+						"§7Shulker Restock: " + (newState ? "§aON" : "§cOFF")), true);
+			}
+			wasTogglePressed = togglePressed;
+
+			if (!ModuleConfig.shulkerRefill().enabled()) { wasPressed = false; return; }
+			if (client.player == null) { wasPressed = false; return; }
+
+			long h = client.getWindow() != null ? client.getWindow().getHandle() : 0;
+			if (h == 0) { wasPressed = false; return; }
 
 			if (markedSlot >= 0 && !(client.currentScreen instanceof HandledScreen<?>)) {
 				reset();
 			}
 
-			if (markedSlot >= 0 && GLFW.glfwGetKey(handle, GLFW.GLFW_KEY_ESCAPE) == GLFW.GLFW_PRESS) {
+			if (markedSlot >= 0 && GLFW.glfwGetKey(h, GLFW.GLFW_KEY_ESCAPE) == GLFW.GLFW_PRESS) {
 				reset();
 				if (client.player != null) {
-					client.player.sendMessage(Text.literal("§cShulker marking cancelled."), false);
+					client.player.sendMessage(Text.literal("§cShulker marking cancelled."), true);
 				}
+				wasPressed = false;
 				return;
 			}
 
-			boolean pressed = KeybindHelper.isPressed(ModuleConfig.shulkerRefill().shulkerRefillKey(), handle);
-			if (pressed && !wasPressed) {
+			boolean pressed = KeybindHelper.isPressed(ModuleConfig.shulkerRefill().shulkerRefillKey(), h);
+			if (pressed && !wasPressed && client.currentScreen instanceof HandledScreen<?>) {
 				onKeyPress(client);
 			}
 			wasPressed = pressed;
@@ -63,7 +80,7 @@ public class ShulkerRefillKeybinds {
 
 		if (ShulkerLinkManager.isSlotLinked(worldKey, slot.getIndex(), slotType)) {
 			ShulkerLinkManager.removeLink(worldKey, slot.getIndex(), slotType);
-			client.player.sendMessage(Text.literal("§cLink removed."), false);
+			client.player.sendMessage(Text.literal("§cLink removed."), true);
 			return;
 		}
 
@@ -73,7 +90,7 @@ public class ShulkerRefillKeybinds {
 				markedSlotType = slotType;
 				client.player.sendMessage(
 					Text.literal("§eShulker marked! Press key on any slot to link."),
-					false
+					true
 				);
 			}
 		} else {
@@ -82,14 +99,14 @@ public class ShulkerRefillKeybinds {
 				markedSlotType = slotType;
 				client.player.sendMessage(
 					Text.literal("§eShulker marked! Press key on any slot to link."),
-					false
+					true
 				);
 			} else {
 				ShulkerLink link = new ShulkerLink(markedSlot, markedSlotType, slot.getIndex(), slotType);
 				ShulkerLinkManager.addLink(worldKey, link);
 				client.player.sendMessage(
 					Text.literal("§aSlots linked! Refill active."),
-					false
+					true
 				);
 				markedSlot = -1;
 				markedSlotType = "";

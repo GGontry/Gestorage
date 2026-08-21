@@ -3,9 +3,13 @@
 	"package": "com.gontry.gestorage.mixin",
 	"compatibilityLevel": "JAVA_21",
 	"mixins": [
+		"BlockDropMixin",
 		"ClickSlotC2SPacketMixin",
 		"EnderChestBlockMixin",
-		"ItemStackMixin"
+		"EntityDropMixin",
+		"ItemStackMixin",
+		"ServerPlayerInteractionManagerMixin",
+		"ServerWorldMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

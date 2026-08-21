@@ -19,15 +19,6 @@ public class EnhancedEnderChestInventory implements Inventory {
 	private final PersistentStateManager stateManager;
 	private long lastFlushMs = 0L;
 
-	public EnhancedEnderChestInventory(Inventory vanillaEnderChest, int totalSize) {
-		this.vanillaEnderChest = vanillaEnderChest;
-		this.totalSize = totalSize;
-		this.overflowStart = vanillaEnderChest.size();
-		this.overflow = new SimpleInventory(totalSize - vanillaEnderChest.size());
-		this.overflowState = null;
-		this.stateManager = null;
-	}
-
 	public EnhancedEnderChestInventory(Inventory vanillaEnderChest, int totalSize, PersistentStateManager stateManager, UUID playerUuid) {
 		this.vanillaEnderChest = vanillaEnderChest;
 		this.totalSize = totalSize;

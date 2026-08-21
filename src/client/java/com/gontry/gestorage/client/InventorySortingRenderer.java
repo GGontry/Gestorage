@@ -25,18 +25,18 @@ public class InventorySortingRenderer {
 
 	private InventorySortingRenderer() {}
 
+	private static void computeButtonPos(HandledScreen<?> screen) {
+		HandledScreenAccessor accessor = (HandledScreenAccessor) screen;
+		buttonX = accessor.gestorage_getX() + accessor.gestorage_getBackgroundWidth() - BUTTON_SIZE - 4;
+		buttonY = accessor.gestorage_getY() + 2;
+	}
+
 	public static void renderButton(DrawContext context, HandledScreen<?> screen, int mouseX, int mouseY) {
 		if (!ModuleConfig.inventorySorting().enabled()) return;
 		if (!ModuleConfig.inventorySorting().showButtons()) return;
 		if (!isSortableScreen(screen)) return;
 
-		HandledScreenAccessor accessor = (HandledScreenAccessor) screen;
-		int screenX = accessor.gestorage_getX();
-		int screenY = accessor.gestorage_getY();
-		int bgWidth = accessor.gestorage_getBackgroundWidth();
-
-		buttonX = screenX + bgWidth - BUTTON_SIZE - 4;
-		buttonY = screenY + 2;
+		computeButtonPos(screen);
 
 		if (isInventoryBlocked(screen)) return;
 
@@ -63,6 +63,10 @@ public class InventorySortingRenderer {
 	public static boolean handleClick(HandledScreen<?> screen, int mouseX, int mouseY) {
 		if (!ModuleConfig.inventorySorting().enabled()) return false;
 		if (!ModuleConfig.inventorySorting().showButtons()) return false;
+		if (!isSortableScreen(screen)) return false;
+
+		computeButtonPos(screen);
+
 		if (mouseX < buttonX || mouseX >= buttonX + BUTTON_SIZE) return false;
 		if (mouseY < buttonY || mouseY >= buttonY + BUTTON_SIZE) return false;
 		if (isInventoryBlocked(screen)) return false;

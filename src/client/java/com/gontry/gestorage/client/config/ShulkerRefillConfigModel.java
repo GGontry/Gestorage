@@ -6,5 +6,6 @@ import io.wispforest.owo.config.annotation.Config;
 public class ShulkerRefillConfigModel {
 	public boolean enabled = false;
 	public String shulkerRefillKey = "";
+	public String toggleEnabledKey = "";
 	public int refillThreshold = 0;
 }
