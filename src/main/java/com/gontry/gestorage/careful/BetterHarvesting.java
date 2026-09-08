@@ -52,7 +52,7 @@ public final class BetterHarvesting {
 				broken++;
 			}
 
-			if (CarefulBreakServerConfig.autoReplant) {
+			if (CarefulBreakServerConfig.autoReplantCrops) {
 				replantCrop(player, world, crops, block);
 			}
 		} finally {

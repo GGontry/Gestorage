@@ -316,7 +316,7 @@ public class GestorageConfigScreen extends Screen {
 						ModuleConfig.inventorySorting().toggleBlockGenericContainerKey(), 38);
 			}
 			case 5 -> {
-				addServerOptionWithKey(baseY, "Enabled", 6, CarefulBreakKeybinds.enabledKey, 16);
+				addServerOptionWithKey(baseY, "Enabled", 7, CarefulBreakKeybinds.enabledKey, 16);
 				baseY += ROW_H + ROW_GAP;
 				addServerOptionWithKey(baseY, "Careful Break", 0, CarefulBreakKeybinds.carefulBreakKey, 10);
 				baseY += ROW_H + ROW_GAP;
@@ -328,7 +328,9 @@ public class GestorageConfigScreen extends Screen {
 				baseY += ROW_H + ROW_GAP;
 				addServerOptionWithKey(baseY, "Better Harvesting", 4, CarefulBreakKeybinds.betterHarvestingKey, 14);
 				baseY += ROW_H + ROW_GAP;
-				addServerOptionWithKey(baseY, "Auto Replant", 5, CarefulBreakKeybinds.autoReplantKey, 15);
+				addServerOptionWithKey(baseY, "Auto Replant Trees", 5, CarefulBreakKeybinds.autoReplantTreesKey, 15);
+				baseY += ROW_H + ROW_GAP;
+				addServerOptionWithKey(baseY, "Auto Replant Crops", 6, CarefulBreakKeybinds.autoReplantCropsKey, 17);
 			}
 		}
 	}
@@ -376,7 +378,8 @@ public class GestorageConfigScreen extends Screen {
 			case 2 -> ClientCarefulBreakState.alwaysCareful;
 			case 3 -> ClientCarefulBreakState.treeCapitator;
 			case 4 -> ClientCarefulBreakState.betterHarvesting;
-			case 5 -> ClientCarefulBreakState.autoReplant;
+			case 5 -> ClientCarefulBreakState.autoReplantTrees;
+			case 6 -> ClientCarefulBreakState.autoReplantCrops;
 			default -> ClientCarefulBreakState.enabled;
 		};
 	}
@@ -565,7 +568,8 @@ public class GestorageConfigScreen extends Screen {
 			case 12 -> CarefulBreakKeybinds.alwaysCarefulKey = encoded;
 			case 13 -> CarefulBreakKeybinds.treeCapitatorKey = encoded;
 			case 14 -> CarefulBreakKeybinds.betterHarvestingKey = encoded;
-			case 15 -> CarefulBreakKeybinds.autoReplantKey = encoded;
+			case 15 -> CarefulBreakKeybinds.autoReplantTreesKey = encoded;
+			case 17 -> CarefulBreakKeybinds.autoReplantCropsKey = encoded;
 		}
 		CarefulBreakKeybinds.save();
 	}

@@ -22,7 +22,8 @@ public class CarefulBreakKeybinds {
 	public static String alwaysCarefulKey = "";
 	public static String treeCapitatorKey = "";
 	public static String betterHarvestingKey = "";
-	public static String autoReplantKey = "";
+	public static String autoReplantTreesKey = "";
+	public static String autoReplantCropsKey = "";
 	public static String enabledKey = "";
 
 	private static boolean prevCarefulBreak = false;
@@ -30,7 +31,8 @@ public class CarefulBreakKeybinds {
 	private static boolean prevAlwaysCareful = false;
 	private static boolean prevTreeCapitator = false;
 	private static boolean prevBetterHarvesting = false;
-	private static boolean prevAutoReplant = false;
+	private static boolean prevAutoReplantTrees = false;
+	private static boolean prevAutoReplantCrops = false;
 	private static boolean prevEnabled = false;
 
 	public static void register() {
@@ -47,8 +49,9 @@ public class CarefulBreakKeybinds {
 			prevAlwaysCareful = edge(alwaysCarefulKey, active, handle, prevAlwaysCareful, 2);
 			prevTreeCapitator = edge(treeCapitatorKey, active, handle, prevTreeCapitator, 3);
 			prevBetterHarvesting = edge(betterHarvestingKey, active, handle, prevBetterHarvesting, 4);
-			prevAutoReplant = edge(autoReplantKey, active, handle, prevAutoReplant, 5);
-			prevEnabled = edge(enabledKey, active, handle, prevEnabled, 6);
+			prevAutoReplantTrees = edge(autoReplantTreesKey, active, handle, prevAutoReplantTrees, 5);
+			prevAutoReplantCrops = edge(autoReplantCropsKey, active, handle, prevAutoReplantCrops, 6);
+			prevEnabled = edge(enabledKey, active, handle, prevEnabled, 7);
 		});
 	}
 
@@ -76,7 +79,8 @@ public class CarefulBreakKeybinds {
 			alwaysCarefulKey = getString(json, "alwaysCarefulKey");
 			treeCapitatorKey = getString(json, "treeCapitatorKey");
 			betterHarvestingKey = getString(json, "betterHarvestingKey");
-			autoReplantKey = getString(json, "autoReplantKey");
+			autoReplantTreesKey = getString(json, "autoReplantKey");
+			autoReplantCropsKey = getString(json, "autoReplantCropsKey");
 			enabledKey = getString(json, "enabledKey");
 		} catch (Exception e) {
 			Gestorage.LOGGER.error("Failed to load careful_break keybinds", e);
@@ -92,7 +96,8 @@ public class CarefulBreakKeybinds {
 			json.addProperty("alwaysCarefulKey", alwaysCarefulKey);
 			json.addProperty("treeCapitatorKey", treeCapitatorKey);
 			json.addProperty("betterHarvestingKey", betterHarvestingKey);
-			json.addProperty("autoReplantKey", autoReplantKey);
+			json.addProperty("autoReplantKey", autoReplantTreesKey);
+			json.addProperty("autoReplantCropsKey", autoReplantCropsKey);
 			json.addProperty("enabledKey", enabledKey);
 			Files.writeString(CONFIG_PATH, GSON.toJson(json));
 		} catch (IOException e) {

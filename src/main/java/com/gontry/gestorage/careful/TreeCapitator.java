@@ -61,7 +61,7 @@ public final class TreeCapitator {
 				world.breakBlock(leafPos, true, player, 512);
 			}
 
-			if (CarefulBreakServerConfig.autoReplant) {
+			if (CarefulBreakServerConfig.autoReplantTrees) {
 				replantTree(player, world, logs, state);
 			}
 		} finally {

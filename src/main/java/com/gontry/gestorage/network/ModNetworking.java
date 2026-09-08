@@ -62,9 +62,11 @@ public class ModNetworking {
 						buf.writeBoolean(p.alwaysCareful());
 						buf.writeBoolean(p.treeCapitator());
 						buf.writeBoolean(p.betterHarvesting());
-						buf.writeBoolean(p.autoReplant());
+						buf.writeBoolean(p.autoReplantTrees());
+						buf.writeBoolean(p.autoReplantCrops());
 					},
 					buf -> new CarefulBreakStateS2C(
+						buf.readBoolean(),
 						buf.readBoolean(),
 						buf.readBoolean(),
 						buf.readBoolean(),
@@ -186,7 +188,7 @@ public class ModNetworking {
 
 	public record CarefulBreakStateS2C(boolean enabled, boolean carefulBreak, boolean carefulDrop,
 			boolean alwaysCareful, boolean treeCapitator, boolean betterHarvesting,
-			boolean autoReplant) implements CustomPayload {
+			boolean autoReplantTrees, boolean autoReplantCrops) implements CustomPayload {
 		@Override
 		public Id<? extends CustomPayload> getId() {
 			return CAREFUL_BREAK_STATE;

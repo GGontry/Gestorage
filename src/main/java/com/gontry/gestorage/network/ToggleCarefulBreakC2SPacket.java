@@ -27,8 +27,9 @@ public class ToggleCarefulBreakC2SPacket {
 			case 2 -> { name = "Always Careful"; CarefulBreakServerConfig.alwaysCareful = !CarefulBreakServerConfig.alwaysCareful; }
 			case 3 -> { name = "Tree Capitator"; CarefulBreakServerConfig.treeCapitator = !CarefulBreakServerConfig.treeCapitator; }
 			case 4 -> { name = "Better Harvesting"; CarefulBreakServerConfig.betterHarvesting = !CarefulBreakServerConfig.betterHarvesting; }
-			case 5 -> { name = "Auto Replant"; CarefulBreakServerConfig.autoReplant = !CarefulBreakServerConfig.autoReplant; }
-			case 6 -> { name = "Enabled"; CarefulBreakServerConfig.enabled = !CarefulBreakServerConfig.enabled; }
+			case 5 -> { name = "Auto Replant Trees"; CarefulBreakServerConfig.autoReplantTrees = !CarefulBreakServerConfig.autoReplantTrees; }
+			case 6 -> { name = "Auto Replant Crops"; CarefulBreakServerConfig.autoReplantCrops = !CarefulBreakServerConfig.autoReplantCrops; }
+			case 7 -> { name = "Enabled"; CarefulBreakServerConfig.enabled = !CarefulBreakServerConfig.enabled; }
 			default -> {
 				Gestorage.LOGGER.warn("[ToggleCarefulBreak] Unknown option: {}", payload.option());
 				return;
@@ -49,7 +50,8 @@ public class ToggleCarefulBreakC2SPacket {
 			case 2 -> CarefulBreakServerConfig.alwaysCareful;
 			case 3 -> CarefulBreakServerConfig.treeCapitator;
 			case 4 -> CarefulBreakServerConfig.betterHarvesting;
-			case 5 -> CarefulBreakServerConfig.autoReplant;
+			case 5 -> CarefulBreakServerConfig.autoReplantTrees;
+			case 6 -> CarefulBreakServerConfig.autoReplantCrops;
 			default -> CarefulBreakServerConfig.enabled;
 		};
 	}

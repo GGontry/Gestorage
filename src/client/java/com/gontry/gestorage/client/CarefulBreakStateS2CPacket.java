@@ -12,7 +12,8 @@ public class CarefulBreakStateS2CPacket {
 				payload.alwaysCareful(),
 				payload.treeCapitator(),
 				payload.betterHarvesting(),
-				payload.autoReplant()
+				payload.autoReplantTrees(),
+				payload.autoReplantCrops()
 		));
 	}
 }

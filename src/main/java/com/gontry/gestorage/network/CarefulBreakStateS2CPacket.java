@@ -16,7 +16,8 @@ public final class CarefulBreakStateS2CPacket {
 				CarefulBreakServerConfig.alwaysCareful,
 				CarefulBreakServerConfig.treeCapitator,
 				CarefulBreakServerConfig.betterHarvesting,
-				CarefulBreakServerConfig.autoReplant
+				CarefulBreakServerConfig.autoReplantTrees,
+				CarefulBreakServerConfig.autoReplantCrops
 		);
 	}
 

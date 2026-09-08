@@ -19,7 +19,8 @@ public final class CarefulBreakServerConfig {
 	public static volatile boolean alwaysCareful = false;
 	public static volatile boolean treeCapitator = false;
 	public static volatile boolean betterHarvesting = false;
-	public static volatile boolean autoReplant = false;
+	public static volatile boolean autoReplantTrees = false;
+	public static volatile boolean autoReplantCrops = false;
 
 	private CarefulBreakServerConfig() {}
 
@@ -45,7 +46,9 @@ public final class CarefulBreakServerConfig {
 			alwaysCareful = getBool(json, "alwaysCareful", false);
 			treeCapitator = getBool(json, "treeCapitator", false);
 			betterHarvesting = getBool(json, "betterHarvesting", false);
-			autoReplant = getBool(json, "autoReplant", false);
+			boolean legacyAutoReplant = json.has("autoReplant") && json.get("autoReplant").getAsBoolean();
+			autoReplantTrees = legacyAutoReplant || getBool(json, "autoReplantTrees", false);
+			autoReplantCrops = legacyAutoReplant || getBool(json, "autoReplantCrops", false);
 			Gestorage.LOGGER.info("CarefulBreak server config loaded, enabled={}", enabled);
 		} catch (Exception e) {
 			Gestorage.LOGGER.error("Failed to load careful_break server config", e);
@@ -56,14 +59,15 @@ public final class CarefulBreakServerConfig {
 		try {
 			Files.createDirectories(CONFIG_PATH.getParent());
 			JsonObject json = new JsonObject();
-			json.addProperty("version", 1);
+			json.addProperty("version", 2);
 			json.addProperty("enabled", enabled);
 			json.addProperty("carefulBreak", carefulBreak);
 			json.addProperty("carefulDrop", carefulDrop);
 			json.addProperty("alwaysCareful", alwaysCareful);
 			json.addProperty("treeCapitator", treeCapitator);
 			json.addProperty("betterHarvesting", betterHarvesting);
-			json.addProperty("autoReplant", autoReplant);
+			json.addProperty("autoReplantTrees", autoReplantTrees);
+			json.addProperty("autoReplantCrops", autoReplantCrops);
 			Files.writeString(CONFIG_PATH, GSON.toJson(json));
 		} catch (IOException e) {
 			Gestorage.LOGGER.error("Failed to save careful_break config", e);
