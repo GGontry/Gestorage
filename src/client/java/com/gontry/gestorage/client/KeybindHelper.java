@@ -5,6 +5,14 @@ import org.lwjgl.glfw.GLFW;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * String-based keybind DSL shared by every module (e.g. "ctrl+shift+e", "mouse.2").
+ *
+ * Keybinds are plain config strings rather than vanilla KeyBinding objects so
+ * they survive config round-trips unchanged. Invariants:
+ * - encode()/decode() are each other's inverse for keys written by the config UI.
+ * - decode() and getKeyName() must never throw: config files can be hand-edited.
+ */
 public class KeybindHelper {
 	public static final int MOD_CTRL = 1;
 	public static final int MOD_SHIFT = 2;
@@ -43,13 +51,32 @@ public class KeybindHelper {
 		if (keyPart.startsWith("super+")) { modifiers |= MOD_SUPER; keyPart = keyPart.substring(6); }
 		int keyCode;
 		if (keyPart.startsWith("mouse.")) {
-			keyCode = -Integer.parseInt(keyPart.substring(6));
+			keyCode = parseMouseKey(keyPart.substring(6));
 		} else if (keyPart.startsWith("key_")) {
-			keyCode = Integer.parseInt(keyPart.substring(4));
+			keyCode = parseKeyNumber(keyPart.substring(4));
 		} else {
 			keyCode = getKeyCodeByName(keyPart);
 		}
 		return new int[]{keyCode, modifiers};
+	}
+
+	/**
+	 * Parses a numeric key fragment, mapping any corrupt value to an "unbound"
+	 * key (-1) instead of throwing. A hand-edited config must never crash the
+	 * tick handler that polls keybinds.
+	 */
+	private static int parseKeyNumber(String fragment) {
+		try {
+			return Integer.parseInt(fragment);
+		} catch (NumberFormatException e) {
+			return -1;
+		}
+	}
+
+	/** Parses "mouse.N" fragments to the negative key code used internally. */
+	private static int parseMouseKey(String fragment) {
+		int n = parseKeyNumber(fragment);
+		return n < 0 ? -1 : -n;
 	}
 
 	private static int getKeyCodeByName(String name) {
@@ -114,8 +141,13 @@ public class KeybindHelper {
 		if (keybind == null || keybind.isEmpty()) return "NONE";
 		String display = keybind.toUpperCase().replace("+", " + ");
 		if (display.contains("MOUSE.")) {
-			int mouseIdx = Integer.parseInt(display.substring(display.indexOf("MOUSE.") + 6));
-			display = display.substring(0, display.indexOf("MOUSE.")) + "MB" + mouseIdx;
+			try {
+				String prefix = display.substring(0, display.indexOf("MOUSE."));
+				int mouseIdx = Integer.parseInt(display.substring(display.indexOf("MOUSE.") + 6));
+				return prefix + "MB" + mouseIdx;
+			} catch (NumberFormatException e) {
+				return display;
+			}
 		}
 		return display;
 	}

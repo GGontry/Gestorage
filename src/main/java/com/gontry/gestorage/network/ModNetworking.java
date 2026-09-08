@@ -8,6 +8,14 @@ import net.minecraft.network.codec.PacketCodec;
 import net.minecraft.network.packet.CustomPayload;
 import net.minecraft.util.Identifier;
 
+/**
+ * Central packet registry.
+ *
+ * Every payload lives here as a {@link CustomPayload} record. Adding a new packet
+ * touches exactly four places: its packet ID, its codec, the registration call in
+ * {@link #register()}, and the record itself. The codec IS the wire format and
+ * must never change for an existing packet once a release goes out.
+ */
 public class ModNetworking {
 	public static final CustomPayload.Id<OpenEnderChestC2S> OPEN_ENDER_CHEST =
 			new CustomPayload.Id<>(Identifier.of(Gestorage.MOD_ID, "open_ender_chest"));
@@ -110,6 +118,7 @@ public class ModNetworking {
 			);
 
 	public static void register() {
+		// C2S first, then S2C; group each packet with its handler below.
 		PayloadTypeRegistry.playC2S().register(OPEN_ENDER_CHEST, OPEN_ENDER_CHEST_CODEC);
 		PayloadTypeRegistry.playS2C().register(OPEN_ENDER_SCREEN, OPEN_ENDER_SCREEN_CODEC);
 		PayloadTypeRegistry.playS2C().register(ENDER_SIZE_CHANGED, ENDER_SIZE_CHANGED_CODEC);
@@ -119,6 +128,7 @@ public class ModNetworking {
 		PayloadTypeRegistry.playC2S().register(TOGGLE_CAREFUL_BREAK, TOGGLE_CAREFUL_BREAK_CODEC);
 		PayloadTypeRegistry.playS2C().register(CAREFUL_BREAK_STATE, CAREFUL_BREAK_STATE_CODEC);
 
+		// Each receiver is bound to its handler class (one static handle() per packet).
 		ServerPlayNetworking.registerGlobalReceiver(OPEN_ENDER_CHEST, OpenEnderChestC2SPacket::handle);
 		ServerPlayNetworking.registerGlobalReceiver(REFILL_REQUEST, RefillRequestC2SPacket::handle);
 		ServerPlayNetworking.registerGlobalReceiver(SORT_INVENTORY, SortInventoryC2SPacket::handle);

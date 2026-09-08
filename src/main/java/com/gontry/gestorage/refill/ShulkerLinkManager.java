@@ -16,6 +16,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Owns the persisted shulker <-> slot links stored in config/gestorage/links.json.
+ *
+ * Links are grouped per world key (save id). Loading tolerates legacy formats
+ * and auto-migrates older dimension-scoped keys to world-scoped keys.
+ */
 public class ShulkerLinkManager {
 	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 	private static final Path CONFIG_PATH = Path.of("config", "gestorage", "links.json");
@@ -128,8 +134,13 @@ public class ShulkerLinkManager {
 		}
 	}
 
+	/**
+	 * Returns links bound to a world. Callers must only read the result; the
+	 * fallback for unknown worlds is an immutable empty list to avoid a per-call
+	 * allocation on hot paths (renderer + refill tick).
+	 */
 	public static List<ShulkerLink> getLinksForWorld(String worldKey) {
-		return allLinks.getOrDefault(worldKey, new ArrayList<>());
+		return allLinks.getOrDefault(worldKey, List.of());
 	}
 
 	public static void addLink(String worldKey, ShulkerLink link) {

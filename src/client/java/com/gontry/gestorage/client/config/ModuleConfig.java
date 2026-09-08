@@ -7,6 +7,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 
+/**
+ * Gateway to the per-module client configs (owo configs).
+ *
+ * The owo wrappers (EnderChestConfig, etc.) are generated at compile time from
+ * the {@code *ConfigModel} classes in this package. {@link #initialize()} must
+ * run before any module code reads a config.
+ */
 public final class ModuleConfig {
 	private static EnderChestConfig ENDER_CHEST;
 	private static ShulkerRefillConfig SHULKER_REFILL;
@@ -16,6 +23,7 @@ public final class ModuleConfig {
 	private ModuleConfig() {}
 
 	public static void initialize() {
+		// Back up each json once, then bootstrap every module config.
 		createBackup(Path.of("config", "gestorage", "ender_chest.json"));
 		createBackup(Path.of("config", "gestorage", "shulker_refill.json"));
 		createBackup(Path.of("config", "gestorage", "storage_overlay.json"));

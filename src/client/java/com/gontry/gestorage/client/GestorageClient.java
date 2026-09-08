@@ -15,17 +15,20 @@ import net.minecraft.client.gui.screen.ingame.HandledScreens;
 public class GestorageClient implements ClientModInitializer {
 	@Override
 	public void onInitializeClient() {
+		// Bootstrap order matters: configs and shared state must exist before any
+		// module keybind/tick handler starts polling them.
 		ModuleConfig.initialize();
 		ShulkerStackServerConfig.load();
 		ShulkerLinkManager.load();
 
+		// Packet receivers and the ender chest menu screens (menus registered in ModMenus).
 		ClientPlayNetworking.registerGlobalReceiver(ModNetworking.OPEN_CONFIG_SCREEN, OpenConfigScreenS2CPacket::handle);
-
 		GestorageKeybinds.register();
 		ModNetworkingClient.register();
 		HandledScreens.register(ModMenus.LARGE_ENDER, LargeEnderScreen::new);
 		HandledScreens.register(ModMenus.EXTRA_LARGE_ENDER, ExtraLargeEnderScreen::new);
 
+		// One commented block per module: add/remove a whole feature here.
 		ShulkerRefillKeybinds.register();
 		ShulkerRefillTickHandler.register();
 

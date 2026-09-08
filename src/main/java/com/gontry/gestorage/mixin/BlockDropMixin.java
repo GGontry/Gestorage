@@ -28,7 +28,7 @@ public class BlockDropMixin {
 
 		List<ItemStack> drops = Block.getDroppedStacks(state, (ServerWorld) world, pos, blockEntity, entity, tool);
 		CarefulBreakManager.collectDrops(player, drops, world, pos);
-		state.updateNeighbors(world, pos, 3);
+		state.onStacksDropped((ServerWorld) world, pos, tool, true);
 		ci.cancel();
 	}
 }

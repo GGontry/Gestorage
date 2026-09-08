@@ -7,9 +7,12 @@
 		"ClickSlotC2SPacketMixin",
 		"EnderChestBlockMixin",
 		"EntityDropMixin",
+		"ItemFrameEntityMixin",
+		"ItemScattererMixin",
 		"ItemStackMixin",
 		"ServerPlayerInteractionManagerMixin",
-		"ServerWorldMixin"
+		"ServerWorldMixin",
+		"VehicleEntityMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

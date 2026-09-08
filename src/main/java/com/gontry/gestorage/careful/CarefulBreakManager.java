@@ -13,7 +13,21 @@ import java.util.List;
 public final class CarefulBreakManager {
 	public static volatile boolean suppressBlockEffects = false;
 
+	private static final ThreadLocal<ServerPlayerEntity> CURRENT_ENTITY_KILLER = new ThreadLocal<>();
+
 	private CarefulBreakManager() {}
+
+	public static ServerPlayerEntity getCurrentEntityKiller() {
+		return CURRENT_ENTITY_KILLER.get();
+	}
+
+	public static void setCurrentEntityKiller(ServerPlayerEntity player) {
+		CURRENT_ENTITY_KILLER.set(player);
+	}
+
+	public static void clearCurrentEntityKiller() {
+		CURRENT_ENTITY_KILLER.remove();
+	}
 
 	public static boolean shouldCollectBlockDrops(ServerPlayerEntity player) {
 		if (!CarefulBreakServerConfig.enabled) return false;

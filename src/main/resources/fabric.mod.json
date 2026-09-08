@@ -5,10 +5,13 @@
 	"name": "Gestorage",
 	"description": "A modular mod that improves every aspect of storage and inventory management.",
 	"authors": [
-		"gontry"
+		"Gontry"
 	],
 	"contact": {
-		"homepage": ""
+		"homepage": "https://modrinth.com/mod/gestorage",
+		"source": "https://github.com/GGontry/Gestorage",
+		"issues": "https://github.com/GGontry/Gestorage/issues",
+		"discord": "https://discord.gg/sVPPUKuR5p"
 	},
 	"license": "MIT",
 	"icon": "assets/gestorage/icon.png",

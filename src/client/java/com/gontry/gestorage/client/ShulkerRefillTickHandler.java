@@ -20,6 +20,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Client-side ticking of shulker refill links.
+ *
+ * While a link is active, this handler watches the target slot and sends
+ * RefillRequestC2S packets when it falls below the configured threshold, with
+ * an exponential backoff. All state here is client prediction; the server is
+ * the authority on the actual inventory transfer.
+ */
 public class ShulkerRefillTickHandler {
 	private static final int MAX_BACKOFF = 20;
 	private static int loopTick = 0;
@@ -27,6 +35,14 @@ public class ShulkerRefillTickHandler {
 	private static String lastScreenType = null;
 	private static final Map<String, LinkState> linkStates = new HashMap<>();
 
+	/*
+	 * Per-link ticking state (client side).
+	 *
+	 * - lastSeenCount lets the handler notice the player took items out of the
+	 *   target (count dropped), making the next refill top-priority.
+	 * - cachedSource keeps the last visible contents of the source slot so a
+	 *   refill can still be validated while the source shulker is off-screen.
+	 */
 	private static final class LinkState {
 		int lastSeenCount = -1;
 		int lastSent = -1;
@@ -120,7 +136,8 @@ public class ShulkerRefillTickHandler {
 		if (!ShulkerRefillManager.isShulkerBox(source)) return false;
 		ContainerComponent container = source.get(DataComponentTypes.CONTAINER);
 		if (container == null) return false;
-		for (ItemStack stack : container.streamNonEmpty().toList()) {
+		// iterateNonEmpty() avoids the stream/list allocation of streamNonEmpty() on a per-tick path.
+		for (ItemStack stack : container.iterateNonEmpty()) {
 			if (target == null || target.isEmpty()
 					|| (target.isOf(stack.getItem())
 						&& target.getCount() < target.getMaxCount()
