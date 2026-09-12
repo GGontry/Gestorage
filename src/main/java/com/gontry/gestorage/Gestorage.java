@@ -5,7 +5,11 @@ import com.gontry.gestorage.config.CarefulBreakServerConfig;
 import com.gontry.gestorage.config.ShulkerStackServerConfig;
 import com.gontry.gestorage.network.CarefulBreakStateS2CPacket;
 import com.gontry.gestorage.network.ModNetworking;
+import com.gontry.gestorage.network.ToolWheelSyncS2CPacket;
+import com.gontry.gestorage.toolwheel.AutoToolManager;
+import com.gontry.gestorage.toolwheel.ToolWheelState;
 import net.fabricmc.api.ModInitializer;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,8 +39,19 @@ public class Gestorage implements ModInitializer {
 
 		// Push the current Careful Break state to every player on join, so the
 		// client always shows the server-authoritative configuration.
-		ServerPlayConnectionEvents.JOIN.register((handler, sender, server) ->
-				CarefulBreakStateS2CPacket.sendTo(handler.player));
+		ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
+			CarefulBreakStateS2CPacket.sendTo(handler.player);
+			ToolWheelSyncS2CPacket.sendTo(handler.player);
+		});
+
+		// Tool Wheel state caches are per-UUID; drop them when the player leaves
+		// and when the (integrated) server shuts down so no stale instance lingers.
+		ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
+			ToolWheelState.clearCache(handler.player.getUuid());
+			AutoToolManager.clear(handler.player.getUuid());
+		});
+
+		ServerLifecycleEvents.SERVER_STOPPED.register(server -> ToolWheelState.clearCacheAll());
 
 		LOGGER.info("Gestorage initialized!");
 	}

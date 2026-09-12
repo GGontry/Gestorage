@@ -10,8 +10,10 @@
 		"ItemFrameEntityMixin",
 		"ItemScattererMixin",
 		"ItemStackMixin",
+		"ServerPlayerEntityMixin",
 		"ServerPlayerInteractionManagerMixin",
 		"ServerWorldMixin",
+		"ToolWheelMiningMixin",
 		"VehicleEntityMixin"
 	],
 	"injectors": {

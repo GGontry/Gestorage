@@ -8,6 +8,7 @@ public class ModNetworkingClient {
 		ClientPlayNetworking.registerGlobalReceiver(ModNetworking.OPEN_ENDER_SCREEN, OpenEnderScreenS2CPacket::handle);
 		ClientPlayNetworking.registerGlobalReceiver(ModNetworking.ENDER_SIZE_CHANGED, EnderSizeChangedS2CPacket::handle);
 		ClientPlayNetworking.registerGlobalReceiver(ModNetworking.CAREFUL_BREAK_STATE, CarefulBreakStateS2CPacket::handle);
+		ClientPlayNetworking.registerGlobalReceiver(ModNetworking.TOOL_WHEEL_SYNC, ToolWheelSyncS2CPacket::handle);
 	}
 
 	public static void sendOpenEnderChest() {
@@ -20,5 +21,17 @@ public class ModNetworkingClient {
 
 	public static void sendToggleCarefulBreak(int option) {
 		ClientPlayNetworking.send(new ModNetworking.ToggleCarefulBreakC2S(option));
+	}
+
+	public static void sendOpenToolWheel() {
+		ClientPlayNetworking.send(new ModNetworking.ToolWheelOpenC2S());
+	}
+
+	public static void sendToolWheelSwap(int slot) {
+		ClientPlayNetworking.send(new ModNetworking.ToolWheelSwapC2S(slot));
+	}
+
+	public static void sendToggleAutoTool() {
+		ClientPlayNetworking.send(new ModNetworking.ToolWheelAutoC2S());
 	}
 }

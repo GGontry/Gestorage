@@ -118,7 +118,7 @@ public class GestorageConfigScreen extends Screen {
 
 	private void buildContent() {
 		int y = bodyY;
-		for (int i = 0; i < 6; i++) {
+		for (int i = 0; i < 7; i++) {
 			if (!moduleMatchesSearch(i)) continue;
 			int idx = i;
 			ConfigButton btn = new ConfigButton(searchX, y, LEFT_W, ROW_H,
@@ -129,7 +129,7 @@ public class GestorageConfigScreen extends Screen {
 			y += ROW_H + ROW_GAP;
 		}
 
-		if (selectedModule >= 0 && selectedModule < 6 && moduleMatchesSearch(selectedModule)) {
+		if (selectedModule >= 0 && selectedModule < 7 && moduleMatchesSearch(selectedModule)) {
 			buildDetail(selectedModule);
 		}
 		positionRows();
@@ -332,6 +332,25 @@ public class GestorageConfigScreen extends Screen {
 				baseY += ROW_H + ROW_GAP;
 				addServerOptionWithKey(baseY, "Auto Replant Crops", 6, CarefulBreakKeybinds.autoReplantCropsKey, 17);
 			}
+			case 6 -> {
+				addOptionWithKey(baseY, "Enabled",
+						() -> ModuleConfig.toolWheel().enabled(),
+						v -> ModuleConfig.toolWheel().enabled(v),
+						ModuleConfig.toolWheel()::save,
+						ModuleConfig.toolWheel().toggleEnabledKey(), 50);
+				baseY += ROW_H + ROW_GAP;
+				keybindButton = new ConfigButton(detailX, optionsTop, detailW, ROW_H,
+						Text.literal("Open Key: " + KeybindHelper.getKeyName(ModuleConfig.toolWheel().openWheelKey())),
+						() -> startKeybindCapture(51));
+				detailRows.add(new DetailRow(keybindButton, 0, detailW, baseY));
+				baseY += ROW_H + ROW_GAP;
+				keybindButton = new ConfigButton(detailX, optionsTop, detailW, ROW_H,
+						Text.literal("Wheel Key: " + KeybindHelper.getKeyName(ModuleConfig.toolWheel().wheelKey())),
+						() -> startKeybindCapture(52));
+				detailRows.add(new DetailRow(keybindButton, 0, detailW, baseY));
+				baseY += ROW_H + ROW_GAP;
+				addToolAutoOption(baseY);
+			}
 		}
 	}
 
@@ -395,6 +414,17 @@ public class GestorageConfigScreen extends Screen {
 		attachKeyButton(baseY, currentKey, targetId);
 	}
 
+	private void addToolAutoOption(int baseY) {
+		int cbW = detailW - KEY_W - 4;
+		ConfigCheckbox cb = new ConfigCheckbox(detailX, optionsTop, cbW, ROW_H,
+				Text.literal("Auto Tool"),
+				() -> ClientToolWheelState.autoTool,
+				v -> {},
+				() -> ModNetworkingClient.sendToggleAutoTool());
+		detailRows.add(new DetailRow(cb, 0, cbW, baseY));
+		attachKeyButton(baseY, ModuleConfig.toolWheel().autoToolKey(), 53);
+	}
+
 	private void positionRows() {
 		for (DetailRow row : detailRows) {
 			row.widget.setX(detailX + row.offsetX);
@@ -430,7 +460,7 @@ public class GestorageConfigScreen extends Screen {
 	}
 
 	private int findFirstVisibleModule(int startFrom) {
-		for (int i = startFrom; i < 6; i++) {
+		for (int i = startFrom; i < 7; i++) {
 			if (moduleMatchesSearch(i)) return i;
 		}
 		return -1;
@@ -557,6 +587,10 @@ public class GestorageConfigScreen extends Screen {
 			case 36 -> { ModuleConfig.inventorySorting().toggleBlockEnderChestKey(encoded); ModuleConfig.inventorySorting().save(); }
 			case 37 -> { ModuleConfig.inventorySorting().toggleBlockShulkerBoxKey(encoded); ModuleConfig.inventorySorting().save(); }
 			case 38 -> { ModuleConfig.inventorySorting().toggleBlockGenericContainerKey(encoded); ModuleConfig.inventorySorting().save(); }
+			case 50 -> { ModuleConfig.toolWheel().toggleEnabledKey(encoded); ModuleConfig.toolWheel().save(); }
+			case 51 -> { ModuleConfig.toolWheel().openWheelKey(encoded); ModuleConfig.toolWheel().save(); }
+			case 52 -> { ModuleConfig.toolWheel().wheelKey(encoded); ModuleConfig.toolWheel().save(); }
+			case 53 -> { ModuleConfig.toolWheel().autoToolKey(encoded); ModuleConfig.toolWheel().save(); }
 			default -> applyCBKeybind(encoded);
 		}
 	}
@@ -605,7 +639,7 @@ public class GestorageConfigScreen extends Screen {
 		int titleX = windowX + windowW / 2;
 		drawCenteredText(context, Text.literal("Gestorage Settings"), titleX, windowY + PAD + 4, 0xFFFFFFFF);
 
-		if (selectedModule >= 0 && selectedModule < 6 && moduleMatchesSearch(selectedModule)) {
+		if (selectedModule >= 0 && selectedModule < 7 && moduleMatchesSearch(selectedModule)) {
 			context.drawText(this.textRenderer, Text.literal(getModuleTitle(selectedModule)), detailX, bodyY, 0xFFFFFFFF, false);
 			List<OrderedText> descLines = this.textRenderer.wrapLines(Text.literal(getModuleDesc(selectedModule)), detailW);
 			int descY = bodyY + 10;
@@ -650,6 +684,7 @@ public class GestorageConfigScreen extends Screen {
 			case 3 -> "Storage Overlay";
 			case 4 -> "Inventory Sorting";
 			case 5 -> "Careful Break";
+			case 6 -> "Tool Wheel";
 			default -> "";
 		};
 	}
@@ -662,6 +697,7 @@ public class GestorageConfigScreen extends Screen {
 			case 3 -> "Informational overlay next to any inventory";
 			case 4 -> "Sort items in inventories";
 			case 5 -> "Collect blocks and drops directly to inventory";
+			case 6 -> "Radial tool wheel + auto tool";
 			default -> "";
 		};
 	}

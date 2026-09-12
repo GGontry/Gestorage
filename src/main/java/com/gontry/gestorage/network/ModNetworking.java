@@ -1,9 +1,12 @@
 package com.gontry.gestorage.network;
 
 import com.gontry.gestorage.Gestorage;
+import com.gontry.gestorage.toolwheel.ToolWheelState;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.minecraft.item.ItemStack;
 import net.minecraft.network.PacketByteBuf;
+import net.minecraft.network.RegistryByteBuf;
 import net.minecraft.network.codec.PacketCodec;
 import net.minecraft.network.packet.CustomPayload;
 import net.minecraft.util.Identifier;
@@ -40,6 +43,18 @@ public class ModNetworking {
 
 	public static final CustomPayload.Id<CarefulBreakStateS2C> CAREFUL_BREAK_STATE =
 			new CustomPayload.Id<>(Identifier.of(Gestorage.MOD_ID, "careful_break_state"));
+
+	public static final CustomPayload.Id<ToolWheelOpenC2S> TOOL_WHEEL_OPEN =
+			new CustomPayload.Id<>(Identifier.of(Gestorage.MOD_ID, "tool_wheel_open"));
+
+	public static final CustomPayload.Id<ToolWheelSwapC2S> TOOL_WHEEL_SWAP =
+			new CustomPayload.Id<>(Identifier.of(Gestorage.MOD_ID, "tool_wheel_swap"));
+
+	public static final CustomPayload.Id<ToolWheelAutoC2S> TOOL_WHEEL_AUTO =
+			new CustomPayload.Id<>(Identifier.of(Gestorage.MOD_ID, "tool_wheel_auto"));
+
+	public static final CustomPayload.Id<ToolWheelSyncS2C> TOOL_WHEEL_SYNC =
+			new CustomPayload.Id<>(Identifier.of(Gestorage.MOD_ID, "tool_wheel_sync"));
 
 	public static final PacketCodec<PacketByteBuf, OpenEnderChestC2S> OPEN_ENDER_CHEST_CODEC =
 			PacketCodec.unit(new OpenEnderChestC2S());
@@ -119,6 +134,35 @@ public class ModNetworking {
 					)
 			);
 
+	public static final PacketCodec<PacketByteBuf, ToolWheelOpenC2S> TOOL_WHEEL_OPEN_CODEC =
+			PacketCodec.unit(new ToolWheelOpenC2S());
+
+	public static final PacketCodec<PacketByteBuf, ToolWheelSwapC2S> TOOL_WHEEL_SWAP_CODEC =
+			PacketCodec.of(
+					(ToolWheelSwapC2S p, PacketByteBuf buf) -> buf.writeInt(p.slot()),
+					buf -> new ToolWheelSwapC2S(buf.readInt())
+			);
+
+	public static final PacketCodec<PacketByteBuf, ToolWheelAutoC2S> TOOL_WHEEL_AUTO_CODEC =
+			PacketCodec.unit(new ToolWheelAutoC2S());
+
+	public static final PacketCodec<RegistryByteBuf, ToolWheelSyncS2C> TOOL_WHEEL_SYNC_CODEC =
+			PacketCodec.of(
+					(ToolWheelSyncS2C p, RegistryByteBuf buf) -> {
+						for (int i = 0; i < ToolWheelState.SIZE; i++) {
+							ItemStack.OPTIONAL_PACKET_CODEC.encode(buf, p.stacks()[i]);
+						}
+						buf.writeBoolean(p.autoTool());
+					},
+					buf -> {
+						ItemStack[] stacks = new ItemStack[ToolWheelState.SIZE];
+						for (int i = 0; i < ToolWheelState.SIZE; i++) {
+							stacks[i] = ItemStack.OPTIONAL_PACKET_CODEC.decode(buf);
+						}
+						return new ToolWheelSyncS2C(stacks, buf.readBoolean());
+					}
+			);
+
 	public static void register() {
 		// C2S first, then S2C; group each packet with its handler below.
 		PayloadTypeRegistry.playC2S().register(OPEN_ENDER_CHEST, OPEN_ENDER_CHEST_CODEC);
@@ -129,12 +173,19 @@ public class ModNetworking {
 		PayloadTypeRegistry.playC2S().register(SORT_INVENTORY, SORT_INVENTORY_CODEC);
 		PayloadTypeRegistry.playC2S().register(TOGGLE_CAREFUL_BREAK, TOGGLE_CAREFUL_BREAK_CODEC);
 		PayloadTypeRegistry.playS2C().register(CAREFUL_BREAK_STATE, CAREFUL_BREAK_STATE_CODEC);
+		PayloadTypeRegistry.playC2S().register(TOOL_WHEEL_OPEN, TOOL_WHEEL_OPEN_CODEC);
+		PayloadTypeRegistry.playC2S().register(TOOL_WHEEL_SWAP, TOOL_WHEEL_SWAP_CODEC);
+		PayloadTypeRegistry.playC2S().register(TOOL_WHEEL_AUTO, TOOL_WHEEL_AUTO_CODEC);
+		PayloadTypeRegistry.playS2C().register(TOOL_WHEEL_SYNC, TOOL_WHEEL_SYNC_CODEC);
 
 		// Each receiver is bound to its handler class (one static handle() per packet).
 		ServerPlayNetworking.registerGlobalReceiver(OPEN_ENDER_CHEST, OpenEnderChestC2SPacket::handle);
 		ServerPlayNetworking.registerGlobalReceiver(REFILL_REQUEST, RefillRequestC2SPacket::handle);
 		ServerPlayNetworking.registerGlobalReceiver(SORT_INVENTORY, SortInventoryC2SPacket::handle);
 		ServerPlayNetworking.registerGlobalReceiver(TOGGLE_CAREFUL_BREAK, ToggleCarefulBreakC2SPacket::handle);
+		ServerPlayNetworking.registerGlobalReceiver(TOOL_WHEEL_OPEN, ToolWheelOpenC2SPacket::handle);
+		ServerPlayNetworking.registerGlobalReceiver(TOOL_WHEEL_SWAP, ToolWheelSwapC2SPacket::handle);
+		ServerPlayNetworking.registerGlobalReceiver(TOOL_WHEEL_AUTO, ToolWheelAutoC2SPacket::handle);
 	}
 
 	public record OpenEnderChestC2S() implements CustomPayload {
@@ -192,6 +243,34 @@ public class ModNetworking {
 		@Override
 		public Id<? extends CustomPayload> getId() {
 			return CAREFUL_BREAK_STATE;
+		}
+	}
+
+	public record ToolWheelOpenC2S() implements CustomPayload {
+		@Override
+		public Id<? extends CustomPayload> getId() {
+			return TOOL_WHEEL_OPEN;
+		}
+	}
+
+	public record ToolWheelSwapC2S(int slot) implements CustomPayload {
+		@Override
+		public Id<? extends CustomPayload> getId() {
+			return TOOL_WHEEL_SWAP;
+		}
+	}
+
+	public record ToolWheelAutoC2S() implements CustomPayload {
+		@Override
+		public Id<? extends CustomPayload> getId() {
+			return TOOL_WHEEL_AUTO;
+		}
+	}
+
+	public record ToolWheelSyncS2C(ItemStack[] stacks, boolean autoTool) implements CustomPayload {
+		@Override
+		public Id<? extends CustomPayload> getId() {
+			return TOOL_WHEEL_SYNC;
 		}
 	}
 }

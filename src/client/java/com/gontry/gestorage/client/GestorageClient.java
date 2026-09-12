@@ -40,6 +40,9 @@ public class GestorageClient implements ClientModInitializer {
 
 		StorageOverlayKeybinds.register();
 
+		ToolWheelKeybinds.register();
+		ToolWheelRenderer.register();
+
 		Gestorage.LOGGER.info("Gestorage client initialized!");
 	}
 }
