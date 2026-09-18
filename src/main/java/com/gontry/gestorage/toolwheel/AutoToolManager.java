@@ -126,6 +126,10 @@ public final class AutoToolManager {
 		ACTIVE.remove(playerUuid);
 	}
 
+	public static void clearAll() {
+		ACTIVE.clear();
+	}
+
 	private static final class ActiveSwap {
 		final int wheelSlot;
 		final ItemStack original;

@@ -37,7 +37,9 @@ public class ToolWheelInventory implements Inventory {
 	public ItemStack removeStack(int slot, int amount) {
 		ItemStack stack = state.stacks.get(slot);
 		if (stack.isEmpty()) return ItemStack.EMPTY;
-		return stack.split(amount);
+		ItemStack split = stack.split(amount);
+		state.scheduleSave();
+		return split;
 	}
 
 	@Override
@@ -45,6 +47,7 @@ public class ToolWheelInventory implements Inventory {
 		ItemStack stack = state.stacks.get(slot);
 		if (stack.isEmpty()) return ItemStack.EMPTY;
 		state.stacks.set(slot, ItemStack.EMPTY);
+		state.scheduleSave();
 		return stack;
 	}
 
@@ -54,6 +57,7 @@ public class ToolWheelInventory implements Inventory {
 		if (!stack.isEmpty() && stack.getCount() > stack.getMaxCount()) {
 			stack.setCount(stack.getMaxCount());
 		}
+		state.scheduleSave();
 	}
 
 	@Override
@@ -77,5 +81,6 @@ public class ToolWheelInventory implements Inventory {
 		for (int i = 0; i < size(); i++) {
 			state.stacks.set(i, ItemStack.EMPTY);
 		}
+		state.scheduleSave();
 	}
 }

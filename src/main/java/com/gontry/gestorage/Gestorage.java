@@ -51,7 +51,10 @@ public class Gestorage implements ModInitializer {
 			AutoToolManager.clear(handler.player.getUuid());
 		});
 
-		ServerLifecycleEvents.SERVER_STOPPED.register(server -> ToolWheelState.clearCacheAll());
+		ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
+			ToolWheelState.clearCacheAll();
+			AutoToolManager.clearAll();
+		});
 
 		LOGGER.info("Gestorage initialized!");
 	}

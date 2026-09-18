@@ -68,7 +68,7 @@ public class ToolWheelRenderer {
 		double dy = my - sh / 2;
 		double dist = Math.sqrt(dx * dx + dy * dy);
 		if (dist < CANCEL_RADIUS) return -1;
-		double rel = Math.toDegrees(Math.atan2(dy, dx)) - START_ANGLE;
+		double rel = Math.toDegrees(Math.atan2(dy, dx)) - START_ANGLE + SLOT_ANGLE / 2;
 		rel = ((rel % 360) + 360) % 360;
 		return (int) Math.floor(rel / SLOT_ANGLE) % SLOT_COUNT;
 	}

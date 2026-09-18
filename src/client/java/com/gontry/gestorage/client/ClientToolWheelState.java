@@ -8,6 +8,7 @@ public class ClientToolWheelState {
 	public static final ItemStack[] STACKS = new ItemStack[9];
 	public static volatile boolean autoTool = false;
 	public static volatile boolean wheelActive = false;
+	public static volatile boolean wheelClickSuppress = false;
 
 	private ClientToolWheelState() {}
 

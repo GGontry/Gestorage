@@ -57,6 +57,8 @@ public class ToolWheelKeybinds {
 			if (ClientToolWheelState.wheelActive && (!inGame || !enabled)) {
 				deactivate(client);
 			}
+
+			ClientToolWheelState.wheelClickSuppress = false;
 		});
 	}
 

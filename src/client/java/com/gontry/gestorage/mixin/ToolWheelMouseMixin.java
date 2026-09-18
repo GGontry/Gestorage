@@ -18,9 +18,25 @@ public class ToolWheelMouseMixin {
 		if (!ClientToolWheelState.wheelActive) return;
 		MinecraftClient client = MinecraftClient.getInstance();
 		if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
+			ClientToolWheelState.wheelClickSuppress = true;
 			ToolWheelKeybinds.select(client);
 		} else if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT) {
+			ClientToolWheelState.wheelClickSuppress = true;
 			ToolWheelKeybinds.deactivate(client);
 		}
+	}
+
+	@Inject(method = "onMouseButton", at = @At("TAIL"))
+	private void gestorage$neutralizeWheelClick(long window, int button, int action, int mods, CallbackInfo ci) {
+		if (!ClientToolWheelState.wheelClickSuppress) return;
+		MinecraftClient client = MinecraftClient.getInstance();
+		if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
+			client.options.attackKey.wasPressed();
+			client.options.attackKey.setPressed(false);
+		} else if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT) {
+			client.options.useKey.wasPressed();
+			client.options.useKey.setPressed(false);
+		}
+		ClientToolWheelState.wheelClickSuppress = false;
 	}
 }

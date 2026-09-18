@@ -12,7 +12,7 @@ public class ToolWheelInputMixin {
 	@Redirect(method = "handleInputEvents", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/option/KeyBinding;wasPressed()Z"))
 	private boolean gestorage$blockPressedWhileWheelOpen(KeyBinding instance) {
 		MinecraftClient client = MinecraftClient.getInstance();
-		if (ClientToolWheelState.wheelActive) {
+		if (ClientToolWheelState.wheelActive || ClientToolWheelState.wheelClickSuppress) {
 			if (instance == client.options.attackKey || instance == client.options.useKey || instance == client.options.pickItemKey) {
 				instance.wasPressed();
 				return false;
@@ -23,7 +23,7 @@ public class ToolWheelInputMixin {
 
 	@Redirect(method = "handleInputEvents", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/option/KeyBinding;isPressed()Z"))
 	private boolean gestorage$blockHeldWhileWheelOpen(KeyBinding instance) {
-		if (ClientToolWheelState.wheelActive) {
+		if (ClientToolWheelState.wheelActive || ClientToolWheelState.wheelClickSuppress) {
 			MinecraftClient client = MinecraftClient.getInstance();
 			if (instance == client.options.attackKey || instance == client.options.useKey) {
 				return false;
