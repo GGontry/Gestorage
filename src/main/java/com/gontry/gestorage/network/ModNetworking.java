@@ -122,15 +122,15 @@ public class ModNetworking {
 			PacketCodec.of(
 					(RefillRequestC2S p, PacketByteBuf buf) -> {
 						buf.writeInt(p.sourceSlot());
-						buf.writeString(p.sourceType());
+						buf.writeString(p.sourceType(), 64);
 						buf.writeInt(p.targetSlot());
-						buf.writeString(p.targetType());
+						buf.writeString(p.targetType(), 64);
 					},
 					buf -> new RefillRequestC2S(
 						buf.readInt(),
-						buf.readString(),
+						buf.readString(64),
 						buf.readInt(),
-						buf.readString()
+						buf.readString(64)
 					)
 			);
 

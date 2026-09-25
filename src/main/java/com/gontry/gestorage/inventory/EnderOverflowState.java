@@ -144,6 +144,10 @@ public class EnderOverflowState extends PersistentState {
 		}
 	}
 
+	public static void resetSessionBackups() {
+		backedUpThisSession.clear();
+	}
+
 	public static void sessionBackup(Path worldDir, UUID playerUuid) {
 		if (!backedUpThisSession.add(playerUuid)) {
 			return;

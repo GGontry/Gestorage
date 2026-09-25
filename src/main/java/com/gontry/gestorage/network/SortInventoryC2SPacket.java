@@ -35,6 +35,7 @@ public class SortInventoryC2SPacket {
 
 			InventorySorter.sortInventory(inventory, startSlot, endSlot,
 					payload.mergeStacks(), payload.sortByName(), payload.sortDescending());
+			inventory.markDirty();
 
 			screenHandler.sendContentUpdates();
 

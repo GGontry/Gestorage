@@ -6,7 +6,7 @@ import net.minecraft.registry.Registries;
 
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.LinkedHashMap;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -29,8 +29,11 @@ public class InventorySorter {
 
 		Comparator<ItemStack> comparator;
 		if (sortByName) {
-			comparator = Comparator.comparing((ItemStack s) ->
-					Registries.ITEM.getId(s.getItem()).toString());
+			Map<ItemStack, String> names = new IdentityHashMap<>();
+			for (ItemStack s : stacks) {
+				names.put(s, Registries.ITEM.getId(s.getItem()).toString());
+			}
+			comparator = Comparator.comparing(names::get);
 		} else {
 			comparator = Comparator.comparingInt((ItemStack s) -> s.getCount());
 		}

@@ -78,11 +78,22 @@ public class ShulkerRefillTickHandler {
 			lastScreenOpen = screen != null;
 			lastScreenType = screenType;
 
-			linkStates.keySet().removeIf(key -> links.stream().noneMatch(l -> linkKey(l).equals(key)));
+			Map<String, ItemStack> screenStacks = new HashMap<>();
+			if (screen != null) {
+				for (Slot slot : screen.getScreenHandler().slots) {
+					String type = getSlotType(slot, screen);
+					if (type == null) continue;
+					screenStacks.put(type + ":" + slot.getIndex(), slot.getStack());
+				}
+			}
+
+			if (linkStates.size() > links.size()) {
+				linkStates.keySet().removeIf(key -> links.stream().noneMatch(l -> linkKey(l).equals(key)));
+			}
 
 			for (ShulkerLink link : links) {
-				ItemStack source = findClientStack(screen, link.sourceSlot(), link.sourceType(), playerInv);
-				ItemStack target = findClientStack(screen, link.targetSlot(), link.targetType(), playerInv);
+				ItemStack source = clientStack(link.sourceSlot(), link.sourceType(), screenStacks, playerInv);
+				ItemStack target = clientStack(link.targetSlot(), link.targetType(), screenStacks, playerInv);
 				String key = linkKey(link);
 				LinkState state = linkStates.computeIfAbsent(key, k -> new LinkState());
 
@@ -148,13 +159,13 @@ public class ShulkerRefillTickHandler {
 		return false;
 	}
 
-	private static ItemStack findClientStack(HandledScreen<?> screen, int slot, String type, Inventory playerInv) {
-		if (screen != null) {
-			Slot found = findSlot(screen, slot, type);
-			if (found != null) return found.getStack();
+	private static ItemStack clientStack(int slot, String type, Map<String, ItemStack> screenStacks, Inventory playerInv) {
+		if (!type.equals("player")) {
+			return screenStacks.get(type + ":" + slot);
 		}
-		if (type.equals("player")) {
-			if (slot >= 0 && slot < playerInv.size()) return playerInv.getStack(slot);
+		if (slot >= 0 && slot < playerInv.size()) {
+			ItemStack fromScreen = screenStacks.get("player:" + slot);
+			return fromScreen != null ? fromScreen : playerInv.getStack(slot);
 		}
 		return null;
 	}
@@ -168,16 +179,6 @@ public class ShulkerRefillTickHandler {
 		for (Slot slot : screen.getScreenHandler().slots) {
 			String type = getSlotType(slot, screen);
 			if (type != null && !type.equals("player")) return type;
-		}
-		return null;
-	}
-
-	private static Slot findSlot(HandledScreen<?> screen, int slotIndex, String type) {
-		for (Slot slot : screen.getScreenHandler().slots) {
-			String slotType = getSlotType(slot, screen);
-			if (slotType != null && slot.getIndex() == slotIndex && slotType.equals(type)) {
-				return slot;
-			}
 		}
 		return null;
 	}

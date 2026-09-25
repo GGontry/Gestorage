@@ -45,6 +45,22 @@ public class ToolWheelState extends PersistentState {
 		return state;
 	}
 
+	public static ToolWheelState getExisting(ServerPlayerEntity player) {
+		UUID uuid = player.getUuid();
+		ToolWheelState state = CACHE.get(uuid);
+		if (state != null) return state;
+		PersistentStateManager sm = player.getServer().getOverworld().getPersistentStateManager();
+		state = sm.get(
+				new PersistentState.Type<>(ToolWheelState::new, ToolWheelState::fromNbt, null),
+				getKey(uuid)
+		);
+		if (state != null) {
+			state.manager = sm;
+			CACHE.put(uuid, state);
+		}
+		return state;
+	}
+
 	@Override
 	public NbtCompound writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup lookup) {
 		nbt.putInt("Version", CURRENT_VERSION);
@@ -64,6 +80,11 @@ public class ToolWheelState extends PersistentState {
 	}
 
 	public static ToolWheelState fromNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup lookup) {
+		int version = nbt.contains("Version") ? nbt.getInt("Version") : 0;
+		if (version != CURRENT_VERSION) {
+			Gestorage.LOGGER.warn("[ToolWheel] Unknown state version {} (expected {}), starting fresh", version, CURRENT_VERSION);
+			return new ToolWheelState();
+		}
 		ToolWheelState state = new ToolWheelState();
 		state.autoTool = nbt.getBoolean("AutoTool");
 		NbtList items = nbt.contains("Items") ? nbt.getList("Items", 10) : new NbtList();

@@ -7,6 +7,7 @@
 		"ClickSlotC2SPacketMixin",
 		"EnderChestBlockMixin",
 		"EntityDropMixin",
+		"EntityDropStackMixin",
 		"ItemFrameEntityMixin",
 		"ItemScattererMixin",
 		"ItemStackMixin",

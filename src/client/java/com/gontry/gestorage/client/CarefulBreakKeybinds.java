@@ -39,19 +39,19 @@ public class CarefulBreakKeybinds {
 		load();
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
 			long handle = client.getWindow() != null ? client.getWindow().getHandle() : 0;
-			boolean active = client.player != null
+			boolean baseActive = client.player != null
 					&& handle != 0
-					&& client.currentScreen == null
-					&& ClientCarefulBreakState.enabled;
+					&& client.currentScreen == null;
+			boolean moduleActive = baseActive && ClientCarefulBreakState.enabled;
 
-			prevCarefulBreak = edge(carefulBreakKey, active, handle, prevCarefulBreak, 0);
-			prevCarefulDrop = edge(carefulDropKey, active, handle, prevCarefulDrop, 1);
-			prevAlwaysCareful = edge(alwaysCarefulKey, active, handle, prevAlwaysCareful, 2);
-			prevTreeCapitator = edge(treeCapitatorKey, active, handle, prevTreeCapitator, 3);
-			prevBetterHarvesting = edge(betterHarvestingKey, active, handle, prevBetterHarvesting, 4);
-			prevAutoReplantTrees = edge(autoReplantTreesKey, active, handle, prevAutoReplantTrees, 5);
-			prevAutoReplantCrops = edge(autoReplantCropsKey, active, handle, prevAutoReplantCrops, 6);
-			prevEnabled = edge(enabledKey, active, handle, prevEnabled, 7);
+			prevCarefulBreak = edge(carefulBreakKey, moduleActive, handle, prevCarefulBreak, 0);
+			prevCarefulDrop = edge(carefulDropKey, moduleActive, handle, prevCarefulDrop, 1);
+			prevAlwaysCareful = edge(alwaysCarefulKey, moduleActive, handle, prevAlwaysCareful, 2);
+			prevTreeCapitator = edge(treeCapitatorKey, moduleActive, handle, prevTreeCapitator, 3);
+			prevBetterHarvesting = edge(betterHarvestingKey, moduleActive, handle, prevBetterHarvesting, 4);
+			prevAutoReplantTrees = edge(autoReplantTreesKey, moduleActive, handle, prevAutoReplantTrees, 5);
+			prevAutoReplantCrops = edge(autoReplantCropsKey, moduleActive, handle, prevAutoReplantCrops, 6);
+			prevEnabled = edge(enabledKey, baseActive, handle, prevEnabled, 7);
 		});
 	}
 

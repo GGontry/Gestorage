@@ -14,6 +14,7 @@ public class ToolWheelOpenC2SPacket {
 		ctx.server().execute(() -> {
 			ServerPlayerEntity player = ctx.player();
 			if (player == null) return;
+			if (player.currentScreenHandler != player.playerScreenHandler) return;
 			ToolWheelState state = ToolWheelState.get(player);
 			ToolWheelInventory inv = new ToolWheelInventory(state, player);
 			player.openHandledScreen(new SimpleNamedScreenHandlerFactory(

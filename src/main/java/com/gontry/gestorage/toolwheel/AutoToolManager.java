@@ -2,9 +2,14 @@ package com.gontry.gestorage.toolwheel;
 
 import com.gontry.gestorage.network.ToolWheelSyncS2CPacket;
 import net.minecraft.block.BlockState;
+import net.minecraft.enchantment.Enchantment;
+import net.minecraft.enchantment.EnchantmentHelper;
+import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.registry.RegistryKeys;
+import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
@@ -43,19 +48,21 @@ public final class AutoToolManager {
 	}
 
 	private static ActiveSwap tryAutoSwap(ServerPlayerEntity player, ServerWorld world, BlockPos pos) {
-		ToolWheelState state = ToolWheelState.get(player);
-		if (!state.autoTool) return null;
+		ToolWheelState state = ToolWheelState.getExisting(player);
+		if (state == null || !state.autoTool) return null;
 		BlockState target = world.getBlockState(pos);
 		if (target.isAir()) return null;
 
 		PlayerInventory inv = player.getInventory();
 		ItemStack hand = inv.getStack(inv.selectedSlot);
-		float bestSpeed = hand.getMiningSpeedMultiplier(target);
+		RegistryEntry<Enchantment> efficiency = player.getServer().getRegistryManager()
+				.get(RegistryKeys.ENCHANTMENT).getEntry(Enchantments.EFFICIENCY).orElse(null);
+		float bestSpeed = miningSpeed(hand, target, efficiency);
 		int bestSlot = -1;
 		for (int i = 0; i < ToolWheelState.SIZE; i++) {
 			ItemStack stack = state.stacks.get(i);
 			if (stack.isEmpty()) continue;
-			float speed = stack.getMiningSpeedMultiplier(target);
+			float speed = miningSpeed(stack, target, efficiency);
 			if (speed > bestSpeed) {
 				bestSpeed = speed;
 				bestSlot = i;
@@ -70,7 +77,7 @@ public final class AutoToolManager {
 		state.scheduleSave();
 		ToolWheelSyncS2CPacket.sendTo(player);
 
-		return new ActiveSwap(bestSlot, hand, tool.getItem());
+		return new ActiveSwap(bestSlot, hand, tool);
 	}
 
 	public static void tick(ServerPlayerEntity player) {
@@ -88,19 +95,24 @@ public final class AutoToolManager {
 
 	private static boolean handHoldsTool(ServerPlayerEntity player, ActiveSwap swap) {
 		ItemStack hand = player.getInventory().getStack(player.getInventory().selectedSlot);
-		return !hand.isEmpty() && hand.isOf(swap.toolItem);
+		return !hand.isEmpty() && hand.isOf(swap.toolItem) && hand.getCount() == swap.toolCount;
 	}
 
 	private static void revert(ServerPlayerEntity player, ActiveSwap swap) {
 		ACTIVE.remove(player.getUuid());
-		ToolWheelState state = ToolWheelState.get(player);
+		ToolWheelState state = ToolWheelState.getExisting(player);
+		if (state == null) return;
 		PlayerInventory inv = player.getInventory();
 		ItemStack handNow = inv.getStack(inv.selectedSlot);
-		if (handNow.isEmpty() || !handNow.isOf(swap.toolItem)) return;
+		if (handNow.isEmpty() || !handNow.isOf(swap.toolItem) || handNow.getCount() != swap.toolCount) return;
 
 		int restoreSlot;
 		if (!swap.sessionOriginal.isEmpty()) {
 			restoreSlot = findSlot(state, swap.sessionOriginal);
+			if (restoreSlot < 0 && swap.wheelSlot >= 0 && swap.wheelSlot < ToolWheelState.SIZE
+					&& state.stacks.get(swap.wheelSlot).isEmpty()) {
+				restoreSlot = swap.wheelSlot;
+			}
 		} else {
 			restoreSlot = swap.wheelSlot < ToolWheelState.SIZE ? swap.wheelSlot : -1;
 			if (restoreSlot >= 0 && !state.stacks.get(restoreSlot).isEmpty()) restoreSlot = -1;
@@ -122,6 +134,17 @@ public final class AutoToolManager {
 		return -1;
 	}
 
+	private static float miningSpeed(ItemStack stack, BlockState target, RegistryEntry<Enchantment> efficiency) {
+		float speed = stack.getMiningSpeedMultiplier(target);
+		if (efficiency != null) {
+			int efficiencyLevel = EnchantmentHelper.getLevel(efficiency, stack);
+			if (efficiencyLevel > 0) {
+				speed += efficiencyLevel * efficiencyLevel + 1.0F;
+			}
+		}
+		return speed;
+	}
+
 	public static void clear(UUID playerUuid) {
 		ACTIVE.remove(playerUuid);
 	}
@@ -134,13 +157,15 @@ public final class AutoToolManager {
 		final int wheelSlot;
 		final ItemStack original;
 		final Item toolItem;
+		final int toolCount;
 		ItemStack sessionOriginal;
 		volatile long lastMineTime = System.currentTimeMillis();
 
-		ActiveSwap(int wheelSlot, ItemStack original, Item toolItem) {
+		ActiveSwap(int wheelSlot, ItemStack original, ItemStack tool) {
 			this.wheelSlot = wheelSlot;
 			this.original = original;
-			this.toolItem = toolItem;
+			this.toolItem = tool.getItem();
+			this.toolCount = tool.getCount();
 		}
 	}
 }

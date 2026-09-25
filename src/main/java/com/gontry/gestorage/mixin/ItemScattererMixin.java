@@ -21,8 +21,10 @@ public class ItemScattererMixin {
 			at = @At("HEAD"), cancellable = true)
 	private static void gestorage$spawn(World world, Entity entity, Inventory inventory, CallbackInfo ci) {
 		if (world.isClient()) return;
-		ServerPlayerEntity killer = CarefulBreakManager.getCurrentEntityKiller();
-		if (killer == null) return;
+		CarefulBreakManager.DeathContext ctx = CarefulBreakManager.getCurrentDeath();
+		if (ctx == null) return;
+		if (ctx.victim() != entity) return;
+		ServerPlayerEntity killer = ctx.killer();
 		if (!CarefulBreakManager.shouldCollectEntityDrops(killer)) return;
 
 		List<ItemStack> drops = new ArrayList<>();

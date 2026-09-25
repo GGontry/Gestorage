@@ -3,6 +3,7 @@ package com.gontry.gestorage;
 import com.gontry.gestorage.command.GestorageCommands;
 import com.gontry.gestorage.config.CarefulBreakServerConfig;
 import com.gontry.gestorage.config.ShulkerStackServerConfig;
+import com.gontry.gestorage.inventory.EnderOverflowState;
 import com.gontry.gestorage.network.CarefulBreakStateS2CPacket;
 import com.gontry.gestorage.network.ModNetworking;
 import com.gontry.gestorage.network.ToolWheelSyncS2CPacket;
@@ -54,6 +55,7 @@ public class Gestorage implements ModInitializer {
 		ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
 			ToolWheelState.clearCacheAll();
 			AutoToolManager.clearAll();
+			EnderOverflowState.resetSessionBackups();
 		});
 
 		LOGGER.info("Gestorage initialized!");

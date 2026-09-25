@@ -8,8 +8,10 @@ import com.google.gson.JsonObject;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 
 public final class CarefulBreakServerConfig {
+	private static final int CURRENT_VERSION = 2;
 	private static final Path CONFIG_PATH = Path.of("config", "gestorage", "careful_break.json");
 	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
@@ -30,6 +32,7 @@ public final class CarefulBreakServerConfig {
 				save();
 				return;
 			}
+			backup();
 			String content = Files.readString(CONFIG_PATH);
 			if (content.isBlank()) {
 				save();
@@ -37,6 +40,13 @@ public final class CarefulBreakServerConfig {
 			}
 			JsonObject json = GSON.fromJson(content, JsonObject.class);
 			if (json == null) {
+				save();
+				return;
+			}
+			int version = json.has("version") ? json.get("version").getAsInt() : 1;
+			if (version > CURRENT_VERSION) {
+				Gestorage.LOGGER.warn("CarefulBreak config version {} is newer than supported {}, resetting", version, CURRENT_VERSION);
+				reset();
 				save();
 				return;
 			}
@@ -53,6 +63,26 @@ public final class CarefulBreakServerConfig {
 		} catch (Exception e) {
 			Gestorage.LOGGER.error("Failed to load careful_break server config", e);
 		}
+	}
+
+	private static void backup() {
+		try {
+			Path backup = CONFIG_PATH.resolveSibling("careful_break.json.backup_v" + CURRENT_VERSION);
+			Files.copy(CONFIG_PATH, backup, StandardCopyOption.REPLACE_EXISTING);
+		} catch (IOException e) {
+			Gestorage.LOGGER.warn("Failed to back up careful_break server config", e);
+		}
+	}
+
+	private static void reset() {
+		enabled = false;
+		carefulBreak = false;
+		carefulDrop = false;
+		alwaysCareful = false;
+		treeCapitator = false;
+		betterHarvesting = false;
+		autoReplantTrees = false;
+		autoReplantCrops = false;
 	}
 
 	public static void save() {
