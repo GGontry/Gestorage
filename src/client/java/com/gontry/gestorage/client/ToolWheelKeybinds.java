@@ -9,6 +9,7 @@ public class ToolWheelKeybinds {
 	private static boolean prevToggleEnabled = false;
 	private static boolean prevOpenWheel = false;
 	private static boolean prevAutoTool = false;
+	private static boolean prevSetToolSlot = false;
 	private static boolean prevWheelKey = false;
 
 	public static void register() {
@@ -41,6 +42,13 @@ public class ToolWheelKeybinds {
 				ModNetworkingClient.sendToggleAutoTool();
 			}
 			prevAutoTool = autoPressed;
+
+			String toolSlotKey = ModuleConfig.toolWheel().setToolSlotKey();
+			boolean toolSlotPressed = inGame && enabled && !toolSlotKey.isEmpty() && KeybindHelper.isPressed(toolSlotKey, handle);
+			if (toolSlotPressed && !prevSetToolSlot) {
+				ModNetworkingClient.sendToolWheelSetToolSlot(client.player.getInventory().selectedSlot);
+			}
+			prevSetToolSlot = toolSlotPressed;
 
 			String wheelKey = ModuleConfig.toolWheel().wheelKey();
 			boolean wheelKeyPressed = inGame && enabled && !wheelKey.isEmpty() && KeybindHelper.isPressed(wheelKey, handle);

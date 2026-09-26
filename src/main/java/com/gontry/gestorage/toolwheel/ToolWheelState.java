@@ -1,8 +1,11 @@
 package com.gontry.gestorage.toolwheel;
 
 import com.gontry.gestorage.Gestorage;
+import com.gontry.gestorage.ModConstants;
+import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -22,6 +25,8 @@ public class ToolWheelState extends PersistentState {
 
 	public final DefaultedList<ItemStack> stacks = DefaultedList.ofSize(SIZE, ItemStack.EMPTY);
 	public boolean autoTool = false;
+	public ItemStack defaultTool = ItemStack.EMPTY;
+	public int defaultSlot = ModConstants.TOOL_SLOT_NONE;
 
 	private PersistentStateManager manager;
 	private long lastFlushMs = 0L;
@@ -66,6 +71,8 @@ public class ToolWheelState extends PersistentState {
 		nbt.putInt("Version", CURRENT_VERSION);
 		nbt.putInt("Size", SIZE);
 		nbt.putBoolean("AutoTool", autoTool);
+		nbt.put("DefaultTool", defaultTool.encodeAllowEmpty(lookup));
+		nbt.putInt("DefaultSlot", defaultSlot);
 		NbtList items = new NbtList();
 		for (int i = 0; i < SIZE; i++) {
 			ItemStack stack = stacks.get(i);
@@ -87,6 +94,18 @@ public class ToolWheelState extends PersistentState {
 		}
 		ToolWheelState state = new ToolWheelState();
 		state.autoTool = nbt.getBoolean("AutoTool");
+		if (nbt.contains("DefaultTool", NbtElement.COMPOUND_TYPE)) {
+			ItemStack defaultTool = ItemStack.fromNbtOrEmpty(lookup, nbt.getCompound("DefaultTool"));
+			state.defaultTool = defaultTool;
+		}
+		if (nbt.contains("DefaultSlot", NbtElement.INT_TYPE)) {
+			int slot = nbt.getInt("DefaultSlot");
+			if (PlayerInventory.isValidHotbarIndex(slot)) {
+				state.defaultSlot = slot;
+			} else {
+				Gestorage.LOGGER.warn("[ToolWheel] Ignored out-of-range default slot {}", slot);
+			}
+		}
 		NbtList items = nbt.contains("Items") ? nbt.getList("Items", 10) : new NbtList();
 		int loaded = 0;
 		int skipped = 0;

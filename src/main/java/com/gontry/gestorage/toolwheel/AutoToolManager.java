@@ -8,6 +8,7 @@ import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.network.packet.s2c.play.UpdateSelectedSlotS2CPacket;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -54,7 +55,8 @@ public final class AutoToolManager {
 		if (target.isAir()) return null;
 
 		PlayerInventory inv = player.getInventory();
-		ItemStack hand = inv.getStack(inv.selectedSlot);
+		int handSlot = ToolWheelLogic.resolveToolSlot(state, inv);
+		ItemStack hand = inv.getStack(handSlot);
 		RegistryEntry<Enchantment> efficiency = player.getServer().getRegistryManager()
 				.get(RegistryKeys.ENCHANTMENT).getEntry(Enchantments.EFFICIENCY).orElse(null);
 		float bestSpeed = miningSpeed(hand, target, efficiency);
@@ -71,13 +73,14 @@ public final class AutoToolManager {
 		if (bestSlot < 0) return null;
 
 		ItemStack tool = state.stacks.get(bestSlot);
-		inv.setStack(inv.selectedSlot, tool);
+		inv.setStack(handSlot, tool);
 		state.stacks.set(bestSlot, hand);
 		inv.markDirty();
 		state.scheduleSave();
+		selectSlot(player, handSlot);
 		ToolWheelSyncS2CPacket.sendTo(player);
 
-		return new ActiveSwap(bestSlot, hand, tool);
+		return new ActiveSwap(bestSlot, handSlot, hand, tool);
 	}
 
 	public static void tick(ServerPlayerEntity player) {
@@ -94,7 +97,7 @@ public final class AutoToolManager {
 	}
 
 	private static boolean handHoldsTool(ServerPlayerEntity player, ActiveSwap swap) {
-		ItemStack hand = player.getInventory().getStack(player.getInventory().selectedSlot);
+		ItemStack hand = player.getInventory().getStack(swap.handSlot);
 		return !hand.isEmpty() && hand.isOf(swap.toolItem) && hand.getCount() == swap.toolCount;
 	}
 
@@ -103,8 +106,10 @@ public final class AutoToolManager {
 		ToolWheelState state = ToolWheelState.getExisting(player);
 		if (state == null) return;
 		PlayerInventory inv = player.getInventory();
-		ItemStack handNow = inv.getStack(inv.selectedSlot);
+		ItemStack handNow = inv.getStack(swap.handSlot);
 		if (handNow.isEmpty() || !handNow.isOf(swap.toolItem) || handNow.getCount() != swap.toolCount) return;
+
+		if (restoreDefaultTool(player, state, inv, swap.handSlot)) return;
 
 		int restoreSlot;
 		if (!swap.sessionOriginal.isEmpty()) {
@@ -120,11 +125,49 @@ public final class AutoToolManager {
 		if (restoreSlot < 0) return;
 
 		ItemStack wheelNow = state.stacks.get(restoreSlot);
-		inv.setStack(inv.selectedSlot, wheelNow);
+		inv.setStack(swap.handSlot, wheelNow);
 		state.stacks.set(restoreSlot, handNow);
 		inv.markDirty();
 		state.scheduleSave();
+		selectSlot(player, swap.handSlot);
 		ToolWheelSyncS2CPacket.sendTo(player);
+	}
+
+	/**
+	 * Swaps the tool the player chose as default back into {@code handSlot}, looking
+	 * for it in the wheel first and then across the whole player inventory. Counts
+	 * are ignored while matching so a default tool that was restocked still counts.
+	 */
+	private static boolean restoreDefaultTool(ServerPlayerEntity player, ToolWheelState state,
+			PlayerInventory inv, int handSlot) {
+		if (state.defaultTool.isEmpty()) return false;
+		for (int i = 0; i < ToolWheelState.SIZE; i++) {
+			if (isDefaultTool(state.stacks.get(i), state.defaultTool)) {
+				ItemStack toolNow = inv.getStack(handSlot);
+				inv.setStack(handSlot, state.stacks.get(i));
+				state.stacks.set(i, toolNow);
+				inv.markDirty();
+				state.scheduleSave();
+				selectSlot(player, handSlot);
+				ToolWheelSyncS2CPacket.sendTo(player);
+				return true;
+			}
+		}
+		for (int i = 0; i < PlayerInventory.MAIN_SIZE; i++) {
+			if (i == handSlot || !isDefaultTool(inv.getStack(i), state.defaultTool)) continue;
+			ItemStack toolNow = inv.getStack(handSlot);
+			inv.setStack(handSlot, inv.getStack(i));
+			inv.setStack(i, toolNow);
+			inv.markDirty();
+			selectSlot(player, handSlot);
+			ToolWheelSyncS2CPacket.sendTo(player);
+			return true;
+		}
+		return false;
+	}
+
+	private static boolean isDefaultTool(ItemStack stack, ItemStack defaultTool) {
+		return !stack.isEmpty() && ItemStack.areItemsAndComponentsEqual(stack, defaultTool);
 	}
 
 	private static int findSlot(ToolWheelState state, ItemStack stack) {
@@ -145,6 +188,19 @@ public final class AutoToolManager {
 		return speed;
 	}
 
+	/**
+	 * Moves the player's hand to {@code slot} and tells the owning client about it,
+	 * otherwise the client would keep rendering and clicking the old slot.
+	 */
+	private static void selectSlot(ServerPlayerEntity player, int slot) {
+		PlayerInventory inv = player.getInventory();
+		if (inv.selectedSlot == slot) return;
+		inv.selectedSlot = slot;
+		if (player.networkHandler != null) {
+			player.networkHandler.sendPacket(new UpdateSelectedSlotS2CPacket(slot));
+		}
+	}
+
 	public static void clear(UUID playerUuid) {
 		ACTIVE.remove(playerUuid);
 	}
@@ -155,14 +211,16 @@ public final class AutoToolManager {
 
 	private static final class ActiveSwap {
 		final int wheelSlot;
+		final int handSlot;
 		final ItemStack original;
 		final Item toolItem;
 		final int toolCount;
 		ItemStack sessionOriginal;
 		volatile long lastMineTime = System.currentTimeMillis();
 
-		ActiveSwap(int wheelSlot, ItemStack original, ItemStack tool) {
+		ActiveSwap(int wheelSlot, int handSlot, ItemStack original, ItemStack tool) {
 			this.wheelSlot = wheelSlot;
+			this.handSlot = handSlot;
 			this.original = original;
 			this.toolItem = tool.getItem();
 			this.toolCount = tool.getCount();

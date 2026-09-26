@@ -3,10 +3,15 @@ package com.gontry.gestorage.command;
 import com.gontry.gestorage.ModConstants;
 import com.gontry.gestorage.ModGameRules;
 import com.gontry.gestorage.network.ModNetworking;
+import com.gontry.gestorage.network.ToolWheelSyncS2CPacket;
+import com.gontry.gestorage.toolwheel.ToolWheelLogic;
+import com.gontry.gestorage.toolwheel.ToolWheelState;
 import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.minecraft.item.ItemStack;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -95,6 +100,123 @@ public class GestorageCommands {
 							return 1;
 						})
 				)
+				.then(CommandManager.literal("tooldefault")
+						.executes(context -> {
+							ServerCommandSource source = context.getSource();
+							ServerPlayerEntity player = source.getPlayer();
+							if (player == null) {
+								source.sendError(Text.literal("[Gestorage] This command must be run by a player"));
+								return 0;
+							}
+							ToolWheelState state = ToolWheelState.getExisting(player);
+							ItemStack current = state == null ? ItemStack.EMPTY : state.defaultTool;
+							if (current.isEmpty()) {
+								source.sendFeedback(() -> Text.literal("[Gestorage] Default tool: none (Auto Tool reverts to the tool held when swapping started)"), false);
+							} else {
+								MutableText confirm = Text.empty();
+								confirm.append(Text.literal("[Gestorage] ").styled(s -> s.withColor(TextColor.fromFormatting(Formatting.GREEN))));
+								confirm.append(Text.literal("Default tool: ").styled(s -> s.withColor(TextColor.fromFormatting(Formatting.WHITE))));
+								confirm.append(current.getName().copy().styled(s -> s.withColor(TextColor.fromFormatting(Formatting.YELLOW))));
+								source.sendFeedback(() -> confirm, false);
+							}
+							return 1;
+						})
+						.then(CommandManager.literal("clear")
+								.executes(context -> {
+									ServerCommandSource source = context.getSource();
+									ServerPlayerEntity player = source.getPlayer();
+									if (player == null) {
+										source.sendError(Text.literal("[Gestorage] This command must be run by a player"));
+										return 0;
+									}
+									ToolWheelLogic.clearDefaultTool(player);
+									ToolWheelSyncS2CPacket.sendTo(player);
+									source.sendFeedback(() -> Text.literal("[Gestorage] Default tool cleared"), true);
+									return 1;
+								})
+						)
+						.then(CommandManager.literal("set")
+								.then(CommandManager.argument("slot", IntegerArgumentType.integer(1, 9))
+										.executes(context -> {
+											ServerCommandSource source = context.getSource();
+											ServerPlayerEntity player = source.getPlayer();
+											if (player == null) {
+												source.sendError(Text.literal("[Gestorage] This command must be run by a player"));
+												return 0;
+											}
+											return setDefaultTool(source, player, IntegerArgumentType.getInteger(context, "slot") - 1);
+										})
+								)
+								.executes(context -> {
+									ServerCommandSource source = context.getSource();
+									ServerPlayerEntity player = source.getPlayer();
+									if (player == null) {
+										source.sendError(Text.literal("[Gestorage] This command must be run by a player"));
+										return 0;
+									}
+									return setDefaultTool(source, player, player.getInventory().selectedSlot);
+								})
+						)
+				)
+				.then(CommandManager.literal("toolslot")
+						.executes(context -> {
+							ServerCommandSource source = context.getSource();
+							ServerPlayerEntity player = source.getPlayer();
+							if (player == null) {
+								source.sendError(Text.literal("[Gestorage] This command must be run by a player"));
+								return 0;
+							}
+							ToolWheelState state = ToolWheelState.getExisting(player);
+							int current = state == null ? ModConstants.TOOL_SLOT_NONE : state.defaultSlot;
+							source.sendFeedback(() -> Text.literal("Current Auto Tool slot: "
+									+ (current == ModConstants.TOOL_SLOT_NONE ? "selected slot" : String.valueOf(current + 1))), false);
+							return 1;
+						})
+						.then(CommandManager.literal("clear")
+								.executes(context -> {
+									ServerCommandSource source = context.getSource();
+									ServerPlayerEntity player = source.getPlayer();
+									if (player == null) {
+										source.sendError(Text.literal("[Gestorage] This command must be run by a player"));
+										return 0;
+									}
+									ToolWheelLogic.setDefaultSlot(player, ModConstants.TOOL_SLOT_NONE);
+									ToolWheelSyncS2CPacket.sendTo(player);
+									source.sendFeedback(() -> Text.literal("[Gestorage] Auto Tool slot cleared (follows the selected slot)"), true);
+									return 1;
+								})
+						)
+						.then(CommandManager.argument("slot", IntegerArgumentType.integer(1, 9))
+								.executes(context -> {
+									ServerCommandSource source = context.getSource();
+									ServerPlayerEntity player = source.getPlayer();
+									if (player == null) {
+										source.sendError(Text.literal("[Gestorage] This command must be run by a player"));
+										return 0;
+									}
+									int slot = IntegerArgumentType.getInteger(context, "slot") - 1;
+									ToolWheelLogic.setDefaultSlot(player, slot);
+									ToolWheelSyncS2CPacket.sendTo(player);
+									source.sendFeedback(() -> Text.literal("[Gestorage] Auto Tool slot set to " + (slot + 1)), true);
+									return 1;
+								})
+						)
+				)
 		);
+	}
+
+	private static int setDefaultTool(ServerCommandSource source, ServerPlayerEntity player, int hotbarSlot) {
+		if (!ToolWheelLogic.setDefaultTool(player, hotbarSlot)) {
+			source.sendError(Text.literal("[Gestorage] Hotbar slot " + (hotbarSlot + 1) + " is empty"));
+			return 0;
+		}
+		ToolWheelSyncS2CPacket.sendTo(player);
+		ItemStack name = player.getInventory().getStack(hotbarSlot);
+		MutableText confirm = Text.empty();
+		confirm.append(Text.literal("[Gestorage] ").styled(s -> s.withColor(TextColor.fromFormatting(Formatting.GREEN))));
+		confirm.append(Text.literal("Default tool set to ").styled(s -> s.withColor(TextColor.fromFormatting(Formatting.WHITE))));
+		confirm.append(name.getName().copy().styled(s -> s.withColor(TextColor.fromFormatting(Formatting.YELLOW))));
+		source.sendFeedback(() -> confirm, true);
+		return 1;
 	}
 }

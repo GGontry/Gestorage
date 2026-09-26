@@ -37,6 +37,12 @@ public final class ModConstants {
 	/** Ticks the client waits before trusting its ender size sync data. */
 	public static final int MAX_SYNC_DELAY_TICKS = 5;
 
+	/**
+	 * Sentinel for "no Tool Wheel slot chosen": Auto Tool then swaps into
+	 * whichever hotbar slot the player currently has selected.
+	 */
+	public static final int TOOL_SLOT_NONE = -1;
+
 	/** Maps a persisted size mode to the matching container capacity. */
 	public static int getEnderSizeForMode(int mode) {
 		return switch (mode) {

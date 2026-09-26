@@ -1,5 +1,6 @@
 package com.gontry.gestorage.client;
 
+import com.gontry.gestorage.ModConstants;
 import com.gontry.gestorage.client.config.ModuleConfig;
 import com.gontry.gestorage.client.ui.ConfigButton;
 import com.gontry.gestorage.client.ui.ConfigCheckbox;
@@ -12,6 +13,7 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.PressableWidget;
 import net.minecraft.client.gui.widget.TextFieldWidget;
+import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.text.OrderedText;
 import net.minecraft.text.Text;
 import org.lwjgl.glfw.GLFW;
@@ -350,6 +352,10 @@ public class GestorageConfigScreen extends Screen {
 				detailRows.add(new DetailRow(keybindButton, 0, detailW, baseY));
 				baseY += ROW_H + ROW_GAP;
 				addToolAutoOption(baseY);
+				baseY += ROW_H + ROW_GAP;
+				addToolDefaultOption(baseY);
+				baseY += ROW_H + ROW_GAP;
+				addToolSlotOption(baseY);
 			}
 		}
 	}
@@ -423,6 +429,35 @@ public class GestorageConfigScreen extends Screen {
 				() -> ModNetworkingClient.sendToggleAutoTool());
 		detailRows.add(new DetailRow(cb, 0, cbW, baseY));
 		attachKeyButton(baseY, ModuleConfig.toolWheel().autoToolKey(), 53);
+	}
+
+	private void addToolDefaultOption(int baseY) {
+		keybindButton = new ConfigButton(detailX, optionsTop, detailW, ROW_H,
+				Text.literal("Default Tool: " + (ClientToolWheelState.defaultTool.isEmpty()
+						? "NONE" : ClientToolWheelState.defaultTool.getName())),
+				() -> {
+					if (this.client == null || this.client.player == null) return;
+					ModNetworkingClient.sendToolWheelSetDefault(this.client.player.getInventory().selectedSlot);
+				});
+		detailRows.add(new DetailRow(keybindButton, 0, detailW, baseY));
+	}
+
+	private void addToolSlotOption(int baseY) {
+		int btnW = detailW - KEY_W - 4;
+		ConfigButton btn = new ConfigButton(detailX, optionsTop, btnW, ROW_H,
+				Text.literal("Default Slot: " + toolSlotLabel()),
+				() -> {
+					int next = ClientToolWheelState.defaultSlot + 1;
+					ModNetworkingClient.sendToolWheelSetToolSlot(
+							next >= PlayerInventory.getHotbarSize() ? ModConstants.TOOL_SLOT_NONE : next);
+				});
+		detailRows.add(new DetailRow(btn, 0, btnW, baseY));
+		attachKeyButton(baseY, ModuleConfig.toolWheel().setToolSlotKey(), 54);
+	}
+
+	private static String toolSlotLabel() {
+		int slot = ClientToolWheelState.defaultSlot;
+		return slot == ModConstants.TOOL_SLOT_NONE ? "Selected" : String.valueOf(slot + 1);
 	}
 
 	private void positionRows() {
@@ -591,6 +626,7 @@ public class GestorageConfigScreen extends Screen {
 			case 51 -> { ModuleConfig.toolWheel().openWheelKey(encoded); ModuleConfig.toolWheel().save(); }
 			case 52 -> { ModuleConfig.toolWheel().wheelKey(encoded); ModuleConfig.toolWheel().save(); }
 			case 53 -> { ModuleConfig.toolWheel().autoToolKey(encoded); ModuleConfig.toolWheel().save(); }
+			case 54 -> { ModuleConfig.toolWheel().setToolSlotKey(encoded); ModuleConfig.toolWheel().save(); }
 			default -> applyCBKeybind(encoded);
 		}
 	}
@@ -697,7 +733,7 @@ public class GestorageConfigScreen extends Screen {
 			case 3 -> "Informational overlay next to any inventory";
 			case 4 -> "Sort items in inventories";
 			case 5 -> "Collect blocks and drops directly to inventory";
-			case 6 -> "Radial tool wheel + auto tool";
+			case 6 -> "Radial tool wheel + auto tool. /gestorage tooldefault picks the tool Auto Tool returns to";
 			default -> "";
 		};
 	}

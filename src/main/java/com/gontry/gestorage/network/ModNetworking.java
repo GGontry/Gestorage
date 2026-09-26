@@ -56,6 +56,12 @@ public class ModNetworking {
 	public static final CustomPayload.Id<ToolWheelSyncS2C> TOOL_WHEEL_SYNC =
 			new CustomPayload.Id<>(Identifier.of(Gestorage.MOD_ID, "tool_wheel_sync"));
 
+	public static final CustomPayload.Id<ToolWheelDefaultC2S> TOOL_WHEEL_DEFAULT =
+			new CustomPayload.Id<>(Identifier.of(Gestorage.MOD_ID, "tool_wheel_default"));
+
+	public static final CustomPayload.Id<ToolWheelToolSlotC2S> TOOL_WHEEL_TOOL_SLOT =
+			new CustomPayload.Id<>(Identifier.of(Gestorage.MOD_ID, "tool_wheel_tool_slot"));
+
 	public static final PacketCodec<PacketByteBuf, OpenEnderChestC2S> OPEN_ENDER_CHEST_CODEC =
 			PacketCodec.unit(new OpenEnderChestC2S());
 
@@ -146,6 +152,18 @@ public class ModNetworking {
 	public static final PacketCodec<PacketByteBuf, ToolWheelAutoC2S> TOOL_WHEEL_AUTO_CODEC =
 			PacketCodec.unit(new ToolWheelAutoC2S());
 
+	public static final PacketCodec<PacketByteBuf, ToolWheelDefaultC2S> TOOL_WHEEL_DEFAULT_CODEC =
+			PacketCodec.of(
+					(ToolWheelDefaultC2S p, PacketByteBuf buf) -> buf.writeInt(p.slot()),
+					buf -> new ToolWheelDefaultC2S(buf.readInt())
+			);
+
+	public static final PacketCodec<PacketByteBuf, ToolWheelToolSlotC2S> TOOL_WHEEL_TOOL_SLOT_CODEC =
+			PacketCodec.of(
+					(ToolWheelToolSlotC2S p, PacketByteBuf buf) -> buf.writeInt(p.slot()),
+					buf -> new ToolWheelToolSlotC2S(buf.readInt())
+			);
+
 	public static final PacketCodec<RegistryByteBuf, ToolWheelSyncS2C> TOOL_WHEEL_SYNC_CODEC =
 			PacketCodec.of(
 					(ToolWheelSyncS2C p, RegistryByteBuf buf) -> {
@@ -153,13 +171,17 @@ public class ModNetworking {
 							ItemStack.OPTIONAL_PACKET_CODEC.encode(buf, p.stacks()[i]);
 						}
 						buf.writeBoolean(p.autoTool());
+						ItemStack.OPTIONAL_PACKET_CODEC.encode(buf, p.defaultTool());
+						buf.writeInt(p.defaultSlot());
 					},
 					buf -> {
 						ItemStack[] stacks = new ItemStack[ToolWheelState.SIZE];
 						for (int i = 0; i < ToolWheelState.SIZE; i++) {
 							stacks[i] = ItemStack.OPTIONAL_PACKET_CODEC.decode(buf);
 						}
-						return new ToolWheelSyncS2C(stacks, buf.readBoolean());
+						boolean autoTool = buf.readBoolean();
+						ItemStack defaultTool = ItemStack.OPTIONAL_PACKET_CODEC.decode(buf);
+						return new ToolWheelSyncS2C(stacks, autoTool, defaultTool, buf.readInt());
 					}
 			);
 
@@ -176,6 +198,8 @@ public class ModNetworking {
 		PayloadTypeRegistry.playC2S().register(TOOL_WHEEL_OPEN, TOOL_WHEEL_OPEN_CODEC);
 		PayloadTypeRegistry.playC2S().register(TOOL_WHEEL_SWAP, TOOL_WHEEL_SWAP_CODEC);
 		PayloadTypeRegistry.playC2S().register(TOOL_WHEEL_AUTO, TOOL_WHEEL_AUTO_CODEC);
+		PayloadTypeRegistry.playC2S().register(TOOL_WHEEL_DEFAULT, TOOL_WHEEL_DEFAULT_CODEC);
+		PayloadTypeRegistry.playC2S().register(TOOL_WHEEL_TOOL_SLOT, TOOL_WHEEL_TOOL_SLOT_CODEC);
 		PayloadTypeRegistry.playS2C().register(TOOL_WHEEL_SYNC, TOOL_WHEEL_SYNC_CODEC);
 
 		// Each receiver is bound to its handler class (one static handle() per packet).
@@ -186,6 +210,8 @@ public class ModNetworking {
 		ServerPlayNetworking.registerGlobalReceiver(TOOL_WHEEL_OPEN, ToolWheelOpenC2SPacket::handle);
 		ServerPlayNetworking.registerGlobalReceiver(TOOL_WHEEL_SWAP, ToolWheelSwapC2SPacket::handle);
 		ServerPlayNetworking.registerGlobalReceiver(TOOL_WHEEL_AUTO, ToolWheelAutoC2SPacket::handle);
+		ServerPlayNetworking.registerGlobalReceiver(TOOL_WHEEL_DEFAULT, ToolWheelDefaultC2SPacket::handle);
+		ServerPlayNetworking.registerGlobalReceiver(TOOL_WHEEL_TOOL_SLOT, ToolWheelToolSlotC2SPacket::handle);
 	}
 
 	public record OpenEnderChestC2S() implements CustomPayload {
@@ -267,7 +293,24 @@ public class ModNetworking {
 		}
 	}
 
-	public record ToolWheelSyncS2C(ItemStack[] stacks, boolean autoTool) implements CustomPayload {
+	/** {@code slot} is a hotbar index (0-8) holding the tool to default to, or {@code -1} to clear. */
+	public record ToolWheelDefaultC2S(int slot) implements CustomPayload {
+		@Override
+		public Id<? extends CustomPayload> getId() {
+			return TOOL_WHEEL_DEFAULT;
+		}
+	}
+
+	/** {@code slot} is the hotbar index Auto Tool must swap into, or {@code -1} to follow the selected slot. */
+	public record ToolWheelToolSlotC2S(int slot) implements CustomPayload {
+		@Override
+		public Id<? extends CustomPayload> getId() {
+			return TOOL_WHEEL_TOOL_SLOT;
+		}
+	}
+
+	public record ToolWheelSyncS2C(ItemStack[] stacks, boolean autoTool, ItemStack defaultTool, int defaultSlot)
+			implements CustomPayload {
 		@Override
 		public Id<? extends CustomPayload> getId() {
 			return TOOL_WHEEL_SYNC;

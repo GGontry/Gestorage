@@ -15,7 +15,7 @@
 	"gestorage.config.module.careful_break": "Careful Break",
 	"gestorage.config.module.careful_break.desc": "Collect blocks and drops directly to inventory",
 	"gestorage.config.module.tool_wheel": "Tool Wheel",
-	"gestorage.config.module.tool_wheel.desc": "Radial tool wheel + auto tool",
+	"gestorage.config.module.tool_wheel.desc": "Radial tool wheel + auto tool. /gestorage tooldefault picks the tool Auto Tool returns to",
 	"container.gestorage.tool_wheel": "Tool Wheel",
 	"overlay.gestorage.stacks": "Stacks: %s",
 	"overlay.gestorage.stacks_remainder": "Stacks: %s + %s",

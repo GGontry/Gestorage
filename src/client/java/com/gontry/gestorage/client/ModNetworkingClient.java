@@ -34,4 +34,12 @@ public class ModNetworkingClient {
 	public static void sendToggleAutoTool() {
 		ClientPlayNetworking.send(new ModNetworking.ToolWheelAutoC2S());
 	}
+
+	public static void sendToolWheelSetDefault(int slot) {
+		ClientPlayNetworking.send(new ModNetworking.ToolWheelDefaultC2S(slot));
+	}
+
+	public static void sendToolWheelSetToolSlot(int slot) {
+		ClientPlayNetworking.send(new ModNetworking.ToolWheelToolSlotC2S(slot));
+	}
 }
