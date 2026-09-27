@@ -3,13 +3,12 @@ package com.gontry.gestorage.client;
 import com.gontry.gestorage.client.config.ModuleConfig;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.text.Text;
 
 public class ToolWheelKeybinds {
 	private static boolean prevToggleEnabled = false;
 	private static boolean prevOpenWheel = false;
 	private static boolean prevAutoTool = false;
-	private static boolean prevSetToolSlot = false;
+	private static boolean prevEnchPref = false;
 	private static boolean prevWheelKey = false;
 
 	public static void register() {
@@ -24,8 +23,7 @@ public class ToolWheelKeybinds {
 				boolean newState = !ModuleConfig.toolWheel().enabled();
 				ModuleConfig.toolWheel().enabled(newState);
 				ModuleConfig.toolWheel().save();
-				client.player.sendMessage(Text.literal(
-						"§7Tool Wheel: " + (newState ? "§aON" : "§cOFF")), true);
+				ModNetworkingClient.sendModuleEnabled(newState);
 			}
 			prevToggleEnabled = togglePressed;
 
@@ -43,12 +41,13 @@ public class ToolWheelKeybinds {
 			}
 			prevAutoTool = autoPressed;
 
-			String toolSlotKey = ModuleConfig.toolWheel().setToolSlotKey();
-			boolean toolSlotPressed = inGame && enabled && !toolSlotKey.isEmpty() && KeybindHelper.isPressed(toolSlotKey, handle);
-			if (toolSlotPressed && !prevSetToolSlot) {
-				ModNetworkingClient.sendToolWheelSetToolSlot(client.player.getInventory().selectedSlot);
+			String enchPrefKey = ModuleConfig.toolWheel().enchPrefKey();
+			boolean enchPrefPressed = inGame && enabled && !enchPrefKey.isEmpty()
+					&& KeybindHelper.isPressed(enchPrefKey, handle);
+			if (enchPrefPressed && !prevEnchPref) {
+				ModNetworkingClient.sendEnchPref(ClientToolWheelState.nextEnchPref());
 			}
-			prevSetToolSlot = toolSlotPressed;
+			prevEnchPref = enchPrefPressed;
 
 			String wheelKey = ModuleConfig.toolWheel().wheelKey();
 			boolean wheelKeyPressed = inGame && enabled && !wheelKey.isEmpty() && KeybindHelper.isPressed(wheelKey, handle);

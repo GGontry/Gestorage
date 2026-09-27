@@ -8,11 +8,15 @@ import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.registry.RegistryWrapper;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.util.WorldSavePath;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.world.PersistentState;
 import net.minecraft.world.PersistentStateManager;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -25,8 +29,8 @@ public class ToolWheelState extends PersistentState {
 
 	public final DefaultedList<ItemStack> stacks = DefaultedList.ofSize(SIZE, ItemStack.EMPTY);
 	public boolean autoTool = false;
-	public ItemStack defaultTool = ItemStack.EMPTY;
 	public int defaultSlot = ModConstants.TOOL_SLOT_NONE;
+	public int enchPref = ModConstants.ENCH_PREF_NONE;
 
 	private PersistentStateManager manager;
 	private long lastFlushMs = 0L;
@@ -66,13 +70,35 @@ public class ToolWheelState extends PersistentState {
 		return state;
 	}
 
+	/**
+	 * Warms the cache from the stored file the first time a player is seen after a
+	 * reconnect, without ever creating a file: {@link #getExisting} only inspects the
+	 * in-memory state map, so a returning player would otherwise look like they had no
+	 * wheel data at all until the wheel was opened, leaving Auto Tool silently dead.
+	 * Returns {@code null} when the player has no stored data, exactly like
+	 * {@link #getExisting}.
+	 */
+	public static ToolWheelState getStored(ServerPlayerEntity player) {
+		UUID uuid = player.getUuid();
+		ToolWheelState state = CACHE.get(uuid);
+		if (state != null) return state;
+		MinecraftServer server = player.getServer();
+		if (server == null || !hasStoredData(server, uuid)) return null;
+		return get(player);
+	}
+
+	private static boolean hasStoredData(MinecraftServer server, UUID uuid) {
+		Path file = server.getSavePath(WorldSavePath.ROOT).resolve("data").resolve(getKey(uuid) + ".dat");
+		return Files.isRegularFile(file);
+	}
+
 	@Override
 	public NbtCompound writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup lookup) {
 		nbt.putInt("Version", CURRENT_VERSION);
 		nbt.putInt("Size", SIZE);
 		nbt.putBoolean("AutoTool", autoTool);
-		nbt.put("DefaultTool", defaultTool.encodeAllowEmpty(lookup));
 		nbt.putInt("DefaultSlot", defaultSlot);
+		nbt.putInt("EnchPref", enchPref);
 		NbtList items = new NbtList();
 		for (int i = 0; i < SIZE; i++) {
 			ItemStack stack = stacks.get(i);
@@ -94,16 +120,20 @@ public class ToolWheelState extends PersistentState {
 		}
 		ToolWheelState state = new ToolWheelState();
 		state.autoTool = nbt.getBoolean("AutoTool");
-		if (nbt.contains("DefaultTool", NbtElement.COMPOUND_TYPE)) {
-			ItemStack defaultTool = ItemStack.fromNbtOrEmpty(lookup, nbt.getCompound("DefaultTool"));
-			state.defaultTool = defaultTool;
-		}
 		if (nbt.contains("DefaultSlot", NbtElement.INT_TYPE)) {
 			int slot = nbt.getInt("DefaultSlot");
 			if (PlayerInventory.isValidHotbarIndex(slot)) {
 				state.defaultSlot = slot;
 			} else {
 				Gestorage.LOGGER.warn("[ToolWheel] Ignored out-of-range default slot {}", slot);
+			}
+		}
+		if (nbt.contains("EnchPref", NbtElement.INT_TYPE)) {
+			int pref = nbt.getInt("EnchPref");
+			if (pref >= ModConstants.ENCH_PREF_NONE && pref <= ModConstants.ENCH_PREF_MAX) {
+				state.enchPref = pref;
+			} else {
+				Gestorage.LOGGER.warn("[ToolWheel] Ignored out-of-range enchantment preference {}", pref);
 			}
 		}
 		NbtList items = nbt.contains("Items") ? nbt.getList("Items", 10) : new NbtList();

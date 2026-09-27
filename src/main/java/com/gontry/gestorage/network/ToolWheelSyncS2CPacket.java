@@ -10,7 +10,7 @@ public final class ToolWheelSyncS2CPacket {
 	private ToolWheelSyncS2CPacket() {}
 
 	public static ModNetworking.ToolWheelSyncS2C buildState(ServerPlayerEntity player) {
-		ToolWheelState state = ToolWheelState.getExisting(player);
+		ToolWheelState state = ToolWheelState.getStored(player);
 		ItemStack[] stacks = new ItemStack[ToolWheelState.SIZE];
 		if (state == null) {
 			for (int i = 0; i < ToolWheelState.SIZE; i++) {
@@ -21,7 +21,7 @@ public final class ToolWheelSyncS2CPacket {
 		for (int i = 0; i < ToolWheelState.SIZE; i++) {
 			stacks[i] = state.stacks.get(i);
 		}
-		return new ModNetworking.ToolWheelSyncS2C(stacks, state.autoTool, state.defaultTool, state.defaultSlot);
+		return new ModNetworking.ToolWheelSyncS2C(stacks, state.autoTool, ItemStack.EMPTY, state.defaultSlot);
 	}
 
 	public static void sendTo(ServerPlayerEntity player) {

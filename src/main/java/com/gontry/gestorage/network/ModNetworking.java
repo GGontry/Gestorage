@@ -53,6 +53,9 @@ public class ModNetworking {
 	public static final CustomPayload.Id<ToolWheelAutoC2S> TOOL_WHEEL_AUTO =
 			new CustomPayload.Id<>(Identifier.of(Gestorage.MOD_ID, "tool_wheel_auto"));
 
+	public static final CustomPayload.Id<ToolWheelModuleC2S> TOOL_WHEEL_MODULE =
+			new CustomPayload.Id<>(Identifier.of(Gestorage.MOD_ID, "tool_wheel_module"));
+
 	public static final CustomPayload.Id<ToolWheelSyncS2C> TOOL_WHEEL_SYNC =
 			new CustomPayload.Id<>(Identifier.of(Gestorage.MOD_ID, "tool_wheel_sync"));
 
@@ -61,6 +64,12 @@ public class ModNetworking {
 
 	public static final CustomPayload.Id<ToolWheelToolSlotC2S> TOOL_WHEEL_TOOL_SLOT =
 			new CustomPayload.Id<>(Identifier.of(Gestorage.MOD_ID, "tool_wheel_tool_slot"));
+
+	public static final CustomPayload.Id<ToolWheelEnchPrefC2S> TOOL_WHEEL_ENCH_PREF =
+			new CustomPayload.Id<>(Identifier.of(Gestorage.MOD_ID, "tool_wheel_ench_pref"));
+
+	public static final CustomPayload.Id<ToolWheelEnchPrefS2C> TOOL_WHEEL_ENCH_PREF_STATE =
+			new CustomPayload.Id<>(Identifier.of(Gestorage.MOD_ID, "tool_wheel_ench_pref_state"));
 
 	public static final PacketCodec<PacketByteBuf, OpenEnderChestC2S> OPEN_ENDER_CHEST_CODEC =
 			PacketCodec.unit(new OpenEnderChestC2S());
@@ -152,6 +161,12 @@ public class ModNetworking {
 	public static final PacketCodec<PacketByteBuf, ToolWheelAutoC2S> TOOL_WHEEL_AUTO_CODEC =
 			PacketCodec.unit(new ToolWheelAutoC2S());
 
+	public static final PacketCodec<PacketByteBuf, ToolWheelModuleC2S> TOOL_WHEEL_MODULE_CODEC =
+			PacketCodec.of(
+					(ToolWheelModuleC2S p, PacketByteBuf buf) -> buf.writeBoolean(p.enabled()),
+					buf -> new ToolWheelModuleC2S(buf.readBoolean())
+			);
+
 	public static final PacketCodec<PacketByteBuf, ToolWheelDefaultC2S> TOOL_WHEEL_DEFAULT_CODEC =
 			PacketCodec.of(
 					(ToolWheelDefaultC2S p, PacketByteBuf buf) -> buf.writeInt(p.slot()),
@@ -162,6 +177,18 @@ public class ModNetworking {
 			PacketCodec.of(
 					(ToolWheelToolSlotC2S p, PacketByteBuf buf) -> buf.writeInt(p.slot()),
 					buf -> new ToolWheelToolSlotC2S(buf.readInt())
+			);
+
+	public static final PacketCodec<PacketByteBuf, ToolWheelEnchPrefC2S> TOOL_WHEEL_ENCH_PREF_CODEC =
+			PacketCodec.of(
+					(ToolWheelEnchPrefC2S p, PacketByteBuf buf) -> buf.writeInt(p.pref()),
+					buf -> new ToolWheelEnchPrefC2S(buf.readInt())
+			);
+
+	public static final PacketCodec<PacketByteBuf, ToolWheelEnchPrefS2C> TOOL_WHEEL_ENCH_PREF_STATE_CODEC =
+			PacketCodec.of(
+					(ToolWheelEnchPrefS2C p, PacketByteBuf buf) -> buf.writeInt(p.pref()),
+					buf -> new ToolWheelEnchPrefS2C(buf.readInt())
 			);
 
 	public static final PacketCodec<RegistryByteBuf, ToolWheelSyncS2C> TOOL_WHEEL_SYNC_CODEC =
@@ -198,8 +225,11 @@ public class ModNetworking {
 		PayloadTypeRegistry.playC2S().register(TOOL_WHEEL_OPEN, TOOL_WHEEL_OPEN_CODEC);
 		PayloadTypeRegistry.playC2S().register(TOOL_WHEEL_SWAP, TOOL_WHEEL_SWAP_CODEC);
 		PayloadTypeRegistry.playC2S().register(TOOL_WHEEL_AUTO, TOOL_WHEEL_AUTO_CODEC);
+		PayloadTypeRegistry.playC2S().register(TOOL_WHEEL_MODULE, TOOL_WHEEL_MODULE_CODEC);
 		PayloadTypeRegistry.playC2S().register(TOOL_WHEEL_DEFAULT, TOOL_WHEEL_DEFAULT_CODEC);
 		PayloadTypeRegistry.playC2S().register(TOOL_WHEEL_TOOL_SLOT, TOOL_WHEEL_TOOL_SLOT_CODEC);
+		PayloadTypeRegistry.playC2S().register(TOOL_WHEEL_ENCH_PREF, TOOL_WHEEL_ENCH_PREF_CODEC);
+		PayloadTypeRegistry.playS2C().register(TOOL_WHEEL_ENCH_PREF_STATE, TOOL_WHEEL_ENCH_PREF_STATE_CODEC);
 		PayloadTypeRegistry.playS2C().register(TOOL_WHEEL_SYNC, TOOL_WHEEL_SYNC_CODEC);
 
 		// Each receiver is bound to its handler class (one static handle() per packet).
@@ -210,8 +240,10 @@ public class ModNetworking {
 		ServerPlayNetworking.registerGlobalReceiver(TOOL_WHEEL_OPEN, ToolWheelOpenC2SPacket::handle);
 		ServerPlayNetworking.registerGlobalReceiver(TOOL_WHEEL_SWAP, ToolWheelSwapC2SPacket::handle);
 		ServerPlayNetworking.registerGlobalReceiver(TOOL_WHEEL_AUTO, ToolWheelAutoC2SPacket::handle);
+		ServerPlayNetworking.registerGlobalReceiver(TOOL_WHEEL_MODULE, ToolWheelModuleC2SPacket::handle);
 		ServerPlayNetworking.registerGlobalReceiver(TOOL_WHEEL_DEFAULT, ToolWheelDefaultC2SPacket::handle);
 		ServerPlayNetworking.registerGlobalReceiver(TOOL_WHEEL_TOOL_SLOT, ToolWheelToolSlotC2SPacket::handle);
+		ServerPlayNetworking.registerGlobalReceiver(TOOL_WHEEL_ENCH_PREF, ToolWheelEnchPrefC2SPacket::handle);
 	}
 
 	public record OpenEnderChestC2S() implements CustomPayload {
@@ -293,7 +325,22 @@ public class ModNetworking {
 		}
 	}
 
-	/** {@code slot} is a hotbar index (0-8) holding the tool to default to, or {@code -1} to clear. */
+	/**
+	 * {@code enabled} mirrors the client module flag so the server can stop the
+	 * server-authoritative Auto Tool when the whole module is switched off. Sent
+	 * whenever the module toggle changes, from the keybind and the config screen.
+	 */
+	public record ToolWheelModuleC2S(boolean enabled) implements CustomPayload {
+		@Override
+		public Id<? extends CustomPayload> getId() {
+			return TOOL_WHEEL_MODULE;
+		}
+	}
+
+	/**
+	 * Reserved, no longer sent: the Auto Tool default tool was removed in favour of
+	 * the session tool captured when Auto Tool is activated.
+	 */
 	public record ToolWheelDefaultC2S(int slot) implements CustomPayload {
 		@Override
 		public Id<? extends CustomPayload> getId() {
@@ -301,7 +348,10 @@ public class ModNetworking {
 		}
 	}
 
-	/** {@code slot} is the hotbar index Auto Tool must swap into, or {@code -1} to follow the selected slot. */
+	/**
+	 * {@code slot} is the hotbar index Auto Tool must swap into, or {@code -1} to follow the
+	 * selected slot. Only the {@code /gestorage toolslot} command writes it.
+	 */
 	public record ToolWheelToolSlotC2S(int slot) implements CustomPayload {
 		@Override
 		public Id<? extends CustomPayload> getId() {
@@ -309,11 +359,36 @@ public class ModNetworking {
 		}
 	}
 
+	/**
+	 * {@code defaultTool} is reserved and always sent empty: the field stays in the payload
+	 * so the released wire format does not change.
+	 */
 	public record ToolWheelSyncS2C(ItemStack[] stacks, boolean autoTool, ItemStack defaultTool, int defaultSlot)
 			implements CustomPayload {
 		@Override
 		public Id<? extends CustomPayload> getId() {
 			return TOOL_WHEEL_SYNC;
+		}
+	}
+
+	/**
+	 * {@code pref} is the enchantment Auto Tool prefers for the block being mined: one
+	 * of {@link ModConstants#ENCH_PREF_NONE}, {@link ModConstants#ENCH_PREF_FORTUNE} or
+	 * {@link ModConstants#ENCH_PREF_SILK_TOUCH}. Out-of-range values are ignored by the
+	 * server.
+	 */
+	public record ToolWheelEnchPrefC2S(int pref) implements CustomPayload {
+		@Override
+		public Id<? extends CustomPayload> getId() {
+			return TOOL_WHEEL_ENCH_PREF;
+		}
+	}
+
+	/** Mirrors the server-authoritative enchantment preference to the owning client. */
+	public record ToolWheelEnchPrefS2C(int pref) implements CustomPayload {
+		@Override
+		public Id<? extends CustomPayload> getId() {
+			return TOOL_WHEEL_ENCH_PREF_STATE;
 		}
 	}
 }

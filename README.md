@@ -68,7 +68,8 @@ Server-side flags, synced to all clients and toggleable with OP level 2 (or as t
 ### Tool Wheel
 
 - A radial HUD wheel (9 slots) opened with a keybind; click to swap a real item between the wheel and your main hand. The wheel contents are saved per player and follow you across sessions and dimensions.
-- **Auto Tool** (server-authoritative per player): on `START_DESTROY_BLOCK` the best tool in the wheel is instantly swapped into your hand, re-evaluated on every block you start mining, and reverted to your original tool one second after mining stops.
+- **Auto Tool** (server-authoritative per player): on `START_DESTROY_BLOCK` the best tool in the wheel is instantly swapped into your hand, re-evaluated on every block you start mining, and reverted one second after mining stops to the tool you were holding when you enabled Auto Tool (turning Auto Tool off mid-vein returns it immediately).
+- `/gestorage toolslot <1-9|clear>` pins the hotbar slot Auto Tool swaps into.
 - Per-player storage is persisted in the overworld (`gestorage_tool_wheel_<uuid>`) and synced to the owner on join and after every change.
 
 ---

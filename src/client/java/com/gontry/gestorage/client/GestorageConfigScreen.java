@@ -1,9 +1,9 @@
 package com.gontry.gestorage.client;
 
-import com.gontry.gestorage.ModConstants;
 import com.gontry.gestorage.client.config.ModuleConfig;
 import com.gontry.gestorage.client.ui.ConfigButton;
 import com.gontry.gestorage.client.ui.ConfigCheckbox;
+import com.gontry.gestorage.client.ui.ConfigCycleButton;
 import com.gontry.gestorage.client.ui.ConfigIconButton;
 import com.gontry.gestorage.client.ui.ConfigTextures;
 import com.gontry.gestorage.client.CarefulBreakKeybinds;
@@ -13,7 +13,6 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.PressableWidget;
 import net.minecraft.client.gui.widget.TextFieldWidget;
-import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.text.OrderedText;
 import net.minecraft.text.Text;
 import org.lwjgl.glfw.GLFW;
@@ -338,7 +337,10 @@ public class GestorageConfigScreen extends Screen {
 				addOptionWithKey(baseY, "Enabled",
 						() -> ModuleConfig.toolWheel().enabled(),
 						v -> ModuleConfig.toolWheel().enabled(v),
-						ModuleConfig.toolWheel()::save,
+						() -> {
+							ModuleConfig.toolWheel().save();
+							ModNetworkingClient.sendModuleEnabled(ModuleConfig.toolWheel().enabled());
+						},
 						ModuleConfig.toolWheel().toggleEnabledKey(), 50);
 				baseY += ROW_H + ROW_GAP;
 				keybindButton = new ConfigButton(detailX, optionsTop, detailW, ROW_H,
@@ -353,9 +355,7 @@ public class GestorageConfigScreen extends Screen {
 				baseY += ROW_H + ROW_GAP;
 				addToolAutoOption(baseY);
 				baseY += ROW_H + ROW_GAP;
-				addToolDefaultOption(baseY);
-				baseY += ROW_H + ROW_GAP;
-				addToolSlotOption(baseY);
+				addToolEnchPrefOption(baseY);
 			}
 		}
 	}
@@ -431,33 +431,26 @@ public class GestorageConfigScreen extends Screen {
 		attachKeyButton(baseY, ModuleConfig.toolWheel().autoToolKey(), 53);
 	}
 
-	private void addToolDefaultOption(int baseY) {
-		keybindButton = new ConfigButton(detailX, optionsTop, detailW, ROW_H,
-				Text.literal("Default Tool: " + (ClientToolWheelState.defaultTool.isEmpty()
-						? "NONE" : ClientToolWheelState.defaultTool.getName())),
-				() -> {
-					if (this.client == null || this.client.player == null) return;
-					ModNetworkingClient.sendToolWheelSetDefault(this.client.player.getInventory().selectedSlot);
-				});
-		detailRows.add(new DetailRow(keybindButton, 0, detailW, baseY));
-	}
-
-	private void addToolSlotOption(int baseY) {
+	/**
+	 * Cycles the server-authoritative Auto Tool enchantment preference (None /
+	 * Fortune / Silk Touch). A wheel tool carrying it is used whenever it can mine
+	 * the block at all, even against a faster tool without the enchantment.
+	 */
+	private void addToolEnchPrefOption(int baseY) {
 		int btnW = detailW - KEY_W - 4;
-		ConfigButton btn = new ConfigButton(detailX, optionsTop, btnW, ROW_H,
-				Text.literal("Default Slot: " + toolSlotLabel()),
-				() -> {
-					int next = ClientToolWheelState.defaultSlot + 1;
-					ModNetworkingClient.sendToolWheelSetToolSlot(
-							next >= PlayerInventory.getHotbarSize() ? ModConstants.TOOL_SLOT_NONE : next);
-				});
+		ConfigCycleButton btn = new ConfigCycleButton(detailX, optionsTop, btnW, ROW_H,
+				() -> Text.literal("Prefer: " + enchPrefLabel(ClientToolWheelState.enchPref)),
+				() -> ModNetworkingClient.sendEnchPref(ClientToolWheelState.nextEnchPref()));
 		detailRows.add(new DetailRow(btn, 0, btnW, baseY));
-		attachKeyButton(baseY, ModuleConfig.toolWheel().setToolSlotKey(), 54);
+		attachKeyButton(baseY, ModuleConfig.toolWheel().enchPrefKey(), 54);
 	}
 
-	private static String toolSlotLabel() {
-		int slot = ClientToolWheelState.defaultSlot;
-		return slot == ModConstants.TOOL_SLOT_NONE ? "Selected" : String.valueOf(slot + 1);
+	private static String enchPrefLabel(int pref) {
+		return switch (pref) {
+			case 1 -> "Fortune";
+			case 2 -> "Silk Touch";
+			default -> "None";
+		};
 	}
 
 	private void positionRows() {
@@ -626,7 +619,7 @@ public class GestorageConfigScreen extends Screen {
 			case 51 -> { ModuleConfig.toolWheel().openWheelKey(encoded); ModuleConfig.toolWheel().save(); }
 			case 52 -> { ModuleConfig.toolWheel().wheelKey(encoded); ModuleConfig.toolWheel().save(); }
 			case 53 -> { ModuleConfig.toolWheel().autoToolKey(encoded); ModuleConfig.toolWheel().save(); }
-			case 54 -> { ModuleConfig.toolWheel().setToolSlotKey(encoded); ModuleConfig.toolWheel().save(); }
+			case 54 -> { ModuleConfig.toolWheel().enchPrefKey(encoded); ModuleConfig.toolWheel().save(); }
 			default -> applyCBKeybind(encoded);
 		}
 	}
@@ -733,7 +726,7 @@ public class GestorageConfigScreen extends Screen {
 			case 3 -> "Informational overlay next to any inventory";
 			case 4 -> "Sort items in inventories";
 			case 5 -> "Collect blocks and drops directly to inventory";
-			case 6 -> "Radial tool wheel + auto tool. /gestorage tooldefault picks the tool Auto Tool returns to";
+			case 6 -> "Radial tool wheel + auto tool. /gestorage toolslot picks the slot Auto Tool uses";
 			default -> "";
 		};
 	}

@@ -43,6 +43,16 @@ public final class ModConstants {
 	 */
 	public static final int TOOL_SLOT_NONE = -1;
 
+	/**
+	 * Auto Tool enchantment preference. A wheel tool carrying the preferred
+	 * enchantment wins over a faster one as long as it can mine the block at all;
+	 * when no preferred tool can mine it, plain mining speed decides.
+	 */
+	public static final int ENCH_PREF_NONE = 0;
+	public static final int ENCH_PREF_FORTUNE = 1;
+	public static final int ENCH_PREF_SILK_TOUCH = 2;
+	public static final int ENCH_PREF_MAX = ENCH_PREF_SILK_TOUCH;
+
 	/** Maps a persisted size mode to the matching container capacity. */
 	public static int getEnderSizeForMode(int mode) {
 		return switch (mode) {

@@ -24,27 +24,6 @@ public final class ToolWheelLogic {
 	}
 
 	/**
-	 * Stores the item sitting in {@code hotbarSlot} as the tool Auto Tool must
-	 * return to once mining stops. The stored stack is a copy, so the player can
-	 * freely move the real item afterwards.
-	 */
-	public static boolean setDefaultTool(ServerPlayerEntity player, int hotbarSlot) {
-		if (!PlayerInventory.isValidHotbarIndex(hotbarSlot)) return false;
-		ItemStack stack = player.getInventory().getStack(hotbarSlot);
-		if (stack.isEmpty()) return false;
-		ToolWheelState state = ToolWheelState.get(player);
-		state.defaultTool = stack.copy();
-		state.scheduleSave();
-		return true;
-	}
-
-	public static void clearDefaultTool(ServerPlayerEntity player) {
-		ToolWheelState state = ToolWheelState.get(player);
-		state.defaultTool = ItemStack.EMPTY;
-		state.scheduleSave();
-	}
-
-	/**
 	 * Pins the hotbar slot Auto Tool swaps into. {@link ModConstants#TOOL_SLOT_NONE}
 	 * restores the vanilla behaviour of using the currently selected slot.
 	 */

@@ -9,6 +9,7 @@ import com.gontry.gestorage.refill.ShulkerLinkManager;
 import com.gontry.gestorage.screen.ExtraLargeEnderScreen;
 import com.gontry.gestorage.screen.LargeEnderScreen;
 import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.gui.screen.ingame.HandledScreens;
 
@@ -42,6 +43,8 @@ public class GestorageClient implements ClientModInitializer {
 
 		ToolWheelKeybinds.register();
 		ToolWheelRenderer.register();
+		ClientPlayConnectionEvents.JOIN.register((handler, sender, client) ->
+				ModNetworkingClient.sendModuleEnabled(ModuleConfig.toolWheel().enabled()));
 
 		Gestorage.LOGGER.info("Gestorage client initialized!");
 	}

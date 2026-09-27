@@ -8,6 +8,6 @@ public class ToolWheelConfigModel {
 	public String openWheelKey = "";
 	public String wheelKey = "";
 	public String autoToolKey = "";
-	public String setToolSlotKey = "";
+	public String enchPrefKey = "";
 	public String toggleEnabledKey = "";
 }

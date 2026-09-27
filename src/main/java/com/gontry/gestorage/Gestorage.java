@@ -6,6 +6,7 @@ import com.gontry.gestorage.config.ShulkerStackServerConfig;
 import com.gontry.gestorage.inventory.EnderOverflowState;
 import com.gontry.gestorage.network.CarefulBreakStateS2CPacket;
 import com.gontry.gestorage.network.ModNetworking;
+import com.gontry.gestorage.network.ToolWheelEnchPrefS2CPacket;
 import com.gontry.gestorage.network.ToolWheelSyncS2CPacket;
 import com.gontry.gestorage.toolwheel.AutoToolManager;
 import com.gontry.gestorage.toolwheel.ToolWheelState;
@@ -43,6 +44,7 @@ public class Gestorage implements ModInitializer {
 		ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
 			CarefulBreakStateS2CPacket.sendTo(handler.player);
 			ToolWheelSyncS2CPacket.sendTo(handler.player);
+			ToolWheelEnchPrefS2CPacket.sendTo(handler.player);
 		});
 
 		// Tool Wheel state caches are per-UUID; drop them when the player leaves
