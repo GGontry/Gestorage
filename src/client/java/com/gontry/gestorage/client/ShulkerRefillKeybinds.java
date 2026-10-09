@@ -19,6 +19,7 @@ public class ShulkerRefillKeybinds {
 	private static String markedSlotType = "";
 	private static boolean wasPressed = false;
 	private static boolean wasTogglePressed = false;
+	private static boolean wasReversePressed = false;
 
 	public static void register() {
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
@@ -37,6 +38,17 @@ public class ShulkerRefillKeybinds {
 						"§7Shulker Restock: " + (newState ? "§aON" : "§cOFF")), true);
 			}
 			wasTogglePressed = togglePressed;
+
+			boolean reversePressed = inGame && !ModuleConfig.shulkerRefill().toggleReverseOrderKey().isEmpty()
+					&& KeybindHelper.isPressed(ModuleConfig.shulkerRefill().toggleReverseOrderKey(), handle);
+			if (reversePressed && !wasReversePressed) {
+				boolean newOrder = !ModuleConfig.shulkerRefill().reverseRefillOrder();
+				ModuleConfig.shulkerRefill().reverseRefillOrder(newOrder);
+				ModuleConfig.shulkerRefill().save();
+				client.player.sendMessage(Text.literal(
+						"§7Refill Order: " + (newOrder ? "§aLast to First" : "§bFirst to Last")), true);
+			}
+			wasReversePressed = reversePressed;
 
 			if (!ModuleConfig.shulkerRefill().enabled()) { wasPressed = false; return; }
 			if (client.player == null) { wasPressed = false; return; }

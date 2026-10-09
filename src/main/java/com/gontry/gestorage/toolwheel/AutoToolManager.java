@@ -17,7 +17,6 @@ import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 
 import java.util.Map;
@@ -26,14 +25,16 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Auto Tool session bookkeeping. A session stores the tool the player was holding
- * when Auto Tool was activated and always returns to it, whatever happens to the
- * Auto Tool flag in the meantime.
+ * Auto Tool session bookkeeping. A session keeps the rotation that is currently
+ * applied to the player's tool slot so it can always be undone, whatever happens to
+ * the Auto Tool flag in the meantime.
  *
  * <p>Every swap is a real inventory rotation: the tool slot and the wheel slot
  * trade their stacks. Because of that a second swap started before the first one
- * was undone would leave both tools in the wrong wheel slot, so a pending swap is
- * always reverted before another one begins.
+ * was undone would leave both tools in the wrong place, so a pending swap is always
+ * reverted before another one begins. A revert only ever swaps those two slots back,
+ * never moves an item to a slot the rotation did not involve and never changes the
+ * slot the player has selected.
  */
 public final class AutoToolManager {
 	private static final long REVERT_DELAY_MS = 1000L;
@@ -56,9 +57,9 @@ public final class AutoToolManager {
 	private AutoToolManager() {}
 
 	/**
-	 * Called whenever the Auto Tool flag flips. Enabling it opens a session around
-	 * the tool currently in the tool slot, disabling it reverts a pending swap right
-	 * away so a tool swapped in mid-vein never stays in the player's hand.
+	 * Called whenever the Auto Tool flag flips. Enabling it opens a session for the
+	 * swaps of this activation, disabling it reverts a pending swap right away so a
+	 * tool swapped in mid-vein never stays in the player's hand.
 	 */
 	public static void onAutoToolToggled(ServerPlayerEntity player, boolean enabled) {
 		UUID id = player.getUuid();
@@ -68,7 +69,7 @@ public final class AutoToolManager {
 				if (session.hasPending()) revert(player, session);
 				SESSIONS.remove(id);
 			}
-			SESSIONS.put(id, newSession(player.getInventory(), ToolWheelState.getExisting(player)));
+			SESSIONS.put(id, new Session());
 			return;
 		}
 		if (session == null) return;
@@ -129,10 +130,8 @@ public final class AutoToolManager {
 		PlayerInventory inv = player.getInventory();
 		int handSlot = ToolWheelLogic.resolveToolSlot(state, inv);
 		if (session == null) {
-			session = new Session(handSlot, inv.getStack(handSlot).copy());
+			session = new Session();
 			SESSIONS.put(id, session);
-		} else {
-			session.retarget(handSlot, inv);
 		}
 
 		BlockState target = world.getBlockState(pos);
@@ -145,21 +144,29 @@ public final class AutoToolManager {
 		Enchants enchants = enchants(player, pref);
 		int wheelSlot = chooseSlot(state, target, inv.getStack(handSlot), pref, enchants);
 		if (wheelSlot < 0) {
+			// The hand already holds the best tool, but the player may be on another
+			// hotbar slot: Auto Tool always moves to the resolved tool slot (the pinned
+			// Default Slot) so it is actually used.
+			selectSlot(player, handSlot);
 			holdPending(player, session);
 			return;
 		}
 
 		if (session.hasPending()) {
-			// Two swaps in a row without undoing the first one would leave the session
-			// tool and the auto tool in each other's wheel slot, so roll the previous
+			// Two swaps in a row without undoing the first one would leave the auto tool
+			// and whatever the tool slot held in each other's place, so roll the previous
 			// swap back first and decide again on the restored layout.
 			revert(player, session);
 			wheelSlot = chooseSlot(state, target, inv.getStack(handSlot), pref, enchants);
-			if (wheelSlot < 0) return;
+			if (wheelSlot < 0) {
+				selectSlot(player, handSlot);
+				return;
+			}
 		}
 
+		ItemStack displaced = inv.getStack(handSlot);
 		applySwap(player, state, inv, handSlot, wheelSlot);
-		session.beginPending(wheelSlot, handSlot, inv.getStack(handSlot));
+		session.beginPending(wheelSlot, handSlot, inv.getStack(handSlot).getItem(), displaced);
 	}
 
 	/**
@@ -196,87 +203,46 @@ public final class AutoToolManager {
 	}
 
 	/**
-	 * Puts the session tool back into the tool slot and the auto tool back where it
-	 * came from. The pending swap is always cleared, a manual change in the tool slot
-	 * is never clobbered and no item is ever destroyed: when the session tool cannot
-	 * be located the auto tool is only parked back in the wheel, and only when that
-	 * slot is free, otherwise the hand is left untouched.
+	 * Undoes the last rotation: the stack Auto Tool displaced goes back into the tool
+	 * slot and the auto tool goes back into the wheel slot it came from. The selected
+	 * hotbar slot is never touched, so scrolling away from the tool slot while Auto Tool
+	 * works is never fought over, and no item is ever moved between slots the swap did
+	 * not involve: when either stack has been moved by the player the layout already is
+	 * what the player wants and only the pending record is dropped.
 	 */
 	private static void revert(ServerPlayerEntity player, Session session) {
 		int wheelSlot = session.wheelSlot;
 		int handSlot = session.handSlot;
 		Item toolItem = session.toolItem;
+		ItemStack displaced = session.displaced;
 		session.clearPending();
 		ToolWheelState state = ToolWheelState.getExisting(player);
-		if (state == null) return;
+		if (state == null || handSlot < 0 || handSlot >= PlayerInventory.MAIN_SIZE) return;
+		if (wheelSlot < 0 || wheelSlot >= ToolWheelState.SIZE) return;
 		PlayerInventory inv = player.getInventory();
-		ItemStack handNow = inv.getStack(handSlot);
-		if (handNow.isEmpty() || !handNow.isOf(toolItem)) return;
-
-		boolean wheelFree = wheelSlot >= 0 && wheelSlot < ToolWheelState.SIZE && state.stacks.get(wheelSlot).isEmpty();
-		if (ItemStack.areItemsAndComponentsEqual(handNow, session.returnTool)) {
-			if (wheelFree) parkInWheel(inv, state, handSlot, wheelSlot, handNow);
-		} else if (session.returnTool.isEmpty()) {
-			// The tool slot was empty when Auto Tool was activated, so there is nothing
-			// to hand back: parking the auto tool in the wheel is the expected result.
-			if (wheelFree) parkInWheel(inv, state, handSlot, wheelSlot, handNow);
-		} else {
-			int restoreSlot = findRestoreSlot(state, inv, session.returnTool, handSlot, wheelSlot);
-			if (restoreSlot >= 0) {
-				ItemStack returnNow = restoreSlot < ToolWheelState.SIZE
-						? state.stacks.get(restoreSlot) : inv.getStack(restoreSlot);
-				inv.setStack(handSlot, returnNow);
-				if (restoreSlot < ToolWheelState.SIZE) {
-					state.stacks.set(restoreSlot, handNow);
-				} else if (wheelFree) {
-					inv.setStack(restoreSlot, ItemStack.EMPTY);
-					state.stacks.set(wheelSlot, handNow);
-				} else {
-					inv.setStack(restoreSlot, handNow);
-				}
-			} else {
-				if (!wheelFree) return;
-				Gestorage.LOGGER.warn("Auto Tool: session tool of {} is gone, parking the auto tool in wheel slot {}",
-						player.getName().getString(), wheelSlot);
-				player.sendMessage(Text.literal("§7Auto Tool: §6original tool missing, auto tool stored in the wheel"), true);
-				parkInWheel(inv, state, handSlot, wheelSlot, handNow);
-			}
-		}
+		ItemStack toolNow = inv.getStack(handSlot);
+		if (toolNow.isEmpty() || !toolNow.isOf(toolItem)) return;
+		ItemStack parked = state.stacks.get(wheelSlot);
+		if (!holdsDisplaced(parked, displaced)) return;
+		inv.setStack(handSlot, parked);
+		state.stacks.set(wheelSlot, toolNow);
 		inv.markDirty();
 		state.scheduleSave();
-		selectSlot(player, handSlot);
 		ToolWheelSyncS2CPacket.sendTo(player);
 	}
 
-	private static void parkInWheel(PlayerInventory inv, ToolWheelState state, int handSlot, int wheelSlot, ItemStack handNow) {
-		inv.setStack(handSlot, ItemStack.EMPTY);
-		state.stacks.set(wheelSlot, handNow);
-	}
-
 	/**
-	 * Looks for the session tool in the wheel first and then across the player
-	 * inventory, returning its index or {@code -1} when it is gone. Matching runs from
-	 * strictest to loosest (identical stack, same item and components, same item) so a
-	 * tool that was used, repaired or re-enchanted while parked is still recognised,
-	 * and the wheel slot the auto tool came from is always tried first. An empty
-	 * session tool (the tool slot was empty when Auto Tool was activated) has nothing
-	 * to restore.
+	 * Whether the wheel slot Auto Tool used still holds the stack it displaced. Matching
+	 * runs from strictest to loosest (identical stack, same item and components, same
+	 * item) so a stack that was used, repaired or re-enchanted while parked is still
+	 * recognised, and an empty displacement only matches an empty slot.
 	 */
-	private static int findRestoreSlot(ToolWheelState state, PlayerInventory inv, ItemStack returnTool,
-			int handSlot, int wheelSlot) {
-		if (returnTool.isEmpty()) return -1;
+	private static boolean holdsDisplaced(ItemStack parked, ItemStack displaced) {
+		if (displaced.isEmpty()) return parked.isEmpty();
 		for (int level = 0; level < 3; level++) {
-			if (wheelSlot >= 0 && wheelSlot < ToolWheelState.SIZE
-					&& matches(state.stacks.get(wheelSlot), returnTool, level)) return wheelSlot;
-			for (int i = 0; i < ToolWheelState.SIZE; i++) {
-				if (i != wheelSlot && matches(state.stacks.get(i), returnTool, level)) return i;
-			}
-			for (int i = 0; i < PlayerInventory.MAIN_SIZE; i++) {
-				if (i == handSlot) continue;
-				if (matches(inv.getStack(i), returnTool, level)) return i;
-			}
+			if (matches(parked, displaced, level)) return true;
 		}
-		return -1;
+		return false;
 	}
 
 	private static boolean matches(ItemStack stack, ItemStack target, int level) {
@@ -286,11 +252,6 @@ public final class AutoToolManager {
 			case 1 -> ItemStack.areItemsAndComponentsEqual(stack, target);
 			default -> stack.getItem() == target.getItem();
 		};
-	}
-
-	private static Session newSession(PlayerInventory inv, ToolWheelState state) {
-		int handSlot = state != null ? ToolWheelLogic.resolveToolSlot(state, inv) : inv.selectedSlot;
-		return new Session(handSlot, inv.getStack(handSlot).copy());
 	}
 
 	/**
@@ -427,38 +388,28 @@ public final class AutoToolManager {
 			RegistryEntry<Enchantment> silkTouch) {}
 
 	private static final class Session {
-		ItemStack returnTool;
 		volatile long lastMineTime = System.currentTimeMillis();
-		int toolSlot = -1;
 		int wheelSlot = -1;
 		int handSlot = -1;
 		Item toolItem = null;
+		ItemStack displaced = ItemStack.EMPTY;
 
-		Session(int toolSlot, ItemStack returnTool) {
-			this.toolSlot = toolSlot;
-			this.returnTool = returnTool;
-		}
-
-		/**
-		 * Re-captures the baseline when Auto Tool follows the selected slot and the
-		 * player moved to another one, so the tool of the slot that is really being
-		 * swapped is the one handed back. A pending swap keeps its own slot.
-		 */
-		void retarget(int handSlot, PlayerInventory inv) {
-			if (hasPending() || this.toolSlot == handSlot) return;
-			this.toolSlot = handSlot;
-			returnTool = inv.getStack(handSlot).copy();
-		}
+		Session() {}
 
 		void refresh() {
 			this.lastMineTime = System.currentTimeMillis();
 		}
 
-		void beginPending(int wheelSlot, int handSlot, ItemStack tool) {
+		/**
+		 * Records the rotation as it happened: the wheel slot the auto tool came from,
+		 * the tool slot it was written to, the auto tool item and the stack it displaced,
+		 * which is the one {@link #revert} hands back.
+		 */
+		void beginPending(int wheelSlot, int handSlot, Item toolItem, ItemStack displaced) {
 			this.wheelSlot = wheelSlot;
 			this.handSlot = handSlot;
-			this.toolSlot = handSlot;
-			this.toolItem = tool.getItem();
+			this.toolItem = toolItem;
+			this.displaced = displaced.copy();
 			this.lastMineTime = System.currentTimeMillis();
 		}
 
@@ -466,6 +417,7 @@ public final class AutoToolManager {
 			this.wheelSlot = -1;
 			this.handSlot = -1;
 			this.toolItem = null;
+			this.displaced = ItemStack.EMPTY;
 		}
 
 		boolean hasPending() {

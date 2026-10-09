@@ -4,27 +4,59 @@ All notable changes to Gestorage are documented in this file.
 
 ## Unreleased
 
-Work in progress — this section is rewritten with the version number when the release is cut.
+### Added
+
+- **Shulker Restock: reversible refill order** — you can now choose whether items are pulled out of the shulker box from the first slot to the last (the default) or from the last slot to the first. Toggle it with the `Reverse Order` option in the module settings or its own assignable keybind; the server honours your choice in the `refill_request` packet.
+
+### Before you update
+
+- Client and server must run the same version: the refill packet now carries the refill-order field.
+
+## 4.0.0
+
+Released 2026-10-09.
+
+### Fixed
+
+- **Shulker Restock: the hotbar count no longer looks like it is being consumed when refilling blocks.** Placing a block is predicted on your client (the stack is decremented locally), so when a refill restored the count to the very number the server had already sent, the correction was never pushed and your client kept counting down while the server stayed full. The server now forces the corrected stack back to the client after a refill, so blocks behave like rockets and every other item.
+- **Tool Wheel: Auto Tool now always swaps into the pinned Default Slot.** Previously it only moved your hand when it had to change the tool, so when the tool already in your hand was the right one for the block it left your selection untouched and the Default Slot was ignored. Auto Tool now selects this slot on every mine start, whether or not an item swap is needed.
+
+### Before you update
+
+- Client and server must run the same version.
+
+## 3.0.0
+
+Released 2026-10-04.
+
+### Stackable Shulkers
+
+- **Now a command, like the ender chest size** — turn it on with `/gestorage shulkerstack on` (or off with `/gestorage shulkerstack off`), and check the current state with `/gestorage shulkerstack`. Changing it requires OP level 2, it is per world and it takes effect immediately. `/gestorage shulkerstack` with no arguments only reports the state.
+- **Plain `/gamerule` works too** — `gestorage:stackableShulkers` is a real game rule now, so `/gamerule gestorage:stackableShulkers true` does the same thing and every client is told about the change right away, not only on join.
+- The stacking itself is unchanged: empty shulker boxes stack up to 64 everywhere, hoppers and droppers included, and a shulker box that holds items still stacks to 1.
 
 ### Tool Wheel
 
 - **Enchantment preference** — a new `Prefer: None / Fortune / Silk Touch` option in the Tool Wheel settings, with its own assignable keybind. A wheel tool carrying the preferred enchantment is used whenever it can break the block, even against a faster tool without it; when no preferred tool can break the block, Auto Tool falls back to the fastest tool. Stored per player, synced to your client, applied to the next block you start breaking.
-- **Auto Tool now returns to your session tool** — the tool you were holding in the tool slot when you enabled Auto Tool. It is looked for in the wheel first and then across your whole inventory, matching by exact stack, then by item and enchantments, then by item alone, so a tool you used, repaired or re-enchanted while it was parked still comes back. Reverting never destroys an item and never leaves you empty handed, and turning Auto Tool off while a tool is swapped in returns it immediately.
+- **Auto Tool hands back exactly what it took** — one second after you stop mining, whatever was in the tool slot goes back into that slot and the auto tool goes back into the wheel slot it came from. A stack you used, repaired or re-enchanted while it sat in the wheel is still handed back, nothing is ever duplicated, destroyed or shuffled into another slot, and turning Auto Tool off while a tool is swapped in returns it immediately.
 - **Reconnecting no longer disables Auto Tool** — your wheel, the Auto Tool flag and the pinned slot are loaded from your save as you join, so Auto Tool works right away instead of only after you open the wheel once. Players who never used the module still get no save file created.
 - **Default Slot is command-only** — pin the hotbar slot Auto Tool swaps into with `/gestorage toolslot <1-9>`, or `/gestorage toolslot clear` to follow the selected slot again. The row and its keybind are no longer in the config screen.
 
 ### Fixed
 
+- Changing hotbar slots while Auto Tool works no longer makes your hand jump back to the tool slot: returning a tool never moves your selection, so you keep whatever slot you switched to.
+- Auto Tool no longer drags an item out of the slot that held it. Whatever the tool slot contained (a bow, a block, a second pickaxe) always goes back to that same slot, instead of being looked for elsewhere and swapped with a mining tool that stayed behind in its place.
 - Two Auto Tool swaps in a row no longer leave the two tools in each other's wheel slot: a pending swap is rolled back before the next decision, so mining stone → dirt → stone keeps the pickaxe and the shovel where they belong.
 - The Efficiency bonus now only applies to tools that actually break the block, so an Efficiency V helmet, a block or a stick can no longer out-score a pickaxe.
 - The one second revert no longer fires in the middle of a vein while the game keeps breaking a block on its own after the button was released.
 - Switching the Tool Wheel module off now also switches Auto Tool off on the server, instead of the server keeping to swap tools for a module you had turned off. The module state is reported to the server when you join and on every toggle.
-- Enabling Auto Tool with an empty tool slot no longer reports your tool as missing.
 - Auto Tool ignores block positions the player could not actually reach instead of reacting to them.
 
 ### Before you update
 
-- `/gestorage tooldefault` no longer exists and the persistent `Default Tool` setting is gone. To get the old behaviour back, hold the tool you want Auto Tool to return to and enable Auto Tool: the session tool is captured for you.
+- Stackable Shulkers moved out of the config screen and into the `gestorage:stackableShulkers` game rule. If you had it enabled, the old `shulker_stack.json` is imported into the rule the first time you start your world, so nothing changes; both old files are then renamed with a `.migrated` suffix and are no longer read. If you had it off, just run `/gestorage shulkerstack on` when you want it.
+- The Stackable Shulkers toggle keybind is gone, along with the `shulker_stack_keybinds.json` file that stored it. Use the command instead.
+- `/gestorage tooldefault` no longer exists and the persistent `Default Tool` setting is gone. Auto Tool now remembers each swap it makes and returns the items themselves, so nothing has to be held when you turn it on.
 - The `Default Slot` keybind is gone from the config screen; use `/gestorage toolslot <1-9>` to re-pin the slot.
 - Client and server must run the same version.
 

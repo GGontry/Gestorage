@@ -6,12 +6,18 @@ import net.minecraft.world.GameRules;
 
 public class ModGameRules {
 	public static GameRules.Key<GameRules.IntRule> ENDER_CHEST_SIZE;
+	public static GameRules.Key<GameRules.BooleanRule> STACKABLE_SHULKERS;
 
 	public static void register() {
 		ENDER_CHEST_SIZE = GameRuleRegistry.register(
 				"gestorage:enderChestSize",
 				GameRules.Category.MISC,
 				GameRuleFactory.createIntRule(0, 0, 2)
+		);
+		STACKABLE_SHULKERS = GameRuleRegistry.register(
+				"gestorage:stackableShulkers",
+				GameRules.Category.MISC,
+				GameRuleFactory.createBooleanRule(false)
 		);
 	}
 
@@ -22,5 +28,9 @@ public class ModGameRules {
 			return ModConstants.MODE_NORMAL;
 		}
 		return raw;
+	}
+
+	public static boolean isStackableShulkers(GameRules gameRules) {
+		return gameRules.getBoolean(STACKABLE_SHULKERS);
 	}
 }

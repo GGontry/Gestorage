@@ -1,6 +1,6 @@
 package com.gontry.gestorage.mixin;
 
-import com.gontry.gestorage.config.ShulkerStackServerConfig;
+import com.gontry.gestorage.shulker.ShulkerStackRule;
 import net.minecraft.block.ShulkerBoxBlock;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.ContainerComponent;
@@ -18,11 +18,12 @@ public class ItemStackMixin {
 	@Inject(method = "getMaxCount", at = @At("HEAD"), cancellable = true)
 	private void gestorage$getMaxCount(CallbackInfoReturnable<Integer> cir) {
 		ItemStack self = (ItemStack) (Object) this;
-		if (!ShulkerStackServerConfig.enabled) return;
 
 		var item = self.getItem();
 		if (!(item instanceof BlockItem blockItem)) return;
 		if (!(blockItem.getBlock() instanceof ShulkerBoxBlock)) return;
+
+		if (!ShulkerStackRule.enabled()) return;
 
 		ContainerComponent container = self.get(DataComponentTypes.CONTAINER);
 		if (container != null && hasItems(container)) {

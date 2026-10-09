@@ -10,6 +10,7 @@ import net.minecraft.component.type.ContainerComponent;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
+import net.minecraft.network.packet.s2c.play.ScreenHandlerSlotUpdateS2CPacket;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.collection.DefaultedList;
 
@@ -22,6 +23,7 @@ public class RefillRequestC2SPacket {
 			String sourceType = payload.sourceType();
 			String targetType = payload.targetType();
 			boolean sameInv = sourceType.equals(targetType);
+			boolean reverse = payload.reverseOrder();
 
 			Inventory sourceInv = getSourceInventory(player, sourceType);
 			if (sourceInv == null) {
@@ -58,7 +60,8 @@ public class RefillRequestC2SPacket {
 
 			ItemStack targetTypeStack = null;
 			if (targetStack.isEmpty()) {
-				for (ItemStack stack : shulkerContents) {
+				for (int idx = 0; idx < shulkerContents.size(); idx++) {
+					ItemStack stack = shulkerContents.get(orderedIndex(idx, shulkerContents.size(), reverse));
 					if (!stack.isEmpty()) {
 						targetTypeStack = stack.copy();
 						targetTypeStack.setCount(1);
@@ -94,8 +97,8 @@ public class RefillRequestC2SPacket {
 			int toGive = Math.min(space, available);
 
 			int remaining = toGive;
-			for (int i = 0; i < shulkerContents.size() && remaining > 0; i++) {
-				ItemStack stack = shulkerContents.get(i);
+			for (int idx = 0; idx < shulkerContents.size() && remaining > 0; idx++) {
+				ItemStack stack = shulkerContents.get(orderedIndex(idx, shulkerContents.size(), reverse));
 				if (!stack.isEmpty() && ItemStack.areItemsAndComponentsEqual(targetTypeStack, stack)) {
 					int toRemove = Math.min(remaining, stack.getCount());
 					stack.decrement(toRemove);
@@ -114,7 +117,23 @@ public class RefillRequestC2SPacket {
 			if (!sameInv) {
 				targetInv.markDirty();
 			}
+
+			// Block placement is predicted on the client (the stack is decremented
+			// locally), so a refill that restores the count within the same tick leaves
+			// the server value identical to what was last synced. sendContentUpdates then
+			// sees no change and the client keeps its predicted, lower count, making the
+			// stack look like it is being consumed. Push the corrected stack directly.
+			if (targetInv == player.getInventory() && player.networkHandler != null) {
+				ItemStack synced = targetInv.getStack(payload.targetSlot());
+				player.networkHandler.sendPacket(new ScreenHandlerSlotUpdateS2CPacket(
+						ScreenHandlerSlotUpdateS2CPacket.UPDATE_PLAYER_INVENTORY_SYNC_ID,
+						0, payload.targetSlot(), synced.copy()));
+			}
 		});
+	}
+
+	private static int orderedIndex(int idx, int size, boolean reverse) {
+		return reverse ? size - 1 - idx : idx;
 	}
 
 	private static Inventory getSourceInventory(ServerPlayerEntity player, String type) {

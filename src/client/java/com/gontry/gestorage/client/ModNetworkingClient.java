@@ -1,6 +1,8 @@
 package com.gontry.gestorage.client;
 
 import com.gontry.gestorage.network.ModNetworking;
+import com.gontry.gestorage.shulker.ShulkerStackRule;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 
 public class ModNetworkingClient {
@@ -8,9 +10,13 @@ public class ModNetworkingClient {
 		ClientPlayNetworking.registerGlobalReceiver(ModNetworking.OPEN_ENDER_SCREEN, OpenEnderScreenS2CPacket::handle);
 		ClientPlayNetworking.registerGlobalReceiver(ModNetworking.ENDER_SIZE_CHANGED, EnderSizeChangedS2CPacket::handle);
 		ClientPlayNetworking.registerGlobalReceiver(ModNetworking.CAREFUL_BREAK_STATE, CarefulBreakStateS2CPacket::handle);
+		ClientPlayNetworking.registerGlobalReceiver(ModNetworking.SHULKER_STACK_STATE, ShulkerStackStateS2CPacket::handle);
 		ClientPlayNetworking.registerGlobalReceiver(ModNetworking.TOOL_WHEEL_SYNC, ToolWheelSyncS2CPacket::handle);
 		ClientPlayNetworking.registerGlobalReceiver(ModNetworking.TOOL_WHEEL_ENCH_PREF_STATE,
 				ToolWheelEnchPrefS2CPacket::handle);
+
+		// The mirrored game rule belongs to a world: drop it when leaving one.
+		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> ShulkerStackRule.setClientMirror(false));
 	}
 
 	public static void sendOpenEnderChest() {

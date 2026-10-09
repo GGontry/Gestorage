@@ -44,6 +44,9 @@ public class ModNetworking {
 	public static final CustomPayload.Id<CarefulBreakStateS2C> CAREFUL_BREAK_STATE =
 			new CustomPayload.Id<>(Identifier.of(Gestorage.MOD_ID, "careful_break_state"));
 
+	public static final CustomPayload.Id<ShulkerStackStateS2C> SHULKER_STACK_STATE =
+			new CustomPayload.Id<>(Identifier.of(Gestorage.MOD_ID, "shulker_stack_state"));
+
 	public static final CustomPayload.Id<ToolWheelOpenC2S> TOOL_WHEEL_OPEN =
 			new CustomPayload.Id<>(Identifier.of(Gestorage.MOD_ID, "tool_wheel_open"));
 
@@ -107,6 +110,12 @@ public class ModNetworking {
 					)
 			);
 
+	public static final PacketCodec<PacketByteBuf, ShulkerStackStateS2C> SHULKER_STACK_STATE_CODEC =
+			PacketCodec.of(
+					(ShulkerStackStateS2C p, PacketByteBuf buf) -> buf.writeBoolean(p.enabled()),
+					buf -> new ShulkerStackStateS2C(buf.readBoolean())
+			);
+
 	public static final PacketCodec<PacketByteBuf, OpenEnderScreenS2C> OPEN_ENDER_SCREEN_CODEC =
 			PacketCodec.of(
 					(OpenEnderScreenS2C p, PacketByteBuf buf) -> buf.writeInt(p.sizeMode()),
@@ -140,12 +149,14 @@ public class ModNetworking {
 						buf.writeString(p.sourceType(), 64);
 						buf.writeInt(p.targetSlot());
 						buf.writeString(p.targetType(), 64);
+						buf.writeBoolean(p.reverseOrder());
 					},
 					buf -> new RefillRequestC2S(
 						buf.readInt(),
 						buf.readString(64),
 						buf.readInt(),
-						buf.readString(64)
+						buf.readString(64),
+						buf.readBoolean()
 					)
 			);
 
@@ -222,6 +233,7 @@ public class ModNetworking {
 		PayloadTypeRegistry.playC2S().register(SORT_INVENTORY, SORT_INVENTORY_CODEC);
 		PayloadTypeRegistry.playC2S().register(TOGGLE_CAREFUL_BREAK, TOGGLE_CAREFUL_BREAK_CODEC);
 		PayloadTypeRegistry.playS2C().register(CAREFUL_BREAK_STATE, CAREFUL_BREAK_STATE_CODEC);
+		PayloadTypeRegistry.playS2C().register(SHULKER_STACK_STATE, SHULKER_STACK_STATE_CODEC);
 		PayloadTypeRegistry.playC2S().register(TOOL_WHEEL_OPEN, TOOL_WHEEL_OPEN_CODEC);
 		PayloadTypeRegistry.playC2S().register(TOOL_WHEEL_SWAP, TOOL_WHEEL_SWAP_CODEC);
 		PayloadTypeRegistry.playC2S().register(TOOL_WHEEL_AUTO, TOOL_WHEEL_AUTO_CODEC);
@@ -274,7 +286,7 @@ public class ModNetworking {
 		}
 	}
 
-	public record RefillRequestC2S(int sourceSlot, String sourceType, int targetSlot, String targetType) implements CustomPayload {
+	public record RefillRequestC2S(int sourceSlot, String sourceType, int targetSlot, String targetType, boolean reverseOrder) implements CustomPayload {
 		@Override
 		public Id<? extends CustomPayload> getId() {
 			return REFILL_REQUEST;
@@ -301,6 +313,17 @@ public class ModNetworking {
 		@Override
 		public Id<? extends CustomPayload> getId() {
 			return CAREFUL_BREAK_STATE;
+		}
+	}
+
+	/**
+	 * Mirrors the {@code gestorage:stackableShulkers} game rule to clients, which do not
+	 * receive game rules from the server on Minecraft 1.21.1.
+	 */
+	public record ShulkerStackStateS2C(boolean enabled) implements CustomPayload {
+		@Override
+		public Id<? extends CustomPayload> getId() {
+			return SHULKER_STACK_STATE;
 		}
 	}
 

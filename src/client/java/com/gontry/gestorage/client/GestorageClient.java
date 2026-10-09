@@ -3,7 +3,6 @@ package com.gontry.gestorage.client;
 import com.gontry.gestorage.Gestorage;
 import com.gontry.gestorage.ModMenus;
 import com.gontry.gestorage.client.config.ModuleConfig;
-import com.gontry.gestorage.config.ShulkerStackServerConfig;
 import com.gontry.gestorage.network.ModNetworking;
 import com.gontry.gestorage.refill.ShulkerLinkManager;
 import com.gontry.gestorage.screen.ExtraLargeEnderScreen;
@@ -19,7 +18,6 @@ public class GestorageClient implements ClientModInitializer {
 		// Bootstrap order matters: configs and shared state must exist before any
 		// module keybind/tick handler starts polling them.
 		ModuleConfig.initialize();
-		ShulkerStackServerConfig.load();
 		ShulkerLinkManager.load();
 
 		// Packet receivers and the ender chest menu screens (menus registered in ModMenus).
@@ -36,8 +34,6 @@ public class GestorageClient implements ClientModInitializer {
 		InventorySortingKeybinds.register();
 
 		CarefulBreakKeybinds.register();
-
-		ShulkerStackKeybinds.register();
 
 		StorageOverlayKeybinds.register();
 

@@ -196,7 +196,8 @@ public class ShulkerRefillTickHandler {
 
 	private static void sendRefill(ShulkerLink link) {
 		ClientPlayNetworking.send(new com.gontry.gestorage.network.ModNetworking.RefillRequestC2S(
-			link.sourceSlot(), link.sourceType(), link.targetSlot(), link.targetType()
+			link.sourceSlot(), link.sourceType(), link.targetSlot(), link.targetType(),
+			ModuleConfig.shulkerRefill().reverseRefillOrder()
 		));
 	}
 }

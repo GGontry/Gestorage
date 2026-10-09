@@ -8,4 +8,6 @@ public class ShulkerRefillConfigModel {
 	public String shulkerRefillKey = "";
 	public String toggleEnabledKey = "";
 	public int refillThreshold = 0;
+	public boolean reverseRefillOrder = false;
+	public String toggleReverseOrderKey = "";
 }

@@ -45,7 +45,12 @@ public class ConfigCheckbox extends PressableWidget {
 		RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
 
 		int color = !this.active ? 0xFF8A8A8A : (this.isHovered() ? 0xFFFFFFFF : 0xFFD9D9D9);
-		context.drawText(MinecraftClient.getInstance().textRenderer, this.getMessage(),
+		Text message = this.getMessage();
+		int textWidth = this.getWidth() - 18;
+		if (textWidth > 0) {
+			message = Text.literal(MinecraftClient.getInstance().textRenderer.trimToWidth(message.getString(), textWidth));
+		}
+		context.drawText(MinecraftClient.getInstance().textRenderer, message,
 				this.getX() + 18, this.getY() + (this.height - 8) / 2, color, false);
 	}
 }

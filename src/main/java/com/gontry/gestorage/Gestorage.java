@@ -2,16 +2,19 @@ package com.gontry.gestorage;
 
 import com.gontry.gestorage.command.GestorageCommands;
 import com.gontry.gestorage.config.CarefulBreakServerConfig;
-import com.gontry.gestorage.config.ShulkerStackServerConfig;
 import com.gontry.gestorage.inventory.EnderOverflowState;
 import com.gontry.gestorage.network.CarefulBreakStateS2CPacket;
 import com.gontry.gestorage.network.ModNetworking;
+import com.gontry.gestorage.network.ShulkerStackStateS2CPacket;
 import com.gontry.gestorage.network.ToolWheelEnchPrefS2CPacket;
 import com.gontry.gestorage.network.ToolWheelSyncS2CPacket;
+import com.gontry.gestorage.shulker.ShulkerStackMigration;
+import com.gontry.gestorage.shulker.ShulkerStackRule;
 import com.gontry.gestorage.toolwheel.AutoToolManager;
 import com.gontry.gestorage.toolwheel.ToolWheelState;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,16 +39,26 @@ public class Gestorage implements ModInitializer {
 		ModNetworking.register();
 		GestorageCommands.register();
 		// 3. Server-side configs loaded before their first read.
-		ShulkerStackServerConfig.load();
 		CarefulBreakServerConfig.load();
 
 		// Push the current Careful Break state to every player on join, so the
 		// client always shows the server-authoritative configuration.
 		ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
 			CarefulBreakStateS2CPacket.sendTo(handler.player);
+			ShulkerStackStateS2CPacket.sendTo(handler.player);
 			ToolWheelSyncS2CPacket.sendTo(handler.player);
 			ToolWheelEnchPrefS2CPacket.sendTo(handler.player);
 		});
+
+		// Stackable Shulkers lives in a game rule: grab the live rules object once the
+		// world is loaded, import any legacy config, and mirror later rule changes
+		// (including a plain /gamerule) to the clients.
+		ServerLifecycleEvents.SERVER_STARTED.register(server -> {
+			ShulkerStackRule.onServerStarted(server);
+			ShulkerStackMigration.run(server);
+		});
+
+		ServerTickEvents.END_SERVER_TICK.register(ShulkerStackStateS2CPacket::syncIfChanged);
 
 		// Tool Wheel state caches are per-UUID; drop them when the player leaves
 		// and when the (integrated) server shuts down so no stale instance lingers.
@@ -58,6 +71,8 @@ public class Gestorage implements ModInitializer {
 			ToolWheelState.clearCacheAll();
 			AutoToolManager.clearAll();
 			EnderOverflowState.resetSessionBackups();
+			ShulkerStackRule.onServerStopped();
+			ShulkerStackStateS2CPacket.reset();
 		});
 
 		LOGGER.info("Gestorage initialized!");

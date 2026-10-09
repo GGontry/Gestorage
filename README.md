@@ -16,7 +16,7 @@ All modules ship **disabled by default** and are activated from the in-game conf
 |---|---|
 | **Expanded Ender Chest** | Grows the ender chest from 27 to 54 (Large) or 228 (Extra Large) slots, selectable server-wide via a game rule, with per-player overflow persistence and keybind access. |
 | **Shulker Restock** | Auto-refill for inventories: bind a hotbar/inventory slot to a shulker box and it is topped up automatically when it runs low. |
-| **Stackable Shulkers** | Empty shulker boxes stack up to 64, in the player inventory and in every container context (hoppers, droppers, etc.). Server-authoritative, toggleable. |
+| **Stackable Shulkers** | Empty shulker boxes stack up to 64, in the player inventory and in every container context (hoppers, droppers, etc.). Controlled server-side with `/gestorage shulkerstack`. |
 | **Storage Overlay** | Informational panel shown next to any open inventory: inventory name, item name, stack counts, item counts and free-slot count. |
 | **Inventory Sorting** | Sort button and keybind for containers, shulker boxes, ender chests and the player inventory, with configurable merge, name and direction options. |
 | **Careful Break** | Server-authoritative mining suite: careful break to hand, careful drop to inventory, tree capitator, better harvesting (cactus/sugarcane/bamboo/kelp chains) and auto replant for trees and crops. |
@@ -42,7 +42,8 @@ All modules ship **disabled by default** and are activated from the in-game conf
 ### Stackable Shulkers
 
 - Empty shulker boxes behave like any other item (stack to 64) while non-empty ones keep their usual stack limit of 1.
-- Server-authoritative: the toggle in the config screen writes the server config and is disabled while connected to a remote server.
+- Server-authoritative and per world, like the ender chest size: turn it on with `/gestorage shulkerstack on`, off with `/gestorage shulkerstack off`, and check it with `/gestorage shulkerstack` (changing it requires OP level 2). It is the `gestorage:stackableShulkers` game rule, so plain `/gamerule` works too, and every client is told about a change right away.
+- There is no config entry for it: it used to be toggled from the config screen, and if you had it enabled your old `shulker_stack.json` is imported into the game rule the first time you start your world.
 
 ### Storage Overlay
 
@@ -68,7 +69,8 @@ Server-side flags, synced to all clients and toggleable with OP level 2 (or as t
 ### Tool Wheel
 
 - A radial HUD wheel (9 slots) opened with a keybind; click to swap a real item between the wheel and your main hand. The wheel contents are saved per player and follow you across sessions and dimensions.
-- **Auto Tool** (server-authoritative per player): on `START_DESTROY_BLOCK` the best tool in the wheel is instantly swapped into your hand, re-evaluated on every block you start mining, and reverted one second after mining stops to the tool you were holding when you enabled Auto Tool (turning Auto Tool off mid-vein returns it immediately).
+- **Auto Tool** (server-authoritative per player): on `START_DESTROY_BLOCK` the best tool in the wheel is instantly swapped into your hand, re-evaluated on every block you start mining, and one second after mining stops the swap is undone: whatever the tool slot held goes back into it and the tool goes back into the wheel. Changing hotbar slots while Auto Tool works is never fought over, and turning Auto Tool off mid-vein returns the item immediately.
+- An **enchantment preference** (`None` / `Fortune` / `Silk Touch`) makes Auto Tool pick a wheel tool carrying that enchantment whenever it can break the block, even against a faster tool without it; when no preferred tool can break the block it falls back to the fastest one.
 - `/gestorage toolslot <1-9|clear>` pins the hotbar slot Auto Tool swaps into.
 - Per-player storage is persisted in the overworld (`gestorage_tool_wheel_<uuid>`) and synced to the owner on join and after every change.
 
@@ -79,7 +81,7 @@ Server-side flags, synced to all clients and toggleable with OP level 2 (or as t
 - Minecraft **1.21.1**
 - Fabric Loader **>= 0.16.10**
 - Fabric API
-- owo-lib is bundled with the mod (warns you if it is missing)
+- owo-lib (required — the mod bundles a sentinel that warns you when it is missing)
 
 ---
 
@@ -101,7 +103,6 @@ All configuration lives in `config/gestorage/`:
 |---|---|
 | `ender_chest.json` | Ender chest access keybind and module enabled flag |
 | `shulker_refill.json` | Refill threshold, marking key and module enabled flag |
-| `shulker_stack.json` | Server-authoritative Stackable Shulkers toggle |
 | `storage_overlay.json` | Overlay element visibility and toggle keybinds |
 | `inventory_sorting.json` | Sorting options and toggle keybinds |
 | `careful_break.json` | Server-authoritative Careful Break flags (written by the server only) |
@@ -113,7 +114,10 @@ All configuration lives in `config/gestorage/`:
 
 - `/gestorage config` — opens the in-game config screen.
 - `/gestorage endersize [normal|large|extra_large]` — sets the `gestorage:enderChestSize` game rule (OP level 2).
+- `/gestorage shulkerstack [on|off]` — turns Stackable Shulkers on or off (OP level 2); without an argument it only reports the state.
+- `/gestorage toolslot [<1-9>|clear]` — pins (or unpins) the hotbar slot Auto Tool swaps into. Personal, no OP level needed.
 - Game rule `gestorage:enderChestSize` — accepts `0` (normal), `1` (large) or `2` (extra large); the game rule is the single authority for the ender chest size on the server.
+- Game rule `gestorage:stackableShulkers` — `true`/`false`, the single authority for Stackable Shulkers on the server.
 
 ---
 

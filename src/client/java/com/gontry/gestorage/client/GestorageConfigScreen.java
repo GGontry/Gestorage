@@ -7,7 +7,6 @@ import com.gontry.gestorage.client.ui.ConfigCycleButton;
 import com.gontry.gestorage.client.ui.ConfigIconButton;
 import com.gontry.gestorage.client.ui.ConfigTextures;
 import com.gontry.gestorage.client.CarefulBreakKeybinds;
-import com.gontry.gestorage.config.ShulkerStackServerConfig;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
@@ -59,7 +58,9 @@ public class GestorageConfigScreen extends Screen {
 	private static final int KEY_W = 84;
 	private static final int DETAIL_HEADER_H = 32;
 	private static final int CHROME_H = PAD * 2 + HEADER_H + HEADER_GAP + SEARCH_H + SEARCH_GAP;
-	private static final int DESIGNED_WINDOW_H = CHROME_H + 7 * ROW_H + 6 * ROW_GAP + DETAIL_HEADER_H;
+	private static final int MODULE_COUNT = 6;
+	private static final int DESIGNED_WINDOW_H = CHROME_H + MODULE_COUNT * ROW_H
+			+ (MODULE_COUNT - 1) * ROW_GAP + DETAIL_HEADER_H;
 
 	public GestorageConfigScreen(Screen parent) {
 		super(Text.literal("Gestorage Settings"));
@@ -119,7 +120,7 @@ public class GestorageConfigScreen extends Screen {
 
 	private void buildContent() {
 		int y = bodyY;
-		for (int i = 0; i < 7; i++) {
+		for (int i = 0; i < MODULE_COUNT; i++) {
 			if (!moduleMatchesSearch(i)) continue;
 			int idx = i;
 			ConfigButton btn = new ConfigButton(searchX, y, LEFT_W, ROW_H,
@@ -130,7 +131,7 @@ public class GestorageConfigScreen extends Screen {
 			y += ROW_H + ROW_GAP;
 		}
 
-		if (selectedModule >= 0 && selectedModule < 7 && moduleMatchesSearch(selectedModule)) {
+		if (selectedModule >= 0 && selectedModule < MODULE_COUNT && moduleMatchesSearch(selectedModule)) {
 			buildDetail(selectedModule);
 		}
 		positionRows();
@@ -194,26 +195,14 @@ public class GestorageConfigScreen extends Screen {
 						Text.literal("Mark Key: " + KeybindHelper.getKeyName(ModuleConfig.shulkerRefill().shulkerRefillKey())),
 						() -> startKeybindCapture(1));
 				detailRows.add(new DetailRow(keybindButton, 0, detailW, baseY));
+				baseY += ROW_H + ROW_GAP;
+				addOptionWithKey(baseY, "Reverse Order",
+						() -> ModuleConfig.shulkerRefill().reverseRefillOrder(),
+						v -> ModuleConfig.shulkerRefill().reverseRefillOrder(v),
+						ModuleConfig.shulkerRefill()::save,
+						ModuleConfig.shulkerRefill().toggleReverseOrderKey(), 39);
 			}
 			case 2 -> {
-				boolean remote = this.client != null && this.client.world != null && !this.client.isIntegratedServerRunning();
-				int cbW = detailW - KEY_W - 4;
-				ConfigCheckbox cb = new ConfigCheckbox(detailX, optionsTop, cbW, ROW_H,
-						Text.literal(remote ? "Enabled (Server)" : "Enabled"),
-						() -> ShulkerStackServerConfig.enabled,
-						v -> ShulkerStackServerConfig.enabled = v,
-						() -> {
-							ShulkerStackServerConfig.save();
-							if (this.client != null && this.client.player != null) {
-								this.client.player.sendMessage(Text.literal(
-										"§7Stackable Shulkers: " + (ShulkerStackServerConfig.enabled ? "§aON" : "§cOFF")), true);
-							}
-						});
-				cb.active = !remote;
-				detailRows.add(new DetailRow(cb, 0, cbW, baseY));
-				attachKeyButton(baseY, ShulkerStackKeybinds.toggleEnabledKey, 22);
-			}
-			case 3 -> {
 				addOptionWithKey(baseY, "Enabled",
 						() -> ModuleConfig.storageOverlay().enabled(),
 						v -> ModuleConfig.storageOverlay().enabled(v),
@@ -256,7 +245,7 @@ public class GestorageConfigScreen extends Screen {
 						ModuleConfig.storageOverlay()::save,
 						ModuleConfig.storageOverlay().toggleFreeSlotsKey(), 29);
 			}
-			case 4 -> {
+			case 3 -> {
 				addOptionWithKey(baseY, "Enabled",
 						() -> ModuleConfig.inventorySorting().enabled(),
 						v -> ModuleConfig.inventorySorting().enabled(v),
@@ -292,7 +281,7 @@ public class GestorageConfigScreen extends Screen {
 						ModuleConfig.inventorySorting()::save,
 						ModuleConfig.inventorySorting().toggleSortDescendingKey(), 34);
 				baseY += ROW_H + ROW_GAP;
-				addOptionWithKey(baseY, "Block Player Inventory",
+				addOptionWithKey(baseY, "Block Player Inv",
 						() -> ModuleConfig.inventorySorting().blockPlayer(),
 						v -> ModuleConfig.inventorySorting().blockPlayer(v),
 						ModuleConfig.inventorySorting()::save,
@@ -316,7 +305,7 @@ public class GestorageConfigScreen extends Screen {
 						ModuleConfig.inventorySorting()::save,
 						ModuleConfig.inventorySorting().toggleBlockGenericContainerKey(), 38);
 			}
-			case 5 -> {
+			case 4 -> {
 				addServerOptionWithKey(baseY, "Enabled", 7, CarefulBreakKeybinds.enabledKey, 16);
 				baseY += ROW_H + ROW_GAP;
 				addServerOptionWithKey(baseY, "Careful Break", 0, CarefulBreakKeybinds.carefulBreakKey, 10);
@@ -333,7 +322,7 @@ public class GestorageConfigScreen extends Screen {
 				baseY += ROW_H + ROW_GAP;
 				addServerOptionWithKey(baseY, "Auto Replant Crops", 6, CarefulBreakKeybinds.autoReplantCropsKey, 17);
 			}
-			case 6 -> {
+			case 5 -> {
 				addOptionWithKey(baseY, "Enabled",
 						() -> ModuleConfig.toolWheel().enabled(),
 						v -> ModuleConfig.toolWheel().enabled(v),
@@ -488,7 +477,7 @@ public class GestorageConfigScreen extends Screen {
 	}
 
 	private int findFirstVisibleModule(int startFrom) {
-		for (int i = startFrom; i < 7; i++) {
+		for (int i = startFrom; i < MODULE_COUNT; i++) {
 			if (moduleMatchesSearch(i)) return i;
 		}
 		return -1;
@@ -598,7 +587,6 @@ public class GestorageConfigScreen extends Screen {
 			case 16 -> { CarefulBreakKeybinds.enabledKey = encoded; CarefulBreakKeybinds.save(); }
 			case 20 -> { ModuleConfig.enderChest().toggleEnabledKey(encoded); ModuleConfig.enderChest().save(); }
 			case 21 -> { ModuleConfig.shulkerRefill().toggleEnabledKey(encoded); ModuleConfig.shulkerRefill().save(); }
-			case 22 -> { ShulkerStackKeybinds.toggleEnabledKey = encoded; ShulkerStackKeybinds.save(); }
 			case 23 -> { ModuleConfig.storageOverlay().toggleEnabledKey(encoded); ModuleConfig.storageOverlay().save(); }
 			case 24 -> { ModuleConfig.storageOverlay().toggleInventoryNameKey(encoded); ModuleConfig.storageOverlay().save(); }
 			case 25 -> { ModuleConfig.storageOverlay().toggleItemNameKey(encoded); ModuleConfig.storageOverlay().save(); }
@@ -615,6 +603,7 @@ public class GestorageConfigScreen extends Screen {
 			case 36 -> { ModuleConfig.inventorySorting().toggleBlockEnderChestKey(encoded); ModuleConfig.inventorySorting().save(); }
 			case 37 -> { ModuleConfig.inventorySorting().toggleBlockShulkerBoxKey(encoded); ModuleConfig.inventorySorting().save(); }
 			case 38 -> { ModuleConfig.inventorySorting().toggleBlockGenericContainerKey(encoded); ModuleConfig.inventorySorting().save(); }
+			case 39 -> { ModuleConfig.shulkerRefill().toggleReverseOrderKey(encoded); ModuleConfig.shulkerRefill().save(); }
 			case 50 -> { ModuleConfig.toolWheel().toggleEnabledKey(encoded); ModuleConfig.toolWheel().save(); }
 			case 51 -> { ModuleConfig.toolWheel().openWheelKey(encoded); ModuleConfig.toolWheel().save(); }
 			case 52 -> { ModuleConfig.toolWheel().wheelKey(encoded); ModuleConfig.toolWheel().save(); }
@@ -668,7 +657,7 @@ public class GestorageConfigScreen extends Screen {
 		int titleX = windowX + windowW / 2;
 		drawCenteredText(context, Text.literal("Gestorage Settings"), titleX, windowY + PAD + 4, 0xFFFFFFFF);
 
-		if (selectedModule >= 0 && selectedModule < 7 && moduleMatchesSearch(selectedModule)) {
+		if (selectedModule >= 0 && selectedModule < MODULE_COUNT && moduleMatchesSearch(selectedModule)) {
 			context.drawText(this.textRenderer, Text.literal(getModuleTitle(selectedModule)), detailX, bodyY, 0xFFFFFFFF, false);
 			List<OrderedText> descLines = this.textRenderer.wrapLines(Text.literal(getModuleDesc(selectedModule)), detailW);
 			int descY = bodyY + 10;
@@ -709,11 +698,10 @@ public class GestorageConfigScreen extends Screen {
 		return switch (idx) {
 			case 0 -> "Ender Key";
 			case 1 -> "Shulker Restock";
-			case 2 -> "Stackable Shulkers";
-			case 3 -> "Storage Overlay";
-			case 4 -> "Inventory Sorting";
-			case 5 -> "Careful Break";
-			case 6 -> "Tool Wheel";
+			case 2 -> "Storage Overlay";
+			case 3 -> "Inventory Sorting";
+			case 4 -> "Careful Break";
+			case 5 -> "Tool Wheel";
 			default -> "";
 		};
 	}
@@ -722,11 +710,10 @@ public class GestorageConfigScreen extends Screen {
 		return switch (idx) {
 			case 0 -> "Keybind to open ender chest with any size";
 			case 1 -> "Auto-refill from shulker boxes";
-			case 2 -> "Shulkers stack up to 64";
-			case 3 -> "Informational overlay next to any inventory";
-			case 4 -> "Sort items in inventories";
-			case 5 -> "Collect blocks and drops directly to inventory";
-			case 6 -> "Radial tool wheel + auto tool. /gestorage toolslot picks the slot Auto Tool uses";
+			case 2 -> "Informational overlay next to any inventory";
+			case 3 -> "Sort items in inventories";
+			case 4 -> "Collect blocks and drops directly to inventory";
+			case 5 -> "Radial tool wheel + auto tool. /gestorage toolslot picks the slot Auto Tool uses";
 			default -> "";
 		};
 	}
