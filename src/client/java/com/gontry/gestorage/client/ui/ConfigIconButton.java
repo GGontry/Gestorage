@@ -35,6 +35,8 @@ public class ConfigIconButton extends PressableWidget {
 	protected void renderWidget(DrawContext context, int mouseX, int mouseY, float delta) {
 		Identifier tex = this.isHovered() ? hoverTexture : texture;
 		RenderSystem.setShaderColor(1f, 1f, 1f, this.active ? 1f : 0.4f);
+		RenderSystem.enableBlend();
+		RenderSystem.defaultBlendFunc();
 		context.drawTexture(tex, this.getX(), this.getY(), 0, 0, this.width, this.height, this.width, this.height);
 		RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
 	}

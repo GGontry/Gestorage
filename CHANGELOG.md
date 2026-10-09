@@ -7,6 +7,7 @@ All notable changes to Gestorage are documented in this file.
 ### Added
 
 - **Shulker Restock: reversible refill order** — you can now choose whether items are pulled out of the shulker box from the first slot to the last (the default) or from the last slot to the first. Toggle it with the `Reverse Order` option in the module settings or its own assignable keybind; the server honours your choice in the `refill_request` packet.
+- **Config screen: real translucency, no extra mod required.** The settings menu's window, buttons and checkboxes have always shipped with semi-transparent artwork, but vanilla never enables alpha blending on the texture draw path, so an external mod (Translucency Fix) was needed to see through them. Gestorage now enables blending itself on those draws, so the menu blends with the world behind it out of the box.
 
 ### Before you update
 

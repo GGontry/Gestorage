@@ -1,6 +1,7 @@
 package com.gontry.gestorage.client.ui;
 
 import com.gontry.gestorage.Gestorage;
+import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.util.Identifier;
 
@@ -21,6 +22,8 @@ public final class ConfigTextures {
 	private ConfigTextures() {}
 
 	public static void drawNineSlice(DrawContext context, Identifier texture, int x, int y, int width, int height) {
+		RenderSystem.enableBlend();
+		RenderSystem.defaultBlendFunc();
 		int right = x + width - BORDER;
 		int bottom = y + height - BORDER;
 		int innerWidth = Math.max(width - BORDER * 2, 0);
@@ -40,6 +43,8 @@ public final class ConfigTextures {
 	}
 
 	public static void drawCheckbox(DrawContext context, boolean on, int x, int y) {
+		RenderSystem.enableBlend();
+		RenderSystem.defaultBlendFunc();
 		context.drawTexture(on ? CHECKBOX_ON : CHECKBOX_OFF, x, y, 0, 0, 12, 12, 12, 12);
 	}
 }
