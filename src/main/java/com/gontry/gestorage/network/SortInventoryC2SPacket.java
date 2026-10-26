@@ -2,6 +2,7 @@ package com.gontry.gestorage.network;
 
 import com.gontry.gestorage.menu.ExtraLargeEnderMenu;
 import com.gontry.gestorage.menu.LargeEnderMenu;
+import com.gontry.gestorage.slotlock.SlotLockManager;
 import com.gontry.gestorage.sorting.InventorySorter;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.inventory.Inventory;
@@ -34,7 +35,8 @@ public class SortInventoryC2SPacket {
 			}
 
 			InventorySorter.sortInventory(inventory, startSlot, endSlot,
-					payload.mergeStacks(), payload.sortByName(), payload.sortDescending());
+					payload.mergeStacks(), payload.sortByName(), payload.sortDescending(),
+					SlotLockManager.lockedSlotsForSorting(player, screenHandler));
 			inventory.markDirty();
 
 			screenHandler.sendContentUpdates();

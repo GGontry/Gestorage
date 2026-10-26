@@ -20,6 +20,7 @@ public final class ModuleConfig {
 	private static StorageOverlayConfig STORAGE_OVERLAY;
 	private static InventorySortingConfig INVENTORY_SORTING;
 	private static ToolWheelConfig TOOL_WHEEL;
+	private static SlotLockConfig SLOT_LOCK;
 
 	private ModuleConfig() {}
 
@@ -30,11 +31,13 @@ public final class ModuleConfig {
 		createBackup(Path.of("config", "gestorage", "storage_overlay.json"));
 		createBackup(Path.of("config", "gestorage", "inventory_sorting.json"));
 		createBackup(Path.of("config", "gestorage", "tool_wheel.json"));
+		createBackup(Path.of("config", "gestorage", "slot_lock.json"));
 		ENDER_CHEST = EnderChestConfig.createAndLoad();
 		SHULKER_REFILL = ShulkerRefillConfig.createAndLoad();
 		STORAGE_OVERLAY = StorageOverlayConfig.createAndLoad();
 		INVENTORY_SORTING = InventorySortingConfig.createAndLoad();
 		TOOL_WHEEL = ToolWheelConfig.createAndLoad();
+		SLOT_LOCK = SlotLockConfig.createAndLoad();
 		Gestorage.LOGGER.info("Module configs initialized");
 	}
 
@@ -56,6 +59,10 @@ public final class ModuleConfig {
 
 	public static ToolWheelConfig toolWheel() {
 		return TOOL_WHEEL;
+	}
+
+	public static SlotLockConfig slotLock() {
+		return SLOT_LOCK;
 	}
 
 	static void createBackup(Path configPath) {

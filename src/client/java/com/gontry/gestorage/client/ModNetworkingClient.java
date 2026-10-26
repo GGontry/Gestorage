@@ -1,9 +1,11 @@
 package com.gontry.gestorage.client;
 
+import com.gontry.gestorage.client.config.ModuleConfig;
 import com.gontry.gestorage.network.ModNetworking;
 import com.gontry.gestorage.shulker.ShulkerStackRule;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import net.minecraft.client.MinecraftClient;
 
 public class ModNetworkingClient {
 	public static void register() {
@@ -14,9 +16,13 @@ public class ModNetworkingClient {
 		ClientPlayNetworking.registerGlobalReceiver(ModNetworking.TOOL_WHEEL_SYNC, ToolWheelSyncS2CPacket::handle);
 		ClientPlayNetworking.registerGlobalReceiver(ModNetworking.TOOL_WHEEL_ENCH_PREF_STATE,
 				ToolWheelEnchPrefS2CPacket::handle);
+		ClientPlayNetworking.registerGlobalReceiver(ModNetworking.SLOT_LOCK_SYNC, SlotLockSyncS2CPacket::handle);
 
-		// The mirrored game rule belongs to a world: drop it when leaving one.
-		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> ShulkerStackRule.setClientMirror(false));
+		// Mirrored server state belongs to a world: drop it when leaving one.
+		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
+			ShulkerStackRule.setClientMirror(false);
+			ClientSlotLockState.clear();
+		});
 	}
 
 	public static void sendOpenEnderChest() {
@@ -49,5 +55,21 @@ public class ModNetworkingClient {
 
 	public static void sendEnchPref(int pref) {
 		ClientPlayNetworking.send(new ModNetworking.ToolWheelEnchPrefC2S(pref));
+	}
+
+	public static void sendSlotLockToggle(int scope, int slot) {
+		ClientPlayNetworking.send(new ModNetworking.SlotLockToggleC2S(scope, slot));
+	}
+
+	public static void sendSlotLockConfig() {
+		// The config screen is also the Mod Menu entry point, so it can be open
+		// before a world is joined. The JOIN handler sends the settings again.
+		if (MinecraftClient.getInstance().getNetworkHandler() == null) return;
+		ClientPlayNetworking.send(new ModNetworking.SlotLockConfigC2S(
+				ModuleConfig.slotLock().enabled(),
+				ModuleConfig.slotLock().sortingSkipsLockedSlots(),
+				ModuleConfig.slotLock().preventDrop(),
+				ModuleConfig.slotLock().preventUse()
+		));
 	}
 }

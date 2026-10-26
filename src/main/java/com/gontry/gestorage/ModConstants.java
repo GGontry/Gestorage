@@ -53,6 +53,20 @@ public final class ModConstants {
 	public static final int ENCH_PREF_SILK_TOUCH = 2;
 	public static final int ENCH_PREF_MAX = ENCH_PREF_SILK_TOUCH;
 
+	/**
+	 * Number of player inventory slots that can be locked: main inventory and
+	 * hotbar (0-35), armor (36-39) and offhand (40).
+	 */
+	public static final int PLAYER_INVENTORY_SIZE = 41;
+
+	/**
+	 * Slot lock scopes shipped in the lock toggle packet. They are not persisted
+	 * on their own: the saved state keeps player and ender chest locks in two
+	 * separate lists.
+	 */
+	public static final int SLOT_SCOPE_PLAYER = 0;
+	public static final int SLOT_SCOPE_ENDER = 1;
+
 	/** Maps a persisted size mode to the matching container capacity. */
 	public static int getEnderSizeForMode(int mode) {
 		return switch (mode) {

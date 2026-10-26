@@ -74,6 +74,15 @@ public class ModNetworking {
 	public static final CustomPayload.Id<ToolWheelEnchPrefS2C> TOOL_WHEEL_ENCH_PREF_STATE =
 			new CustomPayload.Id<>(Identifier.of(Gestorage.MOD_ID, "tool_wheel_ench_pref_state"));
 
+	public static final CustomPayload.Id<SlotLockToggleC2S> SLOT_LOCK_TOGGLE =
+			new CustomPayload.Id<>(Identifier.of(Gestorage.MOD_ID, "slot_lock_toggle"));
+
+	public static final CustomPayload.Id<SlotLockConfigC2S> SLOT_LOCK_CONFIG =
+			new CustomPayload.Id<>(Identifier.of(Gestorage.MOD_ID, "slot_lock_config"));
+
+	public static final CustomPayload.Id<SlotLockSyncS2C> SLOT_LOCK_SYNC =
+			new CustomPayload.Id<>(Identifier.of(Gestorage.MOD_ID, "slot_lock_sync"));
+
 	public static final PacketCodec<PacketByteBuf, OpenEnderChestC2S> OPEN_ENDER_CHEST_CODEC =
 			PacketCodec.unit(new OpenEnderChestC2S());
 
@@ -202,6 +211,40 @@ public class ModNetworking {
 					buf -> new ToolWheelEnchPrefS2C(buf.readInt())
 			);
 
+	public static final PacketCodec<PacketByteBuf, SlotLockToggleC2S> SLOT_LOCK_TOGGLE_CODEC =
+			PacketCodec.of(
+					(SlotLockToggleC2S p, PacketByteBuf buf) -> {
+						buf.writeInt(p.scope());
+						buf.writeInt(p.slot());
+					},
+					buf -> new SlotLockToggleC2S(buf.readInt(), buf.readInt())
+			);
+
+	public static final PacketCodec<PacketByteBuf, SlotLockConfigC2S> SLOT_LOCK_CONFIG_CODEC =
+			PacketCodec.of(
+					(SlotLockConfigC2S p, PacketByteBuf buf) -> {
+						buf.writeBoolean(p.enabled());
+						buf.writeBoolean(p.sortingSkipsLockedSlots());
+						buf.writeBoolean(p.preventDrop());
+						buf.writeBoolean(p.preventUse());
+					},
+					buf -> new SlotLockConfigC2S(
+						buf.readBoolean(),
+						buf.readBoolean(),
+						buf.readBoolean(),
+						buf.readBoolean()
+					)
+			);
+
+	public static final PacketCodec<PacketByteBuf, SlotLockSyncS2C> SLOT_LOCK_SYNC_CODEC =
+			PacketCodec.of(
+					(SlotLockSyncS2C p, PacketByteBuf buf) -> {
+						buf.writeIntArray(p.playerSlots());
+						buf.writeIntArray(p.enderSlots());
+					},
+					buf -> new SlotLockSyncS2C(buf.readIntArray(), buf.readIntArray())
+			);
+
 	public static final PacketCodec<RegistryByteBuf, ToolWheelSyncS2C> TOOL_WHEEL_SYNC_CODEC =
 			PacketCodec.of(
 					(ToolWheelSyncS2C p, RegistryByteBuf buf) -> {
@@ -243,6 +286,9 @@ public class ModNetworking {
 		PayloadTypeRegistry.playC2S().register(TOOL_WHEEL_ENCH_PREF, TOOL_WHEEL_ENCH_PREF_CODEC);
 		PayloadTypeRegistry.playS2C().register(TOOL_WHEEL_ENCH_PREF_STATE, TOOL_WHEEL_ENCH_PREF_STATE_CODEC);
 		PayloadTypeRegistry.playS2C().register(TOOL_WHEEL_SYNC, TOOL_WHEEL_SYNC_CODEC);
+		PayloadTypeRegistry.playC2S().register(SLOT_LOCK_TOGGLE, SLOT_LOCK_TOGGLE_CODEC);
+		PayloadTypeRegistry.playC2S().register(SLOT_LOCK_CONFIG, SLOT_LOCK_CONFIG_CODEC);
+		PayloadTypeRegistry.playS2C().register(SLOT_LOCK_SYNC, SLOT_LOCK_SYNC_CODEC);
 
 		// Each receiver is bound to its handler class (one static handle() per packet).
 		ServerPlayNetworking.registerGlobalReceiver(OPEN_ENDER_CHEST, OpenEnderChestC2SPacket::handle);
@@ -256,6 +302,8 @@ public class ModNetworking {
 		ServerPlayNetworking.registerGlobalReceiver(TOOL_WHEEL_DEFAULT, ToolWheelDefaultC2SPacket::handle);
 		ServerPlayNetworking.registerGlobalReceiver(TOOL_WHEEL_TOOL_SLOT, ToolWheelToolSlotC2SPacket::handle);
 		ServerPlayNetworking.registerGlobalReceiver(TOOL_WHEEL_ENCH_PREF, ToolWheelEnchPrefC2SPacket::handle);
+		ServerPlayNetworking.registerGlobalReceiver(SLOT_LOCK_TOGGLE, SlotLockToggleC2SPacket::handle);
+		ServerPlayNetworking.registerGlobalReceiver(SLOT_LOCK_CONFIG, SlotLockConfigC2SPacket::handle);
 	}
 
 	public record OpenEnderChestC2S() implements CustomPayload {
@@ -412,6 +460,38 @@ public class ModNetworking {
 		@Override
 		public Id<? extends CustomPayload> getId() {
 			return TOOL_WHEEL_ENCH_PREF_STATE;
+		}
+	}
+
+	/**
+	 * Toggles one lock. {@code scope} is one of the {@code SLOT_SCOPE_*} constants
+	 * and {@code slot} is that scope's inventory index; the server validates both
+	 * against the player's currently open screen before touching the state.
+	 */
+	public record SlotLockToggleC2S(int scope, int slot) implements CustomPayload {
+		@Override
+		public Id<? extends CustomPayload> getId() {
+			return SLOT_LOCK_TOGGLE;
+		}
+	}
+
+	/**
+	 * Per-player module switches. Sent on join and whenever the client config
+	 * changes, so the server enforces exactly what the owner sees in the UI.
+	 */
+	public record SlotLockConfigC2S(boolean enabled, boolean sortingSkipsLockedSlots,
+			boolean preventDrop, boolean preventUse) implements CustomPayload {
+		@Override
+		public Id<? extends CustomPayload> getId() {
+			return SLOT_LOCK_CONFIG;
+		}
+	}
+
+	/** Full lock set for both scopes, used to draw the client-side borders. */
+	public record SlotLockSyncS2C(int[] playerSlots, int[] enderSlots) implements CustomPayload {
+		@Override
+		public Id<? extends CustomPayload> getId() {
+			return SLOT_LOCK_SYNC;
 		}
 	}
 }

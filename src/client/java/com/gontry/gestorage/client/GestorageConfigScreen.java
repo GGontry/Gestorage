@@ -58,7 +58,7 @@ public class GestorageConfigScreen extends Screen {
 	private static final int KEY_W = 84;
 	private static final int DETAIL_HEADER_H = 32;
 	private static final int CHROME_H = PAD * 2 + HEADER_H + HEADER_GAP + SEARCH_H + SEARCH_GAP;
-	private static final int MODULE_COUNT = 6;
+	private static final int MODULE_COUNT = 7;
 	private static final int DESIGNED_WINDOW_H = CHROME_H + MODULE_COUNT * ROW_H
 			+ (MODULE_COUNT - 1) * ROW_GAP + DETAIL_HEADER_H;
 
@@ -346,7 +346,38 @@ public class GestorageConfigScreen extends Screen {
 				baseY += ROW_H + ROW_GAP;
 				addToolEnchPrefOption(baseY);
 			}
+			case 6 -> {
+				addCheckbox(baseY, Text.literal("Enabled"),
+						() -> ModuleConfig.slotLock().enabled(),
+						v -> ModuleConfig.slotLock().enabled(v),
+						GestorageConfigScreen::saveSlotLock);
+				baseY += ROW_H + ROW_GAP;
+				keybindButton = new ConfigButton(detailX, optionsTop, detailW, ROW_H,
+						Text.literal("Lock Key: " + KeybindHelper.getKeyName(ModuleConfig.slotLock().lockKey())),
+						() -> startKeybindCapture(60));
+				detailRows.add(new DetailRow(keybindButton, 0, detailW, baseY));
+				baseY += ROW_H + ROW_GAP;
+				addCheckbox(baseY, Text.literal("Sorting Skips Locks"),
+						() -> ModuleConfig.slotLock().sortingSkipsLockedSlots(),
+						v -> ModuleConfig.slotLock().sortingSkipsLockedSlots(v),
+						GestorageConfigScreen::saveSlotLock);
+				baseY += ROW_H + ROW_GAP;
+				addCheckbox(baseY, Text.literal("Prevent Drop"),
+						() -> ModuleConfig.slotLock().preventDrop(),
+						v -> ModuleConfig.slotLock().preventDrop(v),
+						GestorageConfigScreen::saveSlotLock);
+				baseY += ROW_H + ROW_GAP;
+				addCheckbox(baseY, Text.literal("Prevent Use"),
+						() -> ModuleConfig.slotLock().preventUse(),
+						v -> ModuleConfig.slotLock().preventUse(v),
+						GestorageConfigScreen::saveSlotLock);
+			}
 		}
+	}
+
+	private static void saveSlotLock() {
+		ModuleConfig.slotLock().save();
+		ModNetworkingClient.sendSlotLockConfig();
 	}
 
 	private void addCheckbox(int baseY, Text label, BooleanSupplier getter,
@@ -609,6 +640,7 @@ public class GestorageConfigScreen extends Screen {
 			case 52 -> { ModuleConfig.toolWheel().wheelKey(encoded); ModuleConfig.toolWheel().save(); }
 			case 53 -> { ModuleConfig.toolWheel().autoToolKey(encoded); ModuleConfig.toolWheel().save(); }
 			case 54 -> { ModuleConfig.toolWheel().enchPrefKey(encoded); ModuleConfig.toolWheel().save(); }
+			case 60 -> { ModuleConfig.slotLock().lockKey(encoded); ModuleConfig.slotLock().save(); }
 			default -> applyCBKeybind(encoded);
 		}
 	}
@@ -702,6 +734,7 @@ public class GestorageConfigScreen extends Screen {
 			case 3 -> "Inventory Sorting";
 			case 4 -> "Careful Break";
 			case 5 -> "Tool Wheel";
+			case 6 -> "Slot Lock";
 			default -> "";
 		};
 	}
@@ -714,6 +747,7 @@ public class GestorageConfigScreen extends Screen {
 			case 3 -> "Sort items in inventories";
 			case 4 -> "Collect blocks and drops directly to inventory";
 			case 5 -> "Radial tool wheel + auto tool. /gestorage toolslot picks the slot Auto Tool uses";
+			case 6 -> "Hold a key and click slots to lock them. Locked slots can be skipped by sorting and protected from drop/use";
 			default -> "";
 		};
 	}

@@ -6,10 +6,13 @@ import com.gontry.gestorage.inventory.EnderOverflowState;
 import com.gontry.gestorage.network.CarefulBreakStateS2CPacket;
 import com.gontry.gestorage.network.ModNetworking;
 import com.gontry.gestorage.network.ShulkerStackStateS2CPacket;
+import com.gontry.gestorage.network.SlotLockSyncS2CPacket;
 import com.gontry.gestorage.network.ToolWheelEnchPrefS2CPacket;
 import com.gontry.gestorage.network.ToolWheelSyncS2CPacket;
 import com.gontry.gestorage.shulker.ShulkerStackMigration;
 import com.gontry.gestorage.shulker.ShulkerStackRule;
+import com.gontry.gestorage.slotlock.SlotLockManager;
+import com.gontry.gestorage.slotlock.SlotLockState;
 import com.gontry.gestorage.toolwheel.AutoToolManager;
 import com.gontry.gestorage.toolwheel.ToolWheelState;
 import net.fabricmc.api.ModInitializer;
@@ -48,6 +51,7 @@ public class Gestorage implements ModInitializer {
 			ShulkerStackStateS2CPacket.sendTo(handler.player);
 			ToolWheelSyncS2CPacket.sendTo(handler.player);
 			ToolWheelEnchPrefS2CPacket.sendTo(handler.player);
+			SlotLockSyncS2CPacket.sendTo(handler.player);
 		});
 
 		// Stackable Shulkers lives in a game rule: grab the live rules object once the
@@ -65,11 +69,15 @@ public class Gestorage implements ModInitializer {
 		ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
 			ToolWheelState.clearCache(handler.player.getUuid());
 			AutoToolManager.clear(handler.player.getUuid());
+			SlotLockState.clearCache(handler.player.getUuid());
+			SlotLockManager.clear(handler.player.getUuid());
 		});
 
 		ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
 			ToolWheelState.clearCacheAll();
 			AutoToolManager.clearAll();
+			SlotLockState.clearCacheAll();
+			SlotLockManager.clearAll();
 			EnderOverflowState.resetSessionBackups();
 			ShulkerStackRule.onServerStopped();
 			ShulkerStackStateS2CPacket.reset();

@@ -2,6 +2,7 @@ package com.gontry.gestorage.mixin;
 
 import com.gontry.gestorage.client.InventorySortingRenderer;
 import com.gontry.gestorage.client.ShulkerRefillRenderer;
+import com.gontry.gestorage.client.SlotLockRenderer;
 import com.gontry.gestorage.client.StorageOverlayRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
@@ -18,6 +19,12 @@ public class HandledScreenMixin {
 	private void gestorage_onDrawSlot(DrawContext context, Slot slot, CallbackInfo ci) {
 		HandledScreen<?> screen = (HandledScreen<?>) (Object) this;
 		ShulkerRefillRenderer.renderSlotBorder(context, slot, screen);
+		SlotLockRenderer.renderSlotBorder(context, slot, screen);
+	}
+
+	@Inject(at = @At("HEAD"), method = "render")
+	private void gestorage_beforeRender(DrawContext context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
+		SlotLockRenderer.beginFrame();
 	}
 
 	@Inject(at = @At("TAIL"), method = "render")
@@ -31,6 +38,10 @@ public class HandledScreenMixin {
 	private void gestorage_onMouseClicked(double mouseX, double mouseY, int button, CallbackInfoReturnable<Boolean> cir) {
 		if (button != 0) return;
 		HandledScreen<?> screen = (HandledScreen<?>) (Object) this;
+		if (SlotLockRenderer.handleClick(screen, mouseX, mouseY)) {
+			cir.setReturnValue(true);
+			return;
+		}
 		if (InventorySortingRenderer.handleClick(screen, (int) mouseX, (int) mouseY)) {
 			cir.setReturnValue(true);
 		}

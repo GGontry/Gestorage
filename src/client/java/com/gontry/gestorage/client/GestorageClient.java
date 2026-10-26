@@ -39,8 +39,10 @@ public class GestorageClient implements ClientModInitializer {
 
 		ToolWheelKeybinds.register();
 		ToolWheelRenderer.register();
-		ClientPlayConnectionEvents.JOIN.register((handler, sender, client) ->
-				ModNetworkingClient.sendModuleEnabled(ModuleConfig.toolWheel().enabled()));
+		ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
+			ModNetworkingClient.sendModuleEnabled(ModuleConfig.toolWheel().enabled());
+			ModNetworkingClient.sendSlotLockConfig();
+		});
 
 		Gestorage.LOGGER.info("Gestorage client initialized!");
 	}

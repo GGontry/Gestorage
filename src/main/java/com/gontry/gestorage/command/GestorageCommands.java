@@ -99,47 +99,23 @@ public class GestorageCommands {
 						})
 				)
 				.then(CommandManager.literal("shulkerstack")
-						.then(CommandManager.argument("state", StringArgumentType.word())
-								.requires(source -> source.hasPermissionLevel(2))
-								.suggests((context, builder) -> {
-									builder.suggest("on");
-									builder.suggest("off");
-									return builder.buildFuture();
-								})
-								.executes(context -> {
-									String state = StringArgumentType.getString(context, "state").toLowerCase();
-									ServerCommandSource source = context.getSource();
-
-									Boolean value = switch (state) {
-										case "on", "true" -> Boolean.TRUE;
-										case "off", "false" -> Boolean.FALSE;
-										default -> null;
-									};
-
-									if (value == null) {
-										source.sendError(Text.literal("Invalid state: " + state + ". Use: on or off"));
-										return 0;
-									}
-
-									source.getWorld().getGameRules().get(ModGameRules.STACKABLE_SHULKERS).set(value, source.getServer());
-
-									MutableText confirm = Text.empty();
-									confirm.append(Text.literal("[Gestorage] ").styled(s -> s.withColor(TextColor.fromFormatting(Formatting.GREEN))));
-									confirm.append(Text.literal("Stackable shulkers set to ").styled(s -> s.withColor(TextColor.fromFormatting(Formatting.WHITE))));
-									confirm.append(Text.literal(value ? "ON" : "OFF").styled(s -> s.withColor(value
-											? TextColor.fromFormatting(Formatting.GREEN)
-											: TextColor.fromFormatting(Formatting.RED)).withBold(true)));
-									source.sendFeedback(() -> confirm, true);
-
-									return 1;
-								})
-						)
-						.executes(context -> {
-							ServerCommandSource source = context.getSource();
-							boolean current = ModGameRules.isStackableShulkers(source.getWorld().getGameRules());
-							source.sendFeedback(() -> Text.literal("Stackable shulkers: " + (current ? "ON" : "OFF")), false);
-							return 1;
-						})
+						.then(CommandManager.literal("players")
+								.executes(context -> reportPlayersStack(context.getSource()))
+								.then(CommandManager.literal("on")
+										.requires(source -> source.hasPermissionLevel(2))
+										.executes(context -> setPlayersStack(context.getSource(), true)))
+								.then(CommandManager.literal("off")
+										.requires(source -> source.hasPermissionLevel(2))
+										.executes(context -> setPlayersStack(context.getSource(), false))))
+						.then(CommandManager.literal("hoppers")
+								.executes(context -> reportHoppersStack(context.getSource()))
+								.then(CommandManager.literal("on")
+										.requires(source -> source.hasPermissionLevel(2))
+										.executes(context -> setHoppersStack(context.getSource(), true)))
+								.then(CommandManager.literal("off")
+										.requires(source -> source.hasPermissionLevel(2))
+										.executes(context -> setHoppersStack(context.getSource(), false))))
+						.executes(context -> reportShulkerStack(context.getSource()))
 				)
 				.then(CommandManager.literal("toolslot")
 						.executes(context -> {
@@ -186,5 +162,96 @@ public class GestorageCommands {
 						)
 				)
 		);
+	}
+
+	private static int reportShulkerStack(ServerCommandSource source) {
+		boolean players = ModGameRules.isStackableShulkers(source.getWorld().getGameRules());
+		boolean hoppers = ModGameRules.isHopperStackableShulkers(source.getWorld().getGameRules());
+		source.sendFeedback(() -> Text.literal("[Gestorage] Players: " + state(players)
+				+ " | Hoppers: " + hopperState(players, hoppers)), false);
+		if (!hoppers) {
+			source.sendFeedback(() -> Text.literal("[Gestorage] Hoppers keep empty shulkers at 1. "
+					+ "Use /gestorage shulkerstack hoppers on to let them stack."), false);
+		} else if (!players) {
+			source.sendFeedback(() -> Text.literal("[Gestorage] Hoppers are enabled but inactive while players is OFF. "
+					+ "Use /gestorage shulkerstack players on."), false);
+		}
+		return 1;
+	}
+
+	private static int reportPlayersStack(ServerCommandSource source) {
+		boolean players = ModGameRules.isStackableShulkers(source.getWorld().getGameRules());
+		boolean hoppers = ModGameRules.isHopperStackableShulkers(source.getWorld().getGameRules());
+		source.sendFeedback(() -> Text.literal("[Gestorage] Players can stack empty shulkers: " + state(players)
+				+ " | Hoppers: " + hopperState(players, hoppers)), false);
+		return 1;
+	}
+
+	private static int reportHoppersStack(ServerCommandSource source) {
+		boolean players = ModGameRules.isStackableShulkers(source.getWorld().getGameRules());
+		boolean hoppers = ModGameRules.isHopperStackableShulkers(source.getWorld().getGameRules());
+		source.sendFeedback(() -> Text.literal("[Gestorage] Hoppers can stack empty shulkers: " + hopperState(players, hoppers)
+				+ " | Players: " + state(players)), false);
+		if (!hoppers) {
+			source.sendFeedback(() -> Text.literal("[Gestorage] Hoppers keep empty shulkers at 1. "
+					+ "Use /gestorage shulkerstack hoppers on to let them stack."), false);
+		} else if (!players) {
+			source.sendFeedback(() -> Text.literal("[Gestorage] Hoppers are enabled but inactive while players is OFF. "
+					+ "Use /gestorage shulkerstack players on."), false);
+		}
+		return 1;
+	}
+
+	private static int setPlayersStack(ServerCommandSource source, boolean value) {
+		source.getWorld().getGameRules().get(ModGameRules.STACKABLE_SHULKERS).set(value, source.getServer());
+		boolean hoppers = ModGameRules.isHopperStackableShulkers(source.getWorld().getGameRules());
+
+		MutableText confirm = Text.empty();
+		confirm.append(Text.literal("[Gestorage] ").styled(s -> s.withColor(TextColor.fromFormatting(Formatting.GREEN))));
+		confirm.append(Text.literal(value ? "Players can stack empty shulkers" : "Empty shulker stacking disabled for everyone")
+				.styled(s -> s.withColor(TextColor.fromFormatting(Formatting.WHITE))));
+		confirm.append(Text.literal(value
+				? (hoppers ? " (hoppers: ON)" : " (hoppers: OFF)")
+				: " (hopper setting kept, but inactive)")
+				.styled(s -> s.withColor(TextColor.fromFormatting(Formatting.GRAY))));
+		source.sendFeedback(() -> confirm, true);
+
+		if (value && !hoppers) {
+			source.sendFeedback(() -> Text.literal("[Gestorage] Hoppers still keep empty shulkers at 1. "
+					+ "Use /gestorage shulkerstack hoppers on to let them stack."), false);
+		}
+		return 1;
+	}
+
+	private static int setHoppersStack(ServerCommandSource source, boolean value) {
+		var rules = source.getWorld().getGameRules();
+		boolean players = ModGameRules.isStackableShulkers(rules);
+		rules.get(ModGameRules.HOPPER_STACKABLE_SHULKERS).set(value, source.getServer());
+
+		MutableText confirm = Text.empty();
+		confirm.append(Text.literal("[Gestorage] ").styled(s -> s.withColor(TextColor.fromFormatting(Formatting.GREEN))));
+		confirm.append(Text.literal(value ? "Hoppers can stack empty shulkers" : "Hoppers keep empty shulkers at 1")
+				.styled(s -> s.withColor(TextColor.fromFormatting(Formatting.WHITE))));
+		if (value && !players) {
+			// The main rule gates item max counts for everyone; enabling the hopper
+			// rule alone would otherwise silently do nothing.
+			rules.get(ModGameRules.STACKABLE_SHULKERS).set(true, source.getServer());
+			confirm.append(Text.literal(" (players stacking was also enabled, as it is required)")
+					.styled(s -> s.withColor(TextColor.fromFormatting(Formatting.GRAY))));
+		} else {
+			confirm.append(Text.literal(value ? " (players: ON)" : " (only players stack)")
+					.styled(s -> s.withColor(TextColor.fromFormatting(Formatting.GRAY))));
+		}
+		source.sendFeedback(() -> confirm, true);
+		return 1;
+	}
+
+	private static String state(boolean value) {
+		return value ? "ON" : "OFF";
+	}
+
+	private static String hopperState(boolean players, boolean hoppers) {
+		if (!hoppers) return "OFF";
+		return players ? "ON" : "ON (inactive)";
 	}
 }

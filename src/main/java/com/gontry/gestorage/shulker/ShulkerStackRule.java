@@ -38,6 +38,19 @@ public final class ShulkerStackRule {
 		return clientMirror;
 	}
 
+	/**
+	 * Whether hoppers may treat empty shulkers as stackable. Always true on the
+	 * client: the hopper context only runs on the logical server, and a client-side
+	 * render tick must keep seeing the vanilla stack size.
+	 */
+	public static boolean hoppersAllowed() {
+		GameRules rules = serverRules;
+		if (rules != null) {
+			return ModGameRules.isHopperStackableShulkers(rules);
+		}
+		return true;
+	}
+
 	public static void setClientMirror(boolean enabled) {
 		clientMirror = enabled;
 	}
