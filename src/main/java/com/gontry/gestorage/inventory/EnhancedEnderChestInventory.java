@@ -9,15 +9,12 @@ import net.minecraft.world.PersistentStateManager;
 import java.util.UUID;
 
 public class EnhancedEnderChestInventory implements Inventory {
-	private static final long FLUSH_INTERVAL_MS = 2000L;
-
 	private final Inventory vanillaEnderChest;
 	private final SimpleInventory overflow;
 	private final int totalSize;
 	private final int overflowStart;
 	private final EnderOverflowState overflowState;
 	private final PersistentStateManager stateManager;
-	private long lastFlushMs = 0L;
 
 	public EnhancedEnderChestInventory(Inventory vanillaEnderChest, int totalSize, PersistentStateManager stateManager, UUID playerUuid) {
 		this.vanillaEnderChest = vanillaEnderChest;
@@ -99,17 +96,8 @@ public class EnhancedEnderChestInventory implements Inventory {
 		overflow.markDirty();
 		if (overflowState != null) {
 			overflowState.markDirty();
-		}
-		flushIfNeeded();
-	}
-
-	private void flushIfNeeded() {
-		if (overflowState == null || stateManager == null) {
-			return;
-		}
-		long now = System.currentTimeMillis();
-		if (now - lastFlushMs >= FLUSH_INTERVAL_MS) {
-			lastFlushMs = now;
+			// Throttled inside the state, so every wrapper of this player shares the
+			// same window instead of saving once per (short-lived) wrapper.
 			overflowState.flush(stateManager);
 		}
 	}
@@ -130,8 +118,8 @@ public class EnhancedEnderChestInventory implements Inventory {
 		vanillaEnderChest.onClose(player);
 		overflow.onClose(player);
 		markDirty();
-		if (overflowState != null && stateManager != null) {
-			overflowState.flush(stateManager);
+		if (overflowState != null) {
+			overflowState.flushNow(stateManager);
 		}
 	}
 

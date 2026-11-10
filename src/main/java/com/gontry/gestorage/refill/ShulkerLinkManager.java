@@ -3,6 +3,7 @@ package com.gontry.gestorage.refill;
 import com.gontry.gestorage.Gestorage;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
 
@@ -26,6 +27,7 @@ public class ShulkerLinkManager {
 	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 	private static final Path CONFIG_PATH = Path.of("config", "gestorage", "links.json");
 	private static final Type MAP_TYPE = new TypeToken<Map<String, List<ShulkerLink>>>() {}.getType();
+	private static final Type LINK_LIST_TYPE = new TypeToken<List<ShulkerLink>>() {}.getType();
 	private static final int CURRENT_VERSION = 1;
 
 	private static Map<String, List<ShulkerLink>> allLinks = new HashMap<>();
@@ -50,11 +52,15 @@ public class ShulkerLinkManager {
 					return;
 				}
 
-				int version = root.has("version") ? root.get("version").getAsInt() : 0;
+				JsonElement versionElement = root.get("version");
+				int version = 0;
+				if (versionElement != null && versionElement.isJsonPrimitive()
+						&& versionElement.getAsJsonPrimitive().isNumber()) {
+					version = versionElement.getAsInt();
+				}
 
 				if (version == 0) {
-					allLinks = GSON.fromJson(json, MAP_TYPE);
-					if (allLinks == null) allLinks = new HashMap<>();
+					allLinks = loadLegacy(root);
 					Gestorage.LOGGER.info("Loaded legacy links (version 0): {} worlds", allLinks.size());
 				} else {
 					if (root.has("links")) {
@@ -108,6 +114,30 @@ public class ShulkerLinkManager {
 				allLinks = new HashMap<>();
 			}
 		}
+	}
+
+	/**
+	 * Legacy files are a bare world-key map, but a broken/partial file may also
+	 * carry a {@code version} field or non-link values. Only object entries whose
+	 * value is an array are parsed, so one bad entry cannot discard the rest.
+	 */
+	private static Map<String, List<ShulkerLink>> loadLegacy(JsonObject root) {
+		Map<String, List<ShulkerLink>> links = new HashMap<>();
+		if (root.has("links") && root.get("links").isJsonObject()) {
+			Map<String, List<ShulkerLink>> parsed = GSON.fromJson(root.get("links"), MAP_TYPE);
+			if (parsed != null) links.putAll(parsed);
+			return links;
+		}
+		for (Map.Entry<String, JsonElement> entry : root.entrySet()) {
+			if ("version".equals(entry.getKey()) || !entry.getValue().isJsonArray()) continue;
+			try {
+				List<ShulkerLink> parsed = GSON.fromJson(entry.getValue(), LINK_LIST_TYPE);
+				if (parsed != null) links.put(entry.getKey(), parsed);
+			} catch (Exception e) {
+				Gestorage.LOGGER.warn("Skipping malformed legacy link entry '{}'", entry.getKey());
+			}
+		}
+		return links;
 	}
 
 	public static void save() {

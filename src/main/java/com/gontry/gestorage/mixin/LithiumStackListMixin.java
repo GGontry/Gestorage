@@ -1,16 +1,16 @@
 package com.gontry.gestorage.mixin;
 
+import com.gontry.gestorage.shulker.LithiumHopperCache;
+import com.gontry.gestorage.shulker.ShulkerStackHelper;
 import com.gontry.gestorage.shulker.ShulkerStackRule;
-import net.minecraft.block.ShulkerBoxBlock;
-import net.minecraft.component.DataComponentTypes;
-import net.minecraft.component.type.ContainerComponent;
-import net.minecraft.item.BlockItem;
 import net.minecraft.item.ItemStack;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Pseudo;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
  * Keeps Lithium's cached full-slot count consistent with the hopper-only
@@ -29,10 +29,19 @@ import org.spongepowered.asm.mixin.injection.Redirect;
  * by hand), so both paths are covered. It only matters while hopper stacking is
  * disabled; with hopper stacking enabled both sides already use the vanilla
  * limit. The target is marked {@link Pseudo} because Lithium is optional.
+ *
+ * <p>Every list is also registered with {@link LithiumHopperCache}, which
+ * recomputes the cached count when a shulker rule changes without any inventory
+ * being touched.
  */
 @Pseudo
 @Mixin(targets = "net.caffeinemc.mods.lithium.common.hopper.LithiumStackList")
 public class LithiumStackListMixin {
+	@Inject(method = "<init>", at = @At("RETURN"), require = 0)
+	private void gestorage$register(CallbackInfo ci) {
+		LithiumHopperCache.register((Object) this);
+	}
+
 	@Redirect(
 			require = 0,
 			method = "<init>",
@@ -95,16 +104,6 @@ public class LithiumStackListMixin {
 	@Unique
 	private static int gestorage$fullSlotLimit(ItemStack stack) {
 		if (ShulkerStackRule.hoppersAllowed()) return stack.getMaxCount();
-		if (!(stack.getItem() instanceof BlockItem blockItem)) return stack.getMaxCount();
-		if (!(blockItem.getBlock() instanceof ShulkerBoxBlock)) return stack.getMaxCount();
-
-		ContainerComponent container = stack.get(DataComponentTypes.CONTAINER);
-		if (container != null) {
-			for (ItemStack ignored : container.iterateNonEmpty()) {
-				return stack.getMaxCount();
-			}
-		}
-
-		return 1;
+		return ShulkerStackHelper.isEmptyShulker(stack) ? 1 : stack.getMaxCount();
 	}
 }

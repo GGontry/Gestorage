@@ -22,6 +22,6 @@ public class VehicleEntityMixin {
 
 	@Inject(method = "damage", at = @At("RETURN"))
 	private void gestorage$damageReturn(DamageSource source, float amount, CallbackInfoReturnable<Boolean> cir) {
-		CarefulBreakManager.endDeath();
+		CarefulBreakManager.endDeath((VehicleEntity) (Object) this);
 	}
 }

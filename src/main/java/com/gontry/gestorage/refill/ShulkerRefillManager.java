@@ -24,8 +24,4 @@ public class ShulkerRefillManager {
 		SHULKER_CACHE.put(item, result);
 		return result;
 	}
-
-	public static void invalidateCache() {
-		SHULKER_CACHE.clear();
-	}
 }

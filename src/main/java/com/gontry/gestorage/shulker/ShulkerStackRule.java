@@ -19,6 +19,7 @@ import net.minecraft.world.GameRules;
 public final class ShulkerStackRule {
 	private static volatile GameRules serverRules;
 	private static volatile boolean clientMirror;
+	private static volatile boolean clientHoppersMirror = true;
 
 	private ShulkerStackRule() {}
 
@@ -39,19 +40,26 @@ public final class ShulkerStackRule {
 	}
 
 	/**
-	 * Whether hoppers may treat empty shulkers as stackable. Always true on the
-	 * client: the hopper context only runs on the logical server, and a client-side
-	 * render tick must keep seeing the vanilla stack size.
+	 * Whether hoppers may treat empty shulkers as stackable. The client mirror
+	 * matters for GUI prediction: the server and the client must agree on the
+	 * hopper slot limit, or a shift-click shows a stack the server then rejects.
 	 */
 	public static boolean hoppersAllowed() {
 		GameRules rules = serverRules;
 		if (rules != null) {
 			return ModGameRules.isHopperStackableShulkers(rules);
 		}
-		return true;
+		return clientHoppersMirror;
 	}
 
-	public static void setClientMirror(boolean enabled) {
+	public static void setClientMirror(boolean enabled, boolean hoppersAllowed) {
 		clientMirror = enabled;
+		clientHoppersMirror = hoppersAllowed;
+	}
+
+	/** Drops the mirrored state when leaving a world. */
+	public static void resetClientMirror() {
+		clientMirror = false;
+		clientHoppersMirror = true;
 	}
 }

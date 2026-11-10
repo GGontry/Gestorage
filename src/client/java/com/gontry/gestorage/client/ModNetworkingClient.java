@@ -20,7 +20,7 @@ public class ModNetworkingClient {
 
 		// Mirrored server state belongs to a world: drop it when leaving one.
 		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
-			ShulkerStackRule.setClientMirror(false);
+			ShulkerStackRule.resetClientMirror();
 			ClientSlotLockState.clear();
 		});
 	}

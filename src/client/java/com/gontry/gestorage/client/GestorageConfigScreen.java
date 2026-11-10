@@ -12,6 +12,7 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.PressableWidget;
 import net.minecraft.client.gui.widget.TextFieldWidget;
+import net.minecraft.client.util.InputUtil;
 import net.minecraft.text.OrderedText;
 import net.minecraft.text.Text;
 import org.lwjgl.glfw.GLFW;
@@ -26,7 +27,6 @@ public class GestorageConfigScreen extends Screen {
 	private int selectedModule = 0;
 	private boolean waitingForKey = false;
 	private int keybindTarget = -1;
-	private int capturedMods = 0;
 	private boolean swallowNextChar = false;
 	private String searchText = "";
 	private String originalSearchText = "";
@@ -407,15 +407,6 @@ public class GestorageConfigScreen extends Screen {
 		detailRows.add(new DetailRow(btn, detailW - KEY_W, KEY_W, baseY));
 	}
 
-	private void addServerCheckbox(int baseY, String label, int optionId) {
-		ConfigCheckbox cb = new ConfigCheckbox(detailX, optionsTop, detailW, ROW_H,
-				Text.literal(label),
-				() -> serverOptionState(optionId),
-				v -> {},
-				() -> ModNetworkingClient.sendToggleCarefulBreak(optionId));
-		detailRows.add(new DetailRow(cb, 0, detailW, baseY));
-	}
-
 	private static boolean serverOptionState(int optionId) {
 		return switch (optionId) {
 			case 0 -> ClientCarefulBreakState.carefulBreak;
@@ -517,7 +508,6 @@ public class GestorageConfigScreen extends Screen {
 	private void startKeybindCapture(int target) {
 		waitingForKey = true;
 		keybindTarget = target;
-		capturedMods = 0;
 		if (keybindButton != null) {
 			keybindButton.setMessage(Text.literal("[Press key...]"));
 		}
@@ -531,11 +521,15 @@ public class GestorageConfigScreen extends Screen {
 				clearKeybind();
 				return true;
 			}
+			// A modifier on its own is only part of the combination, never the
+			// binding: swallow it and wait for the final key.
 			if (isModifier(keyCode)) {
-				updateMods(keyCode);
 				return true;
 			}
-			String encoded = KeybindHelper.encode(keyCode, capturedMods);
+			// The event carries the modifier state at the time of the press, so a
+			// modifier held before the capture started is included and a released
+			// one is never stuck in the binding.
+			String encoded = KeybindHelper.encode(keyCode, modsFromGlfw(modifiers));
 			applyKeybind(encoded);
 			return true;
 		}
@@ -560,7 +554,7 @@ public class GestorageConfigScreen extends Screen {
 				return true;
 			}
 			int mouseCode = -(button + 1);
-			String encoded = KeybindHelper.encode(mouseCode, capturedMods);
+			String encoded = KeybindHelper.encode(mouseCode, currentMods());
 			applyKeybind(encoded);
 			return true;
 		}
@@ -587,7 +581,6 @@ public class GestorageConfigScreen extends Screen {
 	private void cancelKeybindCapture() {
 		waitingForKey = false;
 		keybindTarget = -1;
-		capturedMods = 0;
 		if (this.client != null && this.client.player != null) {
 			this.client.player.sendMessage(Text.literal("§7Keybind capture cancelled."), false);
 		}
@@ -606,7 +599,6 @@ public class GestorageConfigScreen extends Screen {
 		writeKeybind(keybindTarget, "");
 		waitingForKey = false;
 		keybindTarget = -1;
-		capturedMods = 0;
 		selectModule(selectedModule);
 	}
 
@@ -665,13 +657,42 @@ public class GestorageConfigScreen extends Screen {
 				keyCode == GLFW.GLFW_KEY_LEFT_SUPER || keyCode == GLFW.GLFW_KEY_RIGHT_SUPER;
 	}
 
-	private void updateMods(int keyCode) {
-		switch (keyCode) {
-			case GLFW.GLFW_KEY_LEFT_CONTROL, GLFW.GLFW_KEY_RIGHT_CONTROL -> capturedMods |= KeybindHelper.MOD_CTRL;
-			case GLFW.GLFW_KEY_LEFT_SHIFT, GLFW.GLFW_KEY_RIGHT_SHIFT -> capturedMods |= KeybindHelper.MOD_SHIFT;
-			case GLFW.GLFW_KEY_LEFT_ALT, GLFW.GLFW_KEY_RIGHT_ALT -> capturedMods |= KeybindHelper.MOD_ALT;
-			case GLFW.GLFW_KEY_LEFT_SUPER, GLFW.GLFW_KEY_RIGHT_SUPER -> capturedMods |= KeybindHelper.MOD_SUPER;
+	/** Maps the GLFW modifier bitmask carried by a key event to the keybind DSL bits. */
+	private static int modsFromGlfw(int glfwMods) {
+		int mods = 0;
+		if ((glfwMods & GLFW.GLFW_MOD_CONTROL) != 0) mods |= KeybindHelper.MOD_CTRL;
+		if ((glfwMods & GLFW.GLFW_MOD_SHIFT) != 0) mods |= KeybindHelper.MOD_SHIFT;
+		if ((glfwMods & GLFW.GLFW_MOD_ALT) != 0) mods |= KeybindHelper.MOD_ALT;
+		if ((glfwMods & GLFW.GLFW_MOD_SUPER) != 0) mods |= KeybindHelper.MOD_SUPER;
+		return mods;
+	}
+
+	/**
+	 * Live modifier state for mouse clicks, which do not carry a GLFW mod bitmask.
+	 * Reading the real keyboard state keeps modifiers held before the capture
+	 * started and never reports a modifier that was already released.
+	 */
+	private int currentMods() {
+		if (this.client == null || this.client.getWindow() == null) return 0;
+		long handle = this.client.getWindow().getHandle();
+		int mods = 0;
+		if (InputUtil.isKeyPressed(handle, GLFW.GLFW_KEY_LEFT_CONTROL)
+				|| InputUtil.isKeyPressed(handle, GLFW.GLFW_KEY_RIGHT_CONTROL)) {
+			mods |= KeybindHelper.MOD_CTRL;
 		}
+		if (InputUtil.isKeyPressed(handle, GLFW.GLFW_KEY_LEFT_SHIFT)
+				|| InputUtil.isKeyPressed(handle, GLFW.GLFW_KEY_RIGHT_SHIFT)) {
+			mods |= KeybindHelper.MOD_SHIFT;
+		}
+		if (InputUtil.isKeyPressed(handle, GLFW.GLFW_KEY_LEFT_ALT)
+				|| InputUtil.isKeyPressed(handle, GLFW.GLFW_KEY_RIGHT_ALT)) {
+			mods |= KeybindHelper.MOD_ALT;
+		}
+		if (InputUtil.isKeyPressed(handle, GLFW.GLFW_KEY_LEFT_SUPER)
+				|| InputUtil.isKeyPressed(handle, GLFW.GLFW_KEY_RIGHT_SUPER)) {
+			mods |= KeybindHelper.MOD_SUPER;
+		}
+		return mods;
 	}
 
 	@Override

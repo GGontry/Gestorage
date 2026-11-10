@@ -5,6 +5,7 @@ import com.gontry.gestorage.ModGameRules;
 import com.gontry.gestorage.inventory.EnderChestFactory;
 import com.gontry.gestorage.menu.ExtraLargeEnderMenu;
 import com.gontry.gestorage.menu.LargeEnderMenu;
+import com.gontry.gestorage.shulker.ShulkerStackNormalizer;
 import io.netty.buffer.Unpooled;
 import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
 import net.minecraft.block.EnderChestBlock;
@@ -44,6 +45,9 @@ public class EnderChestBlockMixin {
 		var enhancedInv = EnderChestFactory.createForPlayer(
 				player, targetSize, world.getServer().getOverworld().getPersistentStateManager()
 		);
+		// Extended ender chests are not part of the player inventory, so they are
+		// normalized lazily when opened instead of on join or rule change.
+		ShulkerStackNormalizer.normalize(player, enhancedInv);
 
 		if (sizeMode == ModConstants.MODE_LARGE) {
 			player.openHandledScreen(new ExtendedScreenHandlerFactory<>() {

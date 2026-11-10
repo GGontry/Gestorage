@@ -2,6 +2,7 @@ package com.gontry.gestorage.command;
 
 import com.gontry.gestorage.ModConstants;
 import com.gontry.gestorage.ModGameRules;
+import com.gontry.gestorage.network.EnderSizeChangedS2CPacket;
 import com.gontry.gestorage.network.ModNetworking;
 import com.gontry.gestorage.network.ToolWheelSyncS2CPacket;
 import com.gontry.gestorage.toolwheel.ToolWheelLogic;
@@ -70,6 +71,7 @@ public class GestorageCommands {
 									}
 
 									source.getWorld().getGameRules().get(ModGameRules.ENDER_CHEST_SIZE).set(mode, source.getServer());
+									EnderSizeChangedS2CPacket.broadcast(source.getServer());
 
 									MutableText confirm = Text.empty();
 									confirm.append(Text.literal("[Gestorage] ").styled(s -> s.withColor(TextColor.fromFormatting(Formatting.GREEN))));

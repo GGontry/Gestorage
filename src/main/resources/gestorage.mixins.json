@@ -18,6 +18,7 @@
 		"ServerPlayerEntityMixin",
 		"ServerPlayerInteractionManagerMixin",
 		"ServerWorldMixin",
+		"SlotMixin",
 		"ToolWheelMiningMixin",
 		"VehicleEntityMixin"
 	],

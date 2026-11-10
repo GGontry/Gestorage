@@ -121,8 +121,11 @@ public class ModNetworking {
 
 	public static final PacketCodec<PacketByteBuf, ShulkerStackStateS2C> SHULKER_STACK_STATE_CODEC =
 			PacketCodec.of(
-					(ShulkerStackStateS2C p, PacketByteBuf buf) -> buf.writeBoolean(p.enabled()),
-					buf -> new ShulkerStackStateS2C(buf.readBoolean())
+					(ShulkerStackStateS2C p, PacketByteBuf buf) -> {
+						buf.writeBoolean(p.enabled());
+						buf.writeBoolean(p.hoppersAllowed());
+					},
+					buf -> new ShulkerStackStateS2C(buf.readBoolean(), buf.readBoolean())
 			);
 
 	public static final PacketCodec<PacketByteBuf, OpenEnderScreenS2C> OPEN_ENDER_SCREEN_CODEC =
@@ -365,10 +368,11 @@ public class ModNetworking {
 	}
 
 	/**
-	 * Mirrors the {@code gestorage:stackableShulkers} game rule to clients, which do not
+	 * Mirrors the {@code gestorage:stackableShulkers} and
+	 * {@code gestorage:hopperStackableShulkers} game rules to clients, which do not
 	 * receive game rules from the server on Minecraft 1.21.1.
 	 */
-	public record ShulkerStackStateS2C(boolean enabled) implements CustomPayload {
+	public record ShulkerStackStateS2C(boolean enabled, boolean hoppersAllowed) implements CustomPayload {
 		@Override
 		public Id<? extends CustomPayload> getId() {
 			return SHULKER_STACK_STATE;

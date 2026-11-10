@@ -8,15 +8,11 @@ import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.registry.RegistryWrapper;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.util.WorldSavePath;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.world.PersistentState;
 import net.minecraft.world.PersistentStateManager;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -71,25 +67,15 @@ public class ToolWheelState extends PersistentState {
 	}
 
 	/**
-	 * Warms the cache from the stored file the first time a player is seen after a
-	 * reconnect, without ever creating a file: {@link #getExisting} only inspects the
-	 * in-memory state map, so a returning player would otherwise look like they had no
-	 * wheel data at all until the wheel was opened, leaving Auto Tool silently dead.
-	 * Returns {@code null} when the player has no stored data, exactly like
-	 * {@link #getExisting}.
+	 * Returns the player's stored wheel without ever creating one, so callers such as
+	 * the join sync can tell "no wheel data" from "an empty wheel".
+	 *
+	 * <p>{@link PersistentStateManager#get} also returns a state that is already in
+	 * memory but has not been written to disk yet (a dirty state survives a quick
+	 * disconnect/reconnect), which a file existence check would miss.
 	 */
 	public static ToolWheelState getStored(ServerPlayerEntity player) {
-		UUID uuid = player.getUuid();
-		ToolWheelState state = CACHE.get(uuid);
-		if (state != null) return state;
-		MinecraftServer server = player.getServer();
-		if (server == null || !hasStoredData(server, uuid)) return null;
-		return get(player);
-	}
-
-	private static boolean hasStoredData(MinecraftServer server, UUID uuid) {
-		Path file = server.getSavePath(WorldSavePath.ROOT).resolve("data").resolve(getKey(uuid) + ".dat");
-		return Files.isRegularFile(file);
+		return getExisting(player);
 	}
 
 	@Override

@@ -6,6 +6,6 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 
 public class ShulkerStackStateS2CPacket {
 	public static void handle(ModNetworking.ShulkerStackStateS2C payload, ClientPlayNetworking.Context ctx) {
-		ctx.client().execute(() -> ShulkerStackRule.setClientMirror(payload.enabled()));
+		ctx.client().execute(() -> ShulkerStackRule.setClientMirror(payload.enabled(), payload.hoppersAllowed()));
 	}
 }

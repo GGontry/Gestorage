@@ -14,24 +14,55 @@ import java.util.List;
 public final class CarefulBreakManager {
 	public static volatile boolean suppressBlockEffects = false;
 
-	public record DeathContext(ServerPlayerEntity killer, Entity victim) {}
+	/**
+	 * One frame per death currently in progress. Frames nest because a death can
+	 * trigger another death (or a vehicle damage) from inside its own callbacks.
+	 */
+	public record DeathContext(ServerPlayerEntity killer, Entity victim, DeathContext previous) {}
 
 	private static final ThreadLocal<DeathContext> CURRENT_DEATH = new ThreadLocal<>();
 
 	private CarefulBreakManager() {}
 
+	/**
+	 * Pushes a death frame for every player kill, even when drops are not being
+	 * collected, so {@link #endDeath(Entity)} can always unwind exactly one frame.
+	 */
 	public static void beginDeath(ServerPlayerEntity killer, Entity victim) {
-		if (shouldCollectEntityDrops(killer)) {
-			CURRENT_DEATH.set(new DeathContext(killer, victim));
-		}
+		CURRENT_DEATH.set(new DeathContext(killer, victim, CURRENT_DEATH.get()));
 	}
 
+	/**
+	 * Nearest enclosing frame whose killer collects entity drops, or {@code null}.
+	 * Callers still check the victim, so an inner non-collecting death never
+	 * attributes its drops to an outer victim.
+	 */
 	public static DeathContext getCurrentDeath() {
-		return CURRENT_DEATH.get();
+		DeathContext ctx = CURRENT_DEATH.get();
+		while (ctx != null) {
+			if (shouldCollectEntityDrops(ctx.killer())) return ctx;
+			ctx = ctx.previous();
+		}
+		return null;
 	}
 
-	public static void endDeath() {
-		CURRENT_DEATH.remove();
+	/**
+	 * Pops the frame belonging to {@code victim}. Deaths without a player attacker
+	 * never push a frame, so they must not pop an enclosing one.
+	 */
+	public static void endDeath(Entity victim) {
+		DeathContext ctx = CURRENT_DEATH.get();
+		while (ctx != null) {
+			if (ctx.victim() == victim) {
+				if (ctx.previous() == null) {
+					CURRENT_DEATH.remove();
+				} else {
+					CURRENT_DEATH.set(ctx.previous());
+				}
+				return;
+			}
+			ctx = ctx.previous();
+		}
 	}
 
 	public static boolean shouldCollectBlockDrops(ServerPlayerEntity player) {

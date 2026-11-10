@@ -4,12 +4,14 @@ import com.gontry.gestorage.command.GestorageCommands;
 import com.gontry.gestorage.config.CarefulBreakServerConfig;
 import com.gontry.gestorage.inventory.EnderOverflowState;
 import com.gontry.gestorage.network.CarefulBreakStateS2CPacket;
+import com.gontry.gestorage.network.EnderSizeChangedS2CPacket;
 import com.gontry.gestorage.network.ModNetworking;
 import com.gontry.gestorage.network.ShulkerStackStateS2CPacket;
 import com.gontry.gestorage.network.SlotLockSyncS2CPacket;
 import com.gontry.gestorage.network.ToolWheelEnchPrefS2CPacket;
 import com.gontry.gestorage.network.ToolWheelSyncS2CPacket;
 import com.gontry.gestorage.shulker.ShulkerStackMigration;
+import com.gontry.gestorage.shulker.ShulkerStackNormalizer;
 import com.gontry.gestorage.shulker.ShulkerStackRule;
 import com.gontry.gestorage.slotlock.SlotLockManager;
 import com.gontry.gestorage.slotlock.SlotLockState;
@@ -48,7 +50,11 @@ public class Gestorage implements ModInitializer {
 		// client always shows the server-authoritative configuration.
 		ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
 			CarefulBreakStateS2CPacket.sendTo(handler.player);
+			// A world whose rule is already off may still hold legacy over-max
+			// stacks from before the rule changed; split them before syncing.
+			ShulkerStackNormalizer.normalize(handler.player);
 			ShulkerStackStateS2CPacket.sendTo(handler.player);
+			EnderSizeChangedS2CPacket.sendTo(handler.player);
 			ToolWheelSyncS2CPacket.sendTo(handler.player);
 			ToolWheelEnchPrefS2CPacket.sendTo(handler.player);
 			SlotLockSyncS2CPacket.sendTo(handler.player);
@@ -63,6 +69,7 @@ public class Gestorage implements ModInitializer {
 		});
 
 		ServerTickEvents.END_SERVER_TICK.register(ShulkerStackStateS2CPacket::syncIfChanged);
+		ServerTickEvents.END_SERVER_TICK.register(EnderSizeChangedS2CPacket::syncIfChanged);
 
 		// Tool Wheel state caches are per-UUID; drop them when the player leaves
 		// and when the (integrated) server shuts down so no stale instance lingers.
@@ -81,6 +88,7 @@ public class Gestorage implements ModInitializer {
 			EnderOverflowState.resetSessionBackups();
 			ShulkerStackRule.onServerStopped();
 			ShulkerStackStateS2CPacket.reset();
+			EnderSizeChangedS2CPacket.reset();
 		});
 
 		LOGGER.info("Gestorage initialized!");

@@ -20,8 +20,16 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class EnderOverflowState extends PersistentState {
 	private static final int CURRENT_VERSION = 1;
+	/** Minimum time between two world saves triggered by the same player's overflow. */
+	private static final long FLUSH_INTERVAL_MS = 2000L;
 	private static final Set<UUID> backedUpThisSession = ConcurrentHashMap.newKeySet();
 	public SimpleInventory inventory;
+	/**
+	 * Wall clock of the last flush, shared by every wrapper of this state. The
+	 * throttle lives here (not in the menus) so short-lived wrappers created by
+	 * the refill path cannot force a world save on every request.
+	 */
+	private long lastFlushMs = 0L;
 
 	public EnderOverflowState() {
 		this.inventory = new SimpleInventory(201);
@@ -114,6 +122,20 @@ public class EnderOverflowState extends PersistentState {
 		if (manager == null || !isDirty()) {
 			return;
 		}
+		long now = System.currentTimeMillis();
+		if (now - lastFlushMs < FLUSH_INTERVAL_MS) {
+			return;
+		}
+		lastFlushMs = now;
+		manager.save();
+	}
+
+	/** Saves right away, bypassing the throttle (used when a menu closes). */
+	public void flushNow(PersistentStateManager manager) {
+		if (manager == null || !isDirty()) {
+			return;
+		}
+		lastFlushMs = System.currentTimeMillis();
 		manager.save();
 	}
 
@@ -128,26 +150,16 @@ public class EnderOverflowState extends PersistentState {
 		);
 	}
 
-	public static void createBackup(Path worldDir, UUID playerUuid) {
-		try {
-			Path dataDir = worldDir.resolve("data");
-			Files.createDirectories(dataDir);
-			String key = getKey(playerUuid);
-			Path source = dataDir.resolve(key + ".dat");
-			if (Files.exists(source)) {
-				Path backup = dataDir.resolve(key + ".dat.backup_v" + CURRENT_VERSION);
-				Files.copy(source, backup, StandardCopyOption.REPLACE_EXISTING);
-				Gestorage.LOGGER.info("[Overflow] Created backup for {}: {}", playerUuid, backup.getFileName());
-			}
-		} catch (IOException e) {
-			Gestorage.LOGGER.error("[Overflow] Failed to create backup for player {}", playerUuid, e);
-		}
-	}
-
 	public static void resetSessionBackups() {
 		backedUpThisSession.clear();
 	}
 
+	/**
+	 * Copies the stored overflow NBT once per server session, before the state can
+	 * be written again. Called from the ender chest factory, which is the only
+	 * construction point for the enhanced inventory, so every path that can touch
+	 * the overflow is covered.
+	 */
 	public static void sessionBackup(Path worldDir, UUID playerUuid) {
 		if (!backedUpThisSession.add(playerUuid)) {
 			return;

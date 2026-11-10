@@ -22,6 +22,6 @@ public class EntityDropMixin {
 
 	@Inject(method = "onDeath", at = @At("RETURN"))
 	private void gestorage$onDeathReturn(DamageSource source, CallbackInfo ci) {
-		CarefulBreakManager.endDeath();
+		CarefulBreakManager.endDeath((LivingEntity) (Object) this);
 	}
 }
