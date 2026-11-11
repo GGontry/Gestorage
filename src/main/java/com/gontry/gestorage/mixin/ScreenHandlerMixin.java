@@ -33,7 +33,7 @@ public class ScreenHandlerMixin {
 		if (!SlotLockManager.shouldPreventDrop(serverPlayer, slot)) return;
 
 		ci.cancel();
-		MinecraftServer server = serverPlayer.getServer();
+		MinecraftServer server = serverPlayer.getEntityWorld().getServer();
 		if (server != null) {
 			server.execute(() -> serverPlayer.currentScreenHandler.updateToClient());
 		}

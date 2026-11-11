@@ -12,11 +12,11 @@ public final class ToolWheelLogic {
 		if (wheelSlot < 0 || wheelSlot >= ToolWheelState.SIZE) return false;
 		ToolWheelState state = ToolWheelState.get(player);
 		PlayerInventory inv = player.getInventory();
-		ItemStack hand = inv.getStack(inv.selectedSlot);
+		ItemStack hand = inv.getStack(inv.getSelectedSlot());
 		ItemStack wheel = state.stacks.get(wheelSlot);
 		if (hand.isEmpty() && wheel.isEmpty()) return false;
 		if (ItemStack.areEqual(hand, wheel)) return true;
-		inv.setStack(inv.selectedSlot, wheel);
+		inv.setStack(inv.getSelectedSlot(), wheel);
 		state.stacks.set(wheelSlot, hand);
 		inv.markDirty();
 		state.scheduleSave();
@@ -39,6 +39,6 @@ public final class ToolWheelLogic {
 	 * one was chosen, otherwise whatever the player has selected right now.
 	 */
 	public static int resolveToolSlot(ToolWheelState state, PlayerInventory inv) {
-		return PlayerInventory.isValidHotbarIndex(state.defaultSlot) ? state.defaultSlot : inv.selectedSlot;
+		return PlayerInventory.isValidHotbarIndex(state.defaultSlot) ? state.defaultSlot : inv.getSelectedSlot();
 	}
 }

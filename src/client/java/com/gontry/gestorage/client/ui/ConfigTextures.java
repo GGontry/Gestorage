@@ -1,9 +1,10 @@
 package com.gontry.gestorage.client.ui;
 
 import com.gontry.gestorage.Gestorage;
-import com.mojang.blaze3d.systems.RenderSystem;
+import net.minecraft.client.gl.RenderPipelines;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.ColorHelper;
 
 public final class ConfigTextures {
 	public static final Identifier WINDOW = Identifier.of(Gestorage.MOD_ID, "textures/gui/config/window.png");
@@ -21,30 +22,41 @@ public final class ConfigTextures {
 
 	private ConfigTextures() {}
 
+	/** Draws the texture at full opacity; see {@link #drawNineSlice(DrawContext, Identifier, int, int, int, int, int)}. */
 	public static void drawNineSlice(DrawContext context, Identifier texture, int x, int y, int width, int height) {
-		RenderSystem.enableBlend();
-		RenderSystem.defaultBlendFunc();
+		drawNineSlice(context, texture, x, y, width, height, -1);
+	}
+
+	/**
+	 * Draws a nine-sliced panel from a 16x16 texture with a 1px border. {@code color}
+	 * tints the whole panel; use {@link ColorHelper#getWhite(float)} to dim inactive widgets.
+	 */
+	public static void drawNineSlice(DrawContext context, Identifier texture, int x, int y, int width, int height, int color) {
 		int right = x + width - BORDER;
 		int bottom = y + height - BORDER;
 		int innerWidth = Math.max(width - BORDER * 2, 0);
 		int innerHeight = Math.max(height - BORDER * 2, 0);
 
-		context.drawTexture(texture, x, y, BORDER, BORDER, 0, 0, BORDER, BORDER, TEXTURE_SIZE, TEXTURE_SIZE);
-		context.drawTexture(texture, x + BORDER, y, innerWidth, BORDER, BORDER, 0, TEXTURE_SIZE - BORDER * 2, BORDER, TEXTURE_SIZE, TEXTURE_SIZE);
-		context.drawTexture(texture, right, y, BORDER, BORDER, TEXTURE_SIZE - BORDER, 0, BORDER, BORDER, TEXTURE_SIZE, TEXTURE_SIZE);
+		context.drawTexture(RenderPipelines.GUI_TEXTURED, texture, x, y, 0.0F, 0.0F, BORDER, BORDER, BORDER, BORDER, TEXTURE_SIZE, TEXTURE_SIZE, color);
+		context.drawTexture(RenderPipelines.GUI_TEXTURED, texture, x + BORDER, y, BORDER, 0.0F, innerWidth, BORDER, TEXTURE_SIZE - BORDER * 2, BORDER, TEXTURE_SIZE, TEXTURE_SIZE, color);
+		context.drawTexture(RenderPipelines.GUI_TEXTURED, texture, right, y, TEXTURE_SIZE - BORDER, 0.0F, BORDER, BORDER, BORDER, BORDER, TEXTURE_SIZE, TEXTURE_SIZE, color);
 
-		context.drawTexture(texture, x, y + BORDER, BORDER, innerHeight, 0, BORDER, BORDER, TEXTURE_SIZE - BORDER * 2, TEXTURE_SIZE, TEXTURE_SIZE);
-		context.drawTexture(texture, x + BORDER, y + BORDER, innerWidth, innerHeight, BORDER, BORDER, TEXTURE_SIZE - BORDER * 2, TEXTURE_SIZE - BORDER * 2, TEXTURE_SIZE, TEXTURE_SIZE);
-		context.drawTexture(texture, right, y + BORDER, BORDER, innerHeight, TEXTURE_SIZE - BORDER, BORDER, BORDER, TEXTURE_SIZE - BORDER * 2, TEXTURE_SIZE, TEXTURE_SIZE);
+		context.drawTexture(RenderPipelines.GUI_TEXTURED, texture, x, y + BORDER, 0.0F, BORDER, BORDER, innerHeight, BORDER, TEXTURE_SIZE - BORDER * 2, TEXTURE_SIZE, TEXTURE_SIZE, color);
+		context.drawTexture(RenderPipelines.GUI_TEXTURED, texture, x + BORDER, y + BORDER, BORDER, BORDER, innerWidth, innerHeight, TEXTURE_SIZE - BORDER * 2, TEXTURE_SIZE - BORDER * 2, TEXTURE_SIZE, TEXTURE_SIZE, color);
+		context.drawTexture(RenderPipelines.GUI_TEXTURED, texture, right, y + BORDER, TEXTURE_SIZE - BORDER, BORDER, BORDER, innerHeight, BORDER, TEXTURE_SIZE - BORDER * 2, TEXTURE_SIZE, TEXTURE_SIZE, color);
 
-		context.drawTexture(texture, x, bottom, BORDER, BORDER, 0, TEXTURE_SIZE - BORDER, BORDER, BORDER, TEXTURE_SIZE, TEXTURE_SIZE);
-		context.drawTexture(texture, x + BORDER, bottom, innerWidth, BORDER, BORDER, TEXTURE_SIZE - BORDER, TEXTURE_SIZE - BORDER * 2, BORDER, TEXTURE_SIZE, TEXTURE_SIZE);
-		context.drawTexture(texture, right, bottom, BORDER, BORDER, TEXTURE_SIZE - BORDER, TEXTURE_SIZE - BORDER, BORDER, BORDER, TEXTURE_SIZE, TEXTURE_SIZE);
+		context.drawTexture(RenderPipelines.GUI_TEXTURED, texture, x, bottom, 0.0F, TEXTURE_SIZE - BORDER, BORDER, BORDER, BORDER, BORDER, TEXTURE_SIZE, TEXTURE_SIZE, color);
+		context.drawTexture(RenderPipelines.GUI_TEXTURED, texture, x + BORDER, bottom, BORDER, TEXTURE_SIZE - BORDER, innerWidth, BORDER, TEXTURE_SIZE - BORDER * 2, BORDER, TEXTURE_SIZE, TEXTURE_SIZE, color);
+		context.drawTexture(RenderPipelines.GUI_TEXTURED, texture, right, bottom, TEXTURE_SIZE - BORDER, TEXTURE_SIZE - BORDER, BORDER, BORDER, BORDER, BORDER, TEXTURE_SIZE, TEXTURE_SIZE, color);
 	}
 
+	/** Draws the checkbox at full opacity; see {@link #drawCheckbox(DrawContext, boolean, int, int, int)}. */
 	public static void drawCheckbox(DrawContext context, boolean on, int x, int y) {
-		RenderSystem.enableBlend();
-		RenderSystem.defaultBlendFunc();
-		context.drawTexture(on ? CHECKBOX_ON : CHECKBOX_OFF, x, y, 0, 0, 12, 12, 12, 12);
+		drawCheckbox(context, on, x, y, -1);
+	}
+
+	/** Draws the 12x12 checkbox texture; {@code color} tints it, see {@link #drawNineSlice}. */
+	public static void drawCheckbox(DrawContext context, boolean on, int x, int y, int color) {
+		context.drawTexture(RenderPipelines.GUI_TEXTURED, on ? CHECKBOX_ON : CHECKBOX_OFF, x, y, 0.0F, 0.0F, 12, 12, 12, 12, color);
 	}
 }

@@ -3,6 +3,7 @@ package com.gontry.gestorage.network;
 import com.gontry.gestorage.Gestorage;
 import com.gontry.gestorage.config.CarefulBreakServerConfig;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.minecraft.command.DefaultPermissions;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
@@ -12,9 +13,9 @@ public class ToggleCarefulBreakC2SPacket {
 		ServerPlayerEntity player = ctx.player();
 		if (player == null) return;
 
-		MinecraftServer server = player.getServer();
-		boolean allowed = player.hasPermissionLevel(2)
-				|| (server != null && server.isSingleplayer() && server.isHost(player.getGameProfile()));
+		MinecraftServer server = player.getEntityWorld().getServer();
+		boolean allowed = player.getPermissions().hasPermission(DefaultPermissions.GAMEMASTERS)
+				|| (server != null && server.isSingleplayer() && server.isHost(player.getPlayerConfigEntry()));
 		if (!allowed) {
 			player.sendMessage(Text.literal("§cYou don't have permission to change Careful Break settings"), false);
 			return;

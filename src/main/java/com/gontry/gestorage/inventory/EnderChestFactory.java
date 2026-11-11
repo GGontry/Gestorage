@@ -21,7 +21,7 @@ public final class EnderChestFactory {
 	/** Server-side entry point; resolves the overworld persistent state manager. */
 	public static EnhancedEnderChestInventory createForPlayer(ServerPlayerEntity player, int size) {
 		backupOverflowOnce(player);
-		PersistentStateManager stateManager = player.getWorld().getServer().getOverworld().getPersistentStateManager();
+		PersistentStateManager stateManager = player.getEntityWorld().getServer().getOverworld().getPersistentStateManager();
 		return new EnhancedEnderChestInventory(
 				player.getEnderChestInventory(), size, stateManager, player.getUuid()
 		);
@@ -41,7 +41,7 @@ public final class EnderChestFactory {
 	 * on every wrapper creation costs one set lookup.
 	 */
 	private static void backupOverflowOnce(PlayerEntity player) {
-		MinecraftServer server = player.getServer();
+		MinecraftServer server = player.getEntityWorld().getServer();
 		if (server == null) return;
 		EnderOverflowState.sessionBackup(server.getSavePath(WorldSavePath.ROOT), player.getUuid());
 	}

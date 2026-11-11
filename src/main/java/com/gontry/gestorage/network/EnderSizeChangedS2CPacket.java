@@ -7,12 +7,12 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 
 /**
- * Mirrors the server's {@code gestorage:enderChestSize} game rule to clients.
+ * Mirrors the server's {@code gestorage:ender_chest_size} game rule to clients.
  *
- * <p>Minecraft 1.21.1 does not send game rules to clients, so without this the
- * client size mirror would only update when a chest is opened. The value is
- * pushed on join, whenever the rule changes ({@code /gamerule} included) and
- * after {@code /gestorage endersize}.
+ * <p>Minecraft does not send game rules to clients, so without this the client
+ * size mirror would only update when a chest is opened. The value is pushed on
+ * join, whenever the rule changes ({@code /gamerule} included) and after
+ * {@code /gestorage endersize}.
  */
 public final class EnderSizeChangedS2CPacket {
 	private static int lastBroadcast = ModConstants.MODE_NORMAL;
@@ -20,7 +20,7 @@ public final class EnderSizeChangedS2CPacket {
 	private EnderSizeChangedS2CPacket() {}
 
 	public static void sendTo(ServerPlayerEntity player) {
-		ServerPlayNetworking.send(player, buildState(player.getServer()));
+		ServerPlayNetworking.send(player, buildState(player.getEntityWorld().getServer()));
 	}
 
 	public static void broadcast(MinecraftServer server) {
@@ -32,7 +32,7 @@ public final class EnderSizeChangedS2CPacket {
 	}
 
 	public static void syncIfChanged(MinecraftServer server) {
-		int current = ModGameRules.getEnderChestSize(server.getGameRules());
+		int current = ModGameRules.getEnderChestSize(server.getOverworld().getGameRules());
 		if (current == lastBroadcast) return;
 		broadcast(server);
 	}
@@ -42,6 +42,6 @@ public final class EnderSizeChangedS2CPacket {
 	}
 
 	private static ModNetworking.EnderSizeChangedS2C buildState(MinecraftServer server) {
-		return new ModNetworking.EnderSizeChangedS2C(ModGameRules.getEnderChestSize(server.getGameRules()));
+		return new ModNetworking.EnderSizeChangedS2C(ModGameRules.getEnderChestSize(server.getOverworld().getGameRules()));
 	}
 }

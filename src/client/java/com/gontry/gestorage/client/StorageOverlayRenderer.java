@@ -5,9 +5,10 @@ import com.gontry.gestorage.client.config.ModuleConfig;
 import com.gontry.gestorage.mixin.HandledScreenAccessor;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
+import net.minecraft.client.gl.RenderPipelines;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
-import net.minecraft.client.gui.screen.recipebook.RecipeBookProvider;
+import net.minecraft.client.gui.screen.recipebook.RecipeBookWidget;
 import net.minecraft.item.ItemStack;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.text.Text;
@@ -91,7 +92,10 @@ public class StorageOverlayRenderer {
 	}
 
 	private static boolean isRecipeBookOpen(HandledScreen<?> screen) {
-		return screen instanceof RecipeBookProvider provider && provider.getRecipeBookWidget().isOpen();
+		// The recipe book widget is no longer exposed by RecipeBookProvider; the
+		// screens register it as a child, so look for it there.
+		return screen.children().stream()
+				.anyMatch(child -> child instanceof RecipeBookWidget<?> widget && widget.isOpen());
 	}
 
 	private static Counts countInventory(HandledScreen<?> screen, Slot focused) {
@@ -171,17 +175,17 @@ public class StorageOverlayRenderer {
 		int innerWidth = Math.max(width - BORDER * 2, 0);
 		int innerHeight = Math.max(height - BORDER * 2, 0);
 
-		context.drawTexture(PANEL_TEXTURE, x, y, BORDER, BORDER, 0, 0, BORDER, BORDER, 16, 16);
-		context.drawTexture(PANEL_TEXTURE, x + BORDER, y, innerWidth, BORDER, BORDER, 0, 16 - BORDER * 2, BORDER, 16, 16);
-		context.drawTexture(PANEL_TEXTURE, right, y, BORDER, BORDER, 16 - BORDER, 0, BORDER, BORDER, 16, 16);
+		context.drawTexture(RenderPipelines.GUI_TEXTURED, PANEL_TEXTURE, x, y, 0.0F, 0.0F, BORDER, BORDER, BORDER, BORDER, 16, 16);
+		context.drawTexture(RenderPipelines.GUI_TEXTURED, PANEL_TEXTURE, x + BORDER, y, BORDER, 0.0F, innerWidth, BORDER, 16 - BORDER * 2, BORDER, 16, 16);
+		context.drawTexture(RenderPipelines.GUI_TEXTURED, PANEL_TEXTURE, right, y, 16 - BORDER, 0.0F, BORDER, BORDER, BORDER, BORDER, 16, 16);
 
-		context.drawTexture(PANEL_TEXTURE, x, y + BORDER, BORDER, innerHeight, 0, BORDER, BORDER, 16 - BORDER * 2, 16, 16);
-		context.drawTexture(PANEL_TEXTURE, x + BORDER, y + BORDER, innerWidth, innerHeight, BORDER, BORDER, 16 - BORDER * 2, 16 - BORDER * 2, 16, 16);
-		context.drawTexture(PANEL_TEXTURE, right, y + BORDER, BORDER, innerHeight, 16 - BORDER, BORDER, BORDER, 16 - BORDER * 2, 16, 16);
+		context.drawTexture(RenderPipelines.GUI_TEXTURED, PANEL_TEXTURE, x, y + BORDER, 0.0F, BORDER, BORDER, innerHeight, BORDER, 16 - BORDER * 2, 16, 16);
+		context.drawTexture(RenderPipelines.GUI_TEXTURED, PANEL_TEXTURE, x + BORDER, y + BORDER, BORDER, BORDER, innerWidth, innerHeight, 16 - BORDER * 2, 16 - BORDER * 2, 16, 16);
+		context.drawTexture(RenderPipelines.GUI_TEXTURED, PANEL_TEXTURE, right, y + BORDER, 16 - BORDER, BORDER, BORDER, innerHeight, BORDER, 16 - BORDER * 2, 16, 16);
 
-		context.drawTexture(PANEL_TEXTURE, x, bottom, BORDER, BORDER, 0, 16 - BORDER, BORDER, BORDER, 16, 16);
-		context.drawTexture(PANEL_TEXTURE, x + BORDER, bottom, innerWidth, BORDER, BORDER, 16 - BORDER, 16 - BORDER * 2, BORDER, 16, 16);
-		context.drawTexture(PANEL_TEXTURE, right, bottom, BORDER, BORDER, 16 - BORDER, 16 - BORDER, BORDER, BORDER, 16, 16);
+		context.drawTexture(RenderPipelines.GUI_TEXTURED, PANEL_TEXTURE, x, bottom, 0.0F, 16 - BORDER, BORDER, BORDER, BORDER, BORDER, 16, 16);
+		context.drawTexture(RenderPipelines.GUI_TEXTURED, PANEL_TEXTURE, x + BORDER, bottom, BORDER, 16 - BORDER, innerWidth, BORDER, 16 - BORDER * 2, BORDER, 16, 16);
+		context.drawTexture(RenderPipelines.GUI_TEXTURED, PANEL_TEXTURE, right, bottom, 16 - BORDER, 16 - BORDER, BORDER, BORDER, BORDER, BORDER, 16, 16);
 	}
 
 	private record Counts(int totalSlots, int freeSlots, int matchingItems) {}

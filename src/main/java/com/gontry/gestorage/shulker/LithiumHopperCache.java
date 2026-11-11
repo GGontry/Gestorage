@@ -11,7 +11,7 @@ import java.util.List;
  * be recomputed when a shulker rule changes.
  *
  * <p>Lithium only recomputes that count when an inventory changes. Changing
- * {@code gestorage:stackableShulkers} or {@code gestorage:hopperStackableShulkers}
+ * {@code gestorage:stackable_shulkers} or {@code gestorage:hopper_stackable_shulkers}
  * changes the effective max count without touching any inventory, so a cache
  * filled under the old rule can make a hopper believe the destination is still
  * full (or not full) until something else mutates it.

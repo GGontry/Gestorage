@@ -4,6 +4,7 @@ import com.gontry.gestorage.client.InventorySortingRenderer;
 import com.gontry.gestorage.client.ShulkerRefillRenderer;
 import com.gontry.gestorage.client.SlotLockRenderer;
 import com.gontry.gestorage.client.StorageOverlayRenderer;
+import net.minecraft.client.gui.Click;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.screen.slot.Slot;
@@ -16,7 +17,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(HandledScreen.class)
 public class HandledScreenMixin {
 	@Inject(at = @At("TAIL"), method = "drawSlot")
-	private void gestorage_onDrawSlot(DrawContext context, Slot slot, CallbackInfo ci) {
+	private void gestorage_onDrawSlot(DrawContext context, Slot slot, int mouseX, int mouseY, CallbackInfo ci) {
 		HandledScreen<?> screen = (HandledScreen<?>) (Object) this;
 		ShulkerRefillRenderer.renderSlotBorder(context, slot, screen);
 		SlotLockRenderer.renderSlotBorder(context, slot, screen);
@@ -35,14 +36,14 @@ public class HandledScreenMixin {
 	}
 
 	@Inject(at = @At("HEAD"), method = "mouseClicked", cancellable = true)
-	private void gestorage_onMouseClicked(double mouseX, double mouseY, int button, CallbackInfoReturnable<Boolean> cir) {
-		if (button != 0) return;
+	private void gestorage_onMouseClicked(Click click, boolean doubled, CallbackInfoReturnable<Boolean> cir) {
+		if (click.button() != 0) return;
 		HandledScreen<?> screen = (HandledScreen<?>) (Object) this;
-		if (SlotLockRenderer.handleClick(screen, mouseX, mouseY)) {
+		if (SlotLockRenderer.handleClick(screen, click.x(), click.y())) {
 			cir.setReturnValue(true);
 			return;
 		}
-		if (InventorySortingRenderer.handleClick(screen, (int) mouseX, (int) mouseY)) {
+		if (InventorySortingRenderer.handleClick(screen, (int) click.x(), (int) click.y())) {
 			cir.setReturnValue(true);
 		}
 	}

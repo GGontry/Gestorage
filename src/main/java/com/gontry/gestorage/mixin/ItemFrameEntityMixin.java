@@ -5,7 +5,8 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.decoration.ItemFrameEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.world.GameRules;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.world.rule.GameRules;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -30,7 +31,7 @@ public abstract class ItemFrameEntityMixin {
 	protected abstract ItemStack getAsItemStack();
 
 	@Inject(method = "dropHeldStack", at = @At("HEAD"), cancellable = true)
-	private void gestorage$dropHeldStack(Entity entity, boolean alwaysDrop, CallbackInfo ci) {
+	private void gestorage$dropHeldStack(ServerWorld world, Entity entity, boolean dropSelf, CallbackInfo ci) {
 		if (!(entity instanceof ServerPlayerEntity player)) return;
 		if (this.fixed) return;
 		if (!CarefulBreakManager.shouldCollectEntityDrops(player)) return;
@@ -39,7 +40,7 @@ public abstract class ItemFrameEntityMixin {
 		ItemStack held = self.getHeldItemStack();
 		self.setHeldItemStack(ItemStack.EMPTY);
 
-		if (!self.getWorld().getGameRules().getBoolean(GameRules.DO_ENTITY_DROPS)) {
+		if (!world.getGameRules().getValue(GameRules.ENTITY_DROPS)) {
 			if (entity == null) this.removeFromFrame(held);
 			ci.cancel();
 			return;
@@ -51,7 +52,7 @@ public abstract class ItemFrameEntityMixin {
 		}
 
 		List<ItemStack> drops = new ArrayList<>();
-		if (alwaysDrop) drops.add(this.getAsItemStack());
+		if (dropSelf) drops.add(this.getAsItemStack());
 		if (!held.isEmpty()) {
 			ItemStack copy = held.copy();
 			this.removeFromFrame(copy);

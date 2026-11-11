@@ -15,6 +15,7 @@ import net.minecraft.registry.DynamicRegistryManager;
 import net.minecraft.registry.Registry;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.entry.RegistryEntry;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
@@ -327,15 +328,17 @@ public final class AutoToolManager {
 	}
 
 	private static Enchants enchants(ServerPlayerEntity player, int pref) {
-		DynamicRegistryManager manager = player.getServer() != null ? player.getServer().getRegistryManager() : null;
-		Registry<Enchantment> registry = manager != null ? manager.get(RegistryKeys.ENCHANTMENT) : null;
+		MinecraftServer server = player.getEntityWorld().getServer();
+		DynamicRegistryManager manager = server != null ? server.getRegistryManager() : null;
+		Registry<Enchantment> registry = manager != null
+				? manager.getOptional(RegistryKeys.ENCHANTMENT).orElse(null) : null;
 		RegistryEntry<Enchantment> efficiency = registry != null
-				? registry.getEntry(Enchantments.EFFICIENCY).orElse(null) : null;
+				? registry.getEntry(Enchantments.EFFICIENCY.getValue()).orElse(null) : null;
 		boolean wanted = pref != ModConstants.ENCH_PREF_NONE && registry != null;
 		RegistryEntry<Enchantment> fortune = wanted
-				? registry.getEntry(Enchantments.FORTUNE).orElse(null) : null;
+				? registry.getEntry(Enchantments.FORTUNE.getValue()).orElse(null) : null;
 		RegistryEntry<Enchantment> silkTouch = wanted
-				? registry.getEntry(Enchantments.SILK_TOUCH).orElse(null) : null;
+				? registry.getEntry(Enchantments.SILK_TOUCH.getValue()).orElse(null) : null;
 		return new Enchants(efficiency, fortune, silkTouch);
 	}
 
@@ -367,8 +370,8 @@ public final class AutoToolManager {
 	 */
 	private static void selectSlot(ServerPlayerEntity player, int slot) {
 		PlayerInventory inv = player.getInventory();
-		if (inv.selectedSlot == slot) return;
-		inv.selectedSlot = slot;
+		if (inv.getSelectedSlot() == slot) return;
+		inv.setSelectedSlot(slot);
 		if (player.networkHandler != null) {
 			player.networkHandler.sendPacket(new UpdateSelectedSlotS2CPacket(slot));
 		}

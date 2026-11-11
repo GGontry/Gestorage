@@ -126,8 +126,9 @@ public class RefillRequestC2SPacket {
 			if (targetInv == player.getInventory() && player.networkHandler != null) {
 				ItemStack synced = targetInv.getStack(payload.targetSlot());
 				player.networkHandler.sendPacket(new ScreenHandlerSlotUpdateS2CPacket(
-						ScreenHandlerSlotUpdateS2CPacket.UPDATE_PLAYER_INVENTORY_SYNC_ID,
-						0, payload.targetSlot(), synced.copy()));
+						player.playerScreenHandler.syncId,
+						player.playerScreenHandler.nextRevision(),
+						payload.targetSlot(), synced.copy()));
 			}
 		});
 	}

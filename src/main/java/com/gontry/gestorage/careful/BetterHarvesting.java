@@ -47,7 +47,7 @@ public final class BetterHarvesting {
 			int broken = 0;
 			for (BlockPos cropPos : crops) {
 				if (cropPos.equals(pos)) continue;
-				if (!world.canPlayerModifyAt(player, cropPos)) continue;
+				if (!player.canModifyAt(world, cropPos)) continue;
 				world.breakBlock(cropPos, true, player, 512);
 				broken++;
 			}

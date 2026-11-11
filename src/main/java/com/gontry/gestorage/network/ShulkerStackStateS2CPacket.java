@@ -6,6 +6,7 @@ import com.gontry.gestorage.shulker.ShulkerStackNormalizer;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.world.rule.GameRules;
 
 public final class ShulkerStackStateS2CPacket {
 	private static boolean lastBroadcast;
@@ -14,7 +15,7 @@ public final class ShulkerStackStateS2CPacket {
 	private ShulkerStackStateS2CPacket() {}
 
 	public static void sendTo(ServerPlayerEntity player) {
-		ServerPlayNetworking.send(player, buildState(player.getServer()));
+		ServerPlayNetworking.send(player, buildState(player.getEntityWorld().getServer()));
 	}
 
 	public static void broadcast(MinecraftServer server) {
@@ -30,8 +31,9 @@ public final class ShulkerStackStateS2CPacket {
 	 * turning player stacking off also has to split stacks that no longer fit.
 	 */
 	public static void syncIfChanged(MinecraftServer server) {
-		boolean players = ModGameRules.isStackableShulkers(server.getGameRules());
-		boolean hoppers = ModGameRules.isHopperStackableShulkers(server.getGameRules());
+		GameRules rules = server.getOverworld().getGameRules();
+		boolean players = ModGameRules.isStackableShulkers(rules);
+		boolean hoppers = ModGameRules.isHopperStackableShulkers(rules);
 		if (players == lastBroadcast && hoppers == lastHoppersBroadcast) return;
 
 		boolean playersTurnedOff = lastBroadcast && !players;
@@ -53,9 +55,10 @@ public final class ShulkerStackStateS2CPacket {
 	}
 
 	private static ModNetworking.ShulkerStackStateS2C buildState(MinecraftServer server) {
+		GameRules rules = server.getOverworld().getGameRules();
 		return new ModNetworking.ShulkerStackStateS2C(
-				ModGameRules.isStackableShulkers(server.getGameRules()),
-				ModGameRules.isHopperStackableShulkers(server.getGameRules())
+				ModGameRules.isStackableShulkers(rules),
+				ModGameRules.isHopperStackableShulkers(rules)
 		);
 	}
 }

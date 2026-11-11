@@ -1,12 +1,14 @@
 package com.gontry.gestorage.client;
 
+import com.gontry.gestorage.Gestorage;
 import com.gontry.gestorage.client.config.ModuleConfig;
-import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
+import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.item.ItemStack;
 import net.minecraft.text.Text;
+import net.minecraft.util.Identifier;
 
 public class ToolWheelRenderer {
 	private static final int SLOT_COUNT = 9;
@@ -15,11 +17,15 @@ public class ToolWheelRenderer {
 	private static final int TILE = 18;
 	private static final int RADIUS = 42;
 	private static final double CANCEL_RADIUS = 12.0;
+	private static final Identifier HUD_LAYER = Identifier.of(Gestorage.MOD_ID, "tool_wheel");
 
 	private ToolWheelRenderer() {}
 
 	public static void register() {
-		HudRenderCallback.EVENT.register((context, tickCounter) -> {
+		// The wheel is drawn over the whole HUD, so it is appended after every
+		// other layer (HudRenderCallback replacement). It needs its own id: passing
+		// a vanilla id to addLast would try to create a second layer with that id.
+		HudElementRegistry.addLast(HUD_LAYER, (context, tickCounter) -> {
 			if (!ClientToolWheelState.wheelActive) return;
 			if (!ModuleConfig.toolWheel().enabled()) return;
 			render(context);
@@ -42,7 +48,7 @@ public class ToolWheelRenderer {
 			ItemStack stack = ClientToolWheelState.STACKS[i];
 			if (!stack.isEmpty()) {
 				context.drawItem(stack, x + 1, y + 1);
-				context.drawItemInSlot(tr, stack, x + 1, y + 1, null);
+				context.drawStackOverlay(tr, stack, x + 1, y + 1, null);
 			}
 		}
 

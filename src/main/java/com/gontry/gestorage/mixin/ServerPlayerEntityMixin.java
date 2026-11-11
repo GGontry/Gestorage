@@ -8,7 +8,6 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(ServerPlayerEntity.class)
 public class ServerPlayerEntityMixin {
@@ -20,15 +19,16 @@ public class ServerPlayerEntityMixin {
 	/**
 	 * Q outside any screen calls this directly (the THROW slot action is covered by
 	 * {@link ScreenHandlerMixin}). Cancel and re-sync the open handler afterwards so
-	 * the client does not keep a predicted copy of the dropped item.
+	 * the client does not keep a predicted copy of the dropped item. The method is
+	 * {@code void} on 1.21.11, so cancelling it has no return value to restore.
 	 */
 	@Inject(method = "dropSelectedItem", at = @At("HEAD"), cancellable = true)
-	private void gestorage$preventLockedDrop(boolean entireStack, CallbackInfoReturnable<Boolean> cir) {
+	private void gestorage$preventLockedDrop(boolean entireStack, CallbackInfo ci) {
 		ServerPlayerEntity player = (ServerPlayerEntity) (Object) this;
 		if (!SlotLockManager.shouldPreventDrop(player)) return;
 
-		cir.setReturnValue(false);
-		MinecraftServer server = player.getServer();
+		ci.cancel();
+		MinecraftServer server = player.getEntityWorld().getServer();
 		if (server != null) {
 			server.execute(() -> player.currentScreenHandler.updateToClient());
 		}

@@ -13,6 +13,7 @@
 		"ItemFrameEntityMixin",
 		"ItemScattererMixin",
 		"ItemStackMixin",
+		"LevelInfoMixin",
 		"LithiumStackListMixin",
 		"ScreenHandlerMixin",
 		"ServerPlayerEntityMixin",

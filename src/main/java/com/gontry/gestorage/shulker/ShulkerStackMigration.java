@@ -14,7 +14,7 @@ import java.nio.file.StandardCopyOption;
 
 /**
  * One-time migration from the retired {@code config/gestorage/shulker_stack.json} flag to
- * the {@code gestorage:stackableShulkers} game rule.
+ * the {@code gestorage:stackable_shulkers} game rule.
  *
  * <p>Runs when the server starts, before anyone joins. A legacy file that had
  * {@code enabled: true} turns the game rule on for that world; the default
@@ -32,8 +32,8 @@ public final class ShulkerStackMigration {
 	public static void run(MinecraftServer server) {
 		if (Files.exists(LEGACY_CONFIG)) {
 			if (wasEnabled(LEGACY_CONFIG)) {
-				server.getGameRules().get(ModGameRules.STACKABLE_SHULKERS).set(true, server);
-				Gestorage.LOGGER.info("Migrated shulker_stack.json (enabled=true) to the gestorage:stackableShulkers game rule");
+				server.getOverworld().getGameRules().setValue(ModGameRules.STACKABLE_SHULKERS, true, server);
+				Gestorage.LOGGER.info("Migrated shulker_stack.json (enabled=true) to the gestorage:stackable_shulkers game rule");
 			}
 			rename(LEGACY_CONFIG);
 		}

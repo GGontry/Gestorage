@@ -2,7 +2,7 @@
 
 pkgs.mkShell {
   buildInputs = with pkgs; [
-    # Java 21 for Minecraft 1.21.1
+    # Java 21 for Minecraft 1.21.11
     jdk21
 
     # Gradle
@@ -15,7 +15,7 @@ pkgs.mkShell {
 
   shellHook = ''
     echo "=== Gestorage Dev Environment ==="
-    echo "Minecraft: 1.21.1"
+    echo "Minecraft: 1.21.11"
     echo "Java: $(java -version 2>&1 | head -1)"
     echo "Gradle: $(gradle --version | head -3 | tail -1)"
     echo ""

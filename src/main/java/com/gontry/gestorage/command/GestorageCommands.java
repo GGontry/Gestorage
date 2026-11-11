@@ -47,7 +47,7 @@ public class GestorageCommands {
 				)
 				.then(CommandManager.literal("endersize")
 						.then(CommandManager.argument("size", StringArgumentType.word())
-								.requires(source -> source.hasPermissionLevel(2))
+								.requires(CommandManager.requirePermissionLevel(CommandManager.GAMEMASTERS_CHECK))
 								.suggests((context, builder) -> {
 									for (String mode : SIZE_MODES) {
 										builder.suggest(mode);
@@ -70,7 +70,7 @@ public class GestorageCommands {
 										return 0;
 									}
 
-									source.getWorld().getGameRules().get(ModGameRules.ENDER_CHEST_SIZE).set(mode, source.getServer());
+									source.getWorld().getGameRules().setValue(ModGameRules.ENDER_CHEST_SIZE, mode, source.getServer());
 									EnderSizeChangedS2CPacket.broadcast(source.getServer());
 
 									MutableText confirm = Text.empty();
@@ -104,18 +104,18 @@ public class GestorageCommands {
 						.then(CommandManager.literal("players")
 								.executes(context -> reportPlayersStack(context.getSource()))
 								.then(CommandManager.literal("on")
-										.requires(source -> source.hasPermissionLevel(2))
+										.requires(CommandManager.requirePermissionLevel(CommandManager.GAMEMASTERS_CHECK))
 										.executes(context -> setPlayersStack(context.getSource(), true)))
 								.then(CommandManager.literal("off")
-										.requires(source -> source.hasPermissionLevel(2))
+										.requires(CommandManager.requirePermissionLevel(CommandManager.GAMEMASTERS_CHECK))
 										.executes(context -> setPlayersStack(context.getSource(), false))))
 						.then(CommandManager.literal("hoppers")
 								.executes(context -> reportHoppersStack(context.getSource()))
 								.then(CommandManager.literal("on")
-										.requires(source -> source.hasPermissionLevel(2))
+										.requires(CommandManager.requirePermissionLevel(CommandManager.GAMEMASTERS_CHECK))
 										.executes(context -> setHoppersStack(context.getSource(), true)))
 								.then(CommandManager.literal("off")
-										.requires(source -> source.hasPermissionLevel(2))
+										.requires(CommandManager.requirePermissionLevel(CommandManager.GAMEMASTERS_CHECK))
 										.executes(context -> setHoppersStack(context.getSource(), false))))
 						.executes(context -> reportShulkerStack(context.getSource()))
 				)
@@ -205,7 +205,7 @@ public class GestorageCommands {
 	}
 
 	private static int setPlayersStack(ServerCommandSource source, boolean value) {
-		source.getWorld().getGameRules().get(ModGameRules.STACKABLE_SHULKERS).set(value, source.getServer());
+		source.getWorld().getGameRules().setValue(ModGameRules.STACKABLE_SHULKERS, value, source.getServer());
 		boolean hoppers = ModGameRules.isHopperStackableShulkers(source.getWorld().getGameRules());
 
 		MutableText confirm = Text.empty();
@@ -228,7 +228,7 @@ public class GestorageCommands {
 	private static int setHoppersStack(ServerCommandSource source, boolean value) {
 		var rules = source.getWorld().getGameRules();
 		boolean players = ModGameRules.isStackableShulkers(rules);
-		rules.get(ModGameRules.HOPPER_STACKABLE_SHULKERS).set(value, source.getServer());
+		rules.setValue(ModGameRules.HOPPER_STACKABLE_SHULKERS, value, source.getServer());
 
 		MutableText confirm = Text.empty();
 		confirm.append(Text.literal("[Gestorage] ").styled(s -> s.withColor(TextColor.fromFormatting(Formatting.GREEN))));
@@ -237,7 +237,7 @@ public class GestorageCommands {
 		if (value && !players) {
 			// The main rule gates item max counts for everyone; enabling the hopper
 			// rule alone would otherwise silently do nothing.
-			rules.get(ModGameRules.STACKABLE_SHULKERS).set(true, source.getServer());
+			rules.setValue(ModGameRules.STACKABLE_SHULKERS, true, source.getServer());
 			confirm.append(Text.literal(" (players stacking was also enabled, as it is required)")
 					.styled(s -> s.withColor(TextColor.fromFormatting(Formatting.GRAY))));
 		} else {

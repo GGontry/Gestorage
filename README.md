@@ -1,10 +1,10 @@
 # Gestorage
 
 [![Mod Loader](https://img.shields.io/badge/Modloader-Fabric-blue)](https://fabricmc.net/)
-[![Minecraft](https://img.shields.io/badge/Minecraft-1.21.1-ea5b2b)](https://www.minecraft.net/)
+[![Minecraft](https://img.shields.io/badge/Minecraft-1.21.11-ea5b2b)](https://www.minecraft.net/)
 [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 
-**Gestorage** is a modular Fabric mod (Minecraft 1.21.1) that improves player storage and inventory management. It is an ecosystem of independent modules that can be enabled and disabled individually, so you only install the mechanics you actually want.
+**Gestorage** is a modular Fabric mod (Minecraft 1.21.11) that improves player storage and inventory management. It is an ecosystem of independent modules that can be enabled and disabled individually, so you only install the mechanics you actually want.
 
 All modules ship **disabled by default** and are activated from the in-game config screen (`/gestorage config`), by keybind, or by editing `config/gestorage/`.
 
@@ -29,7 +29,7 @@ All modules ship **disabled by default** and are activated from the in-game conf
 
 ### Expanded Ender Chest
 
-- Three storage tiers, chosen server-wide with the `gestorage:enderChestSize` game rule: Normal (27), Large (54) and Extra Large (228 slots).
+- Three storage tiers, chosen server-wide with the `gestorage:ender_chest_size` game rule: Normal (27), Large (54) and Extra Large (228 slots).
 - Overflow items beyond the vanilla 27 slots are stored per player and persist across sessions (NBT state, versioned with backups).
 - A configurable keybind opens your ender chest from anywhere, without needing an item.
 - Also accessible with `/gestorage endersize [normal|large|extra_large]` (requires OP level 2).
@@ -38,6 +38,7 @@ All modules ship **disabled by default** and are activated from the in-game conf
 
 - Mark two slots (source shulker and target) with the configured marking key to create a persistent per-world link.
 - The target slot is refilled from the shulker up to default stack size whenever it falls below the configured threshold, with adaptive back-off.
+- **Reverse Order** — choose whether items are pulled from the first shulker slot to the last (default) or from the last to the first. Available in the module settings and as its own assignable keybind.
 - Links are saved per world in `config/gestorage/links.json` and survive restarts; they are shared across players.
 
 ### Stackable Shulkers
@@ -48,8 +49,9 @@ All modules ship **disabled by default** and are activated from the in-game conf
 - While hoppers are off, a hopper only moves an empty shulker into an **empty** slot. A destination with one shulker in every slot is treated as full; once slots are emptied (shift-clicked or taken by hand), the hopper resumes moving items into them. The rule is enforced everywhere: normal transfers, item-entity pickup/collision, hopper minecarts and shift-clicking into a hopper screen all move at most one shulker at a time. Picking up a dropped stack leaves the rest of the stack in the world instead of deleting it.
 - This also works with Lithium: Gestorage keeps Lithium's cached full-slot count in sync when hoppers are off, and invalidates that cache when either rule changes, so an emptied destination does not leave the hopper stuck (and toggling the rule does not leave a stale count behind).
 - Turning player stacking off splits any existing over-max stacks in the player inventory, cursor and ender chest into singles; whatever does not fit is dropped at the player's feet. The same cleanup runs when joining a world whose rule is already off.
-- Server-authoritative and per world, like the ender chest size: turn player stacking on with `/gestorage shulkerstack players on`, off with `/gestorage shulkerstack players off`, and check both states with `/gestorage shulkerstack` (changing them requires OP level 2). It is the `gestorage:stackableShulkers` game rule, so plain `/gamerule` works too, and every client is told about a change right away (including the hopper rule, so GUI limits match the server).
+- Server-authoritative and per world, like the ender chest size: turn player stacking on with `/gestorage shulkerstack players on`, off with `/gestorage shulkerstack players off`, and check both states with `/gestorage shulkerstack` (changing them requires OP level 2). It is the `gestorage:stackable_shulkers` game rule, so plain `/gamerule` works too, and every client is told about a change right away (including the hopper rule, so GUI limits match the server).
 - There is no config entry for it: it used to be toggled from the config screen, and if you had it enabled your old `shulker_stack.json` is imported into the game rule the first time you start your world.
+- Upgrading a 1.21.1 world keeps its settings: the values saved under the old `gestorage:stackableShulkers` / `gestorage:hopperStackableShulkers` names are imported once into the new snake_case rules. Vanilla logs the old keys it has to drop while opening the world; that message is expected.
 
 ### Storage Overlay
 
@@ -92,16 +94,17 @@ Server-side flags, synced to all clients and toggleable with OP level 2 (or as t
 
 ## Requirements
 
-- Minecraft **1.21.1**
-- Fabric Loader **>= 0.16.10**
-- Fabric API
-- owo-lib (required — the mod bundles a sentinel that warns you when it is missing)
+- Minecraft **1.21.11**
+- Fabric Loader **>= 0.20.1**
+- Fabric API **0.141.6+1.21.11** (or newer for the same Minecraft version)
+- owo-lib **0.13.0+1.21.11** (required — the mod bundles a sentinel that warns you when it is missing)
+- Mod Menu **17.0.1** (optional, only adds the config-screen button)
 
 ---
 
 ## Installation
 
-1. Install **Fabric Loader** for Minecraft 1.21.1.
+1. Install **Fabric Loader** for Minecraft 1.21.11.
 2. Install the matching **Fabric API** version.
 3. Download the latest **Gestorage** release from the [Releases page](../../releases).
 4. Drop the `.jar` file into your `.minecraft/mods` directory.
@@ -115,27 +118,31 @@ All configuration lives in `config/gestorage/`:
 
 | File | Purpose |
 |---|---|
-| `ender_chest.json` | Ender chest access keybind and module enabled flag |
-| `shulker_refill.json` | Refill threshold, marking key and module enabled flag |
-| `storage_overlay.json` | Overlay element visibility and toggle keybinds |
-| `inventory_sorting.json` | Sorting options and toggle keybinds |
-| `slot_lock.json` | Slot Lock key, behaviour switches and module enabled flag |
+| `ender_chest.json5` | Ender chest access keybind and module enabled flag |
+| `shulker_refill.json5` | Refill threshold, refill order, marking key and module enabled flag |
+| `storage_overlay.json5` | Overlay element visibility and toggle keybinds |
+| `inventory_sorting.json5` | Sorting options and toggle keybinds |
+| `slot_lock.json5` | Slot Lock key, behaviour switches and module enabled flag |
 | `careful_break.json` | Server-authoritative Careful Break flags (written by the server only) |
 | `careful_break_keybinds.json` | Client-side Careful Break keybinds |
-| `tool_wheel.json` | Tool Wheel keys and module enabled flag |
+| `tool_wheel.json5` | Tool Wheel keys and module enabled flag |
 | `links.json` | Shulker link definitions |
+
+The config screen draws its window, buttons and checkboxes with real transparency, so it blends with the world behind it without an external translucency mod.
 
 ### Commands and game rules
 
 - `/gestorage config` — opens the in-game config screen.
-- `/gestorage endersize [normal|large|extra_large]` — sets the `gestorage:enderChestSize` game rule (OP level 2).
+- `/gestorage endersize [normal|large|extra_large]` — sets the `gestorage:ender_chest_size` game rule (OP level 2).
 - `/gestorage shulkerstack` — reports the player and hopper stacking states.
 - `/gestorage shulkerstack players [on|off]` — turns player/global empty-shulker stacking on or off (OP level 2).
 - `/gestorage shulkerstack hoppers [on|off]` — allows hoppers to stack empty shulkers (OP level 2); off by default. Turning them on also enables player stacking if needed; turning them off keeps hoppers at the vanilla limit of 1.
 - `/gestorage toolslot [<1-9>|clear]` — pins (or unpins) the hotbar slot Auto Tool swaps into. Personal, no OP level needed.
-- Game rule `gestorage:enderChestSize` — accepts `0` (normal), `1` (large) or `2` (extra large); the game rule is the single authority for the ender chest size on the server.
-- Game rule `gestorage:stackableShulkers` — `true`/`false`, the single authority for Stackable Shulkers on the server.
-- Game rule `gestorage:hopperStackableShulkers` — `true`/`false`, default `false`; lets hoppers treat empty shulkers as stackable when `gestorage:stackableShulkers` is also on.
+- Game rule `gestorage:ender_chest_size` — accepts `0` (normal), `1` (large) or `2` (extra large); the game rule is the single authority for the ender chest size on the server.
+- Game rule `gestorage:stackable_shulkers` — `true`/`false`, the single authority for Stackable Shulkers on the server.
+- Game rule `gestorage:hopper_stackable_shulkers` — `true`/`false`, default `false`; lets hoppers treat empty shulkers as stackable when `gestorage:stackable_shulkers` is also on.
+
+Game rules use snake_case because 1.21.11 requires rule ids to be valid identifiers (no uppercase letters), the same way vanilla renamed all of its own rules. Worlds from the 1.21.1 line keep their values: the old camelCase keys are imported automatically on first load.
 
 ---
 

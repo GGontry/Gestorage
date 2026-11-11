@@ -8,11 +8,15 @@ import com.gontry.gestorage.client.ui.ConfigIconButton;
 import com.gontry.gestorage.client.ui.ConfigTextures;
 import com.gontry.gestorage.client.CarefulBreakKeybinds;
 import net.minecraft.client.font.TextRenderer;
+import net.minecraft.client.gui.Click;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.PressableWidget;
 import net.minecraft.client.gui.widget.TextFieldWidget;
+import net.minecraft.client.input.CharInput;
+import net.minecraft.client.input.KeyInput;
 import net.minecraft.client.util.InputUtil;
+import net.minecraft.client.util.Window;
 import net.minecraft.text.OrderedText;
 import net.minecraft.text.Text;
 import org.lwjgl.glfw.GLFW;
@@ -514,9 +518,10 @@ public class GestorageConfigScreen extends Screen {
 	}
 
 	@Override
-	public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+	public boolean keyPressed(KeyInput input) {
 		swallowNextChar = false;
 		if (waitingForKey) {
+			int keyCode = input.key();
 			if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
 				clearKeybind();
 				return true;
@@ -529,26 +534,27 @@ public class GestorageConfigScreen extends Screen {
 			// The event carries the modifier state at the time of the press, so a
 			// modifier held before the capture started is included and a released
 			// one is never stuck in the binding.
-			String encoded = KeybindHelper.encode(keyCode, modsFromGlfw(modifiers));
+			String encoded = KeybindHelper.encode(keyCode, modsFromGlfw(input.modifiers()));
 			applyKeybind(encoded);
 			return true;
 		}
-		return super.keyPressed(keyCode, scanCode, modifiers);
+		return super.keyPressed(input);
 	}
 
 	@Override
-	public boolean charTyped(char chr, int modifiers) {
+	public boolean charTyped(CharInput input) {
 		if (swallowNextChar) {
 			swallowNextChar = false;
 			return true;
 		}
 		if (waitingForKey) return true;
-		return super.charTyped(chr, modifiers);
+		return super.charTyped(input);
 	}
 
 	@Override
-	public boolean mouseClicked(double mouseX, double mouseY, int button) {
+	public boolean mouseClicked(Click click, boolean doubled) {
 		if (waitingForKey) {
+			int button = click.button();
 			if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
 				cancelKeybindCapture();
 				return true;
@@ -558,14 +564,14 @@ public class GestorageConfigScreen extends Screen {
 			applyKeybind(encoded);
 			return true;
 		}
-		if (withinViewport(mouseX, mouseY)) {
+		if (withinViewport(click.x(), click.y())) {
 			for (DetailRow row : detailRows) {
-				if (row.widget.mouseClicked(mouseX, mouseY, button)) {
+				if (row.widget.mouseClicked(click, doubled)) {
 					return true;
 				}
 			}
 		}
-		return super.mouseClicked(mouseX, mouseY, button);
+		return super.mouseClicked(click, doubled);
 	}
 
 	@Override
@@ -673,23 +679,23 @@ public class GestorageConfigScreen extends Screen {
 	 * started and never reports a modifier that was already released.
 	 */
 	private int currentMods() {
-		if (this.client == null || this.client.getWindow() == null) return 0;
-		long handle = this.client.getWindow().getHandle();
+		if (this.client == null) return 0;
+		Window window = this.client.getWindow();
 		int mods = 0;
-		if (InputUtil.isKeyPressed(handle, GLFW.GLFW_KEY_LEFT_CONTROL)
-				|| InputUtil.isKeyPressed(handle, GLFW.GLFW_KEY_RIGHT_CONTROL)) {
+		if (InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_LEFT_CONTROL)
+				|| InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_RIGHT_CONTROL)) {
 			mods |= KeybindHelper.MOD_CTRL;
 		}
-		if (InputUtil.isKeyPressed(handle, GLFW.GLFW_KEY_LEFT_SHIFT)
-				|| InputUtil.isKeyPressed(handle, GLFW.GLFW_KEY_RIGHT_SHIFT)) {
+		if (InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_LEFT_SHIFT)
+				|| InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_RIGHT_SHIFT)) {
 			mods |= KeybindHelper.MOD_SHIFT;
 		}
-		if (InputUtil.isKeyPressed(handle, GLFW.GLFW_KEY_LEFT_ALT)
-				|| InputUtil.isKeyPressed(handle, GLFW.GLFW_KEY_RIGHT_ALT)) {
+		if (InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_LEFT_ALT)
+				|| InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_RIGHT_ALT)) {
 			mods |= KeybindHelper.MOD_ALT;
 		}
-		if (InputUtil.isKeyPressed(handle, GLFW.GLFW_KEY_LEFT_SUPER)
-				|| InputUtil.isKeyPressed(handle, GLFW.GLFW_KEY_RIGHT_SUPER)) {
+		if (InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_LEFT_SUPER)
+				|| InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_RIGHT_SUPER)) {
 			mods |= KeybindHelper.MOD_SUPER;
 		}
 		return mods;
@@ -786,16 +792,16 @@ public class GestorageConfigScreen extends Screen {
 		}
 
 		@Override
-		public void onClick(double mouseX, double mouseY) {
-			super.onClick(mouseX - 4, mouseY);
+		public void onClick(Click click, boolean doubled) {
+			super.onClick(new Click(click.x() - 4, click.y(), click.buttonInfo()), doubled);
 		}
 
 		@Override
-		public void renderWidget(DrawContext context, int mouseX, int mouseY, float delta) {
-			context.getMatrices().push();
-			context.getMatrices().translate(4, (this.height - 8) / 2f, 0);
-			super.renderWidget(context, mouseX, mouseY, delta);
-			context.getMatrices().pop();
+		public void renderWidget(DrawContext context, int mouseX, int mouseY, float deltaTicks) {
+			context.getMatrices().pushMatrix();
+			context.getMatrices().translate(4, (this.height - 8) / 2f);
+			super.renderWidget(context, mouseX, mouseY, deltaTicks);
+			context.getMatrices().popMatrix();
 		}
 	}
 

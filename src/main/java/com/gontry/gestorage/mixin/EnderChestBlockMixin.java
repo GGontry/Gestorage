@@ -15,6 +15,7 @@ import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.hit.BlockHitResult;
@@ -29,21 +30,24 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public class EnderChestBlockMixin {
 	@Inject(method = "onUse", at = @At("HEAD"), cancellable = true)
 	private void gestorage$onUse(net.minecraft.block.BlockState state, World world, BlockPos pos, PlayerEntity player, BlockHitResult hitPos, CallbackInfoReturnable<ActionResult> cir) {
-		if (world.isClient()) return;
-
-		int sizeMode = ModGameRules.getEnderChestSize(world.getGameRules());
-		if (sizeMode == ModConstants.MODE_NORMAL) return;
-
-		cir.setReturnValue(ActionResult.success(world.isClient));
+		if (!(world instanceof ServerWorld serverWorld)) return;
 
 		var enderChest = player.getEnderChestInventory();
+		if (enderChest == null) return;
+
+		int sizeMode = ModGameRules.getEnderChestSize(serverWorld.getGameRules());
+		if (sizeMode == ModConstants.MODE_NORMAL) return;
+
+		// Server-side only, so the previous success(world.isClient) maps to CONSUME.
+		cir.setReturnValue(ActionResult.CONSUME);
+
 		if (world.getBlockEntity(pos) instanceof EnderChestBlockEntity blockEntity) {
 			enderChest.setActiveBlockEntity(blockEntity);
 		}
 
 		int targetSize = ModConstants.getEnderSizeForMode(sizeMode);
 		var enhancedInv = EnderChestFactory.createForPlayer(
-				player, targetSize, world.getServer().getOverworld().getPersistentStateManager()
+				player, targetSize, serverWorld.getServer().getOverworld().getPersistentStateManager()
 		);
 		// Extended ender chests are not part of the player inventory, so they are
 		// normalized lazily when opened instead of on join or rule change.

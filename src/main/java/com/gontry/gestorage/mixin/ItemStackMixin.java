@@ -11,7 +11,6 @@ import net.minecraft.item.ItemUsageContext;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
-import net.minecraft.util.TypedActionResult;
 import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -38,11 +37,11 @@ public class ItemStackMixin {
 
 	@Inject(method = "use", at = @At("HEAD"), cancellable = true)
 	private void gestorage$preventLockedUse(World world, PlayerEntity user, Hand hand,
-			CallbackInfoReturnable<TypedActionResult<ItemStack>> cir) {
+			CallbackInfoReturnable<ActionResult> cir) {
 		if (world.isClient()) return;
 		if (!(user instanceof ServerPlayerEntity player)) return;
 		if (!SlotLockManager.shouldPreventUse(player, hand)) return;
-		cir.setReturnValue(TypedActionResult.pass((ItemStack) (Object) this));
+		cir.setReturnValue(ActionResult.PASS);
 	}
 
 	@Inject(method = "useOnBlock", at = @At("HEAD"), cancellable = true)
@@ -58,7 +57,7 @@ public class ItemStackMixin {
 	@Inject(method = "useOnEntity", at = @At("HEAD"), cancellable = true)
 	private void gestorage$preventLockedUseOnEntity(PlayerEntity user, LivingEntity entity, Hand hand,
 			CallbackInfoReturnable<ActionResult> cir) {
-		if (user.getWorld().isClient()) return;
+		if (user.getEntityWorld().isClient()) return;
 		if (!(user instanceof ServerPlayerEntity player)) return;
 		if (!SlotLockManager.shouldPreventUse(player, hand)) return;
 		cir.setReturnValue(ActionResult.PASS);

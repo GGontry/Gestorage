@@ -1,11 +1,13 @@
 package com.gontry.gestorage.client.ui;
 
-import com.mojang.blaze3d.systems.RenderSystem;
+import net.minecraft.client.gl.RenderPipelines;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
 import net.minecraft.client.gui.widget.PressableWidget;
+import net.minecraft.client.input.AbstractInput;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.ColorHelper;
 
 public class ConfigIconButton extends PressableWidget {
 	private final Runnable onPressAction;
@@ -20,7 +22,7 @@ public class ConfigIconButton extends PressableWidget {
 	}
 
 	@Override
-	public void onPress() {
+	public void onPress(AbstractInput input) {
 		if (onPressAction != null) {
 			onPressAction.run();
 		}
@@ -32,12 +34,9 @@ public class ConfigIconButton extends PressableWidget {
 	}
 
 	@Override
-	protected void renderWidget(DrawContext context, int mouseX, int mouseY, float delta) {
+	protected void drawIcon(DrawContext context, int mouseX, int mouseY, float deltaTicks) {
 		Identifier tex = this.isHovered() ? hoverTexture : texture;
-		RenderSystem.setShaderColor(1f, 1f, 1f, this.active ? 1f : 0.4f);
-		RenderSystem.enableBlend();
-		RenderSystem.defaultBlendFunc();
-		context.drawTexture(tex, this.getX(), this.getY(), 0, 0, this.width, this.height, this.width, this.height);
-		RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
+		context.drawTexture(RenderPipelines.GUI_TEXTURED, tex, this.getX(), this.getY(), 0.0F, 0.0F,
+				this.width, this.height, this.width, this.height, ColorHelper.getWhite(this.active ? 1.0F : 0.4F));
 	}
 }

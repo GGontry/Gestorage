@@ -32,7 +32,9 @@ public final class ShulkerStackNormalizer {
 		normalizeCursor(player);
 
 		EnderChestInventory enderChest = player.getEnderChestInventory();
-		normalizeRange(player, enderChest, 0, enderChest.size());
+		if (enderChest != null) {
+			normalizeRange(player, enderChest, 0, enderChest.size());
+		}
 	}
 
 	/** Normalizes one already-created inventory, such as the extended ender chest. */

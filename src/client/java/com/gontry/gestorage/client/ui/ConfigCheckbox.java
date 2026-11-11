@@ -1,11 +1,12 @@
 package com.gontry.gestorage.client.ui;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
 import net.minecraft.client.gui.widget.PressableWidget;
+import net.minecraft.client.input.AbstractInput;
 import net.minecraft.text.Text;
+import net.minecraft.util.math.ColorHelper;
 
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
@@ -24,7 +25,7 @@ public class ConfigCheckbox extends PressableWidget {
 	}
 
 	@Override
-	public void onPress() {
+	public void onPress(AbstractInput input) {
 		boolean newValue = !getter.getAsBoolean();
 		this.setter.accept(newValue);
 		if (this.onToggle != null) {
@@ -38,11 +39,10 @@ public class ConfigCheckbox extends PressableWidget {
 	}
 
 	@Override
-	protected void renderWidget(DrawContext context, int mouseX, int mouseY, float delta) {
+	protected void drawIcon(DrawContext context, int mouseX, int mouseY, float deltaTicks) {
 		int iconY = this.getY() + (this.height - 12) / 2;
-		RenderSystem.setShaderColor(1f, 1f, 1f, this.active ? 1f : 0.4f);
-		ConfigTextures.drawCheckbox(context, getter.getAsBoolean(), this.getX(), iconY);
-		RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
+		ConfigTextures.drawCheckbox(context, getter.getAsBoolean(), this.getX(), iconY,
+				ColorHelper.getWhite(this.active ? 1.0F : 0.4F));
 
 		int color = !this.active ? 0xFF8A8A8A : (this.isHovered() ? 0xFFFFFFFF : 0xFFD9D9D9);
 		Text message = this.getMessage();

@@ -2,17 +2,19 @@ package com.gontry.gestorage.shulker;
 
 import com.gontry.gestorage.ModGameRules;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.world.GameRules;
+import net.minecraft.world.rule.GameRules;
 
 /**
- * Resolves the {@code gestorage:stackableShulkers} game rule for call sites that have no
+ * Resolves the {@code gestorage:stackable_shulkers} game rule for call sites that have no
  * world at hand, such as {@code ItemStack.getMaxCount()}.
  *
- * <p>The server holds a live reference to its {@link GameRules} instance. Rule objects
- * mutate in place, so the reference always returns the current value, including after a
- * vanilla {@code /gamerule} change, with no cache to invalidate.
+ * <p>Game rules are per-world since 1.21.11, so the server holds a live reference to
+ * the overworld's {@link GameRules}; the nether and the end delegate to the same save
+ * properties, so the overworld behaves like the old server-wide rules. Rule objects
+ * mutate in place, so the reference always returns the current value, including after
+ * a vanilla {@code /gamerule} change, with no cache to invalidate.
  *
- * <p>A client has no server instance and Minecraft 1.21.1 does not sync game rules to it,
+ * <p>A client has no server instance and Minecraft does not sync game rules to it,
  * so the client reads the mirror the server pushes with the {@code shulker_stack_state}
  * packet instead.
  */
@@ -24,7 +26,7 @@ public final class ShulkerStackRule {
 	private ShulkerStackRule() {}
 
 	public static void onServerStarted(MinecraftServer server) {
-		serverRules = server.getGameRules();
+		serverRules = server.getOverworld().getGameRules();
 	}
 
 	public static void onServerStopped() {

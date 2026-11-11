@@ -17,7 +17,7 @@ public class HopperMinecartEntityMixin {
 	@WrapMethod(method = "tick")
 	private void gestorage$wrapTick(Operation<Void> original) {
 		HopperMinecartEntity self = (HopperMinecartEntity) (Object) this;
-		if (self.getWorld().isClient()) {
+		if (self.getEntityWorld().isClient()) {
 			original.call();
 			return;
 		}

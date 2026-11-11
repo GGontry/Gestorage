@@ -1,5 +1,6 @@
 package com.gontry.gestorage.inventory;
 
+import net.minecraft.entity.ContainerUser;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.inventory.SimpleInventory;
@@ -108,15 +109,15 @@ public class EnhancedEnderChestInventory implements Inventory {
 	}
 
 	@Override
-	public void onOpen(PlayerEntity player) {
-		vanillaEnderChest.onOpen(player);
-		overflow.onOpen(player);
+	public void onOpen(ContainerUser user) {
+		vanillaEnderChest.onOpen(user);
+		overflow.onOpen(user);
 	}
 
 	@Override
-	public void onClose(PlayerEntity player) {
-		vanillaEnderChest.onClose(player);
-		overflow.onClose(player);
+	public void onClose(ContainerUser user) {
+		vanillaEnderChest.onClose(user);
+		overflow.onClose(user);
 		markDirty();
 		if (overflowState != null) {
 			overflowState.flushNow(stateManager);

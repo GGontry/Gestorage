@@ -14,7 +14,7 @@ public class EntityDropMixin {
 	@Inject(method = "onDeath", at = @At("HEAD"))
 	private void gestorage$onDeath(DamageSource source, CallbackInfo ci) {
 		LivingEntity self = (LivingEntity) (Object) this;
-		if (self.getWorld().isClient()) return;
+		if (self.getEntityWorld().isClient()) return;
 		if (source.getAttacker() instanceof ServerPlayerEntity player) {
 			CarefulBreakManager.beginDeath(player, self);
 		}

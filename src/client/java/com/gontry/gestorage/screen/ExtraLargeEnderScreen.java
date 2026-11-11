@@ -2,6 +2,7 @@ package com.gontry.gestorage.screen;
 
 import com.gontry.gestorage.Gestorage;
 import com.gontry.gestorage.menu.ExtraLargeEnderMenu;
+import net.minecraft.client.gl.RenderPipelines;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.entity.player.PlayerInventory;
@@ -30,11 +31,11 @@ public class ExtraLargeEnderScreen extends HandledScreen<ExtraLargeEnderMenu> im
 		int chestAreaHeight = CHEST_ROWS * 18 + 17;
 		int playerInvUV = CHEST_ROWS * 18 + 18;
 
-		context.drawTexture(TEXTURE, x, y, 0, 0.0f, 0.0f,
+		context.drawTexture(RenderPipelines.GUI_TEXTURED, TEXTURE, x, y, 0.0F, 0.0F,
 				this.backgroundWidth, chestAreaHeight, TEX_WIDTH, TEX_HEIGHT);
 
-		context.drawTexture(TEXTURE, x, y + chestAreaHeight, 0,
-				0.0f, (float) playerInvUV,
+		context.drawTexture(RenderPipelines.GUI_TEXTURED, TEXTURE, x, y + chestAreaHeight,
+				0.0F, (float) playerInvUV,
 				this.backgroundWidth, 96, TEX_WIDTH, TEX_HEIGHT);
 	}
 

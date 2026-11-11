@@ -19,11 +19,11 @@ public class ConfigCycleButton extends ConfigButton {
 	}
 
 	@Override
-	protected void renderWidget(DrawContext context, int mouseX, int mouseY, float delta) {
+	protected void drawIcon(DrawContext context, int mouseX, int mouseY, float deltaTicks) {
 		Text label = labelSupplier.get();
 		if (!label.getString().equals(getMessage().getString())) {
 			setMessage(label);
 		}
-		super.renderWidget(context, mouseX, mouseY, delta);
+		super.drawIcon(context, mouseX, mouseY, deltaTicks);
 	}
 }

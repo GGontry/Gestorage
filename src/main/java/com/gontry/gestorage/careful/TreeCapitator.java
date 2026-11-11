@@ -52,12 +52,12 @@ public final class TreeCapitator {
 		try {
 			for (BlockPos logPos : logs) {
 				if (logPos.equals(pos)) continue;
-				if (!world.canPlayerModifyAt(player, logPos)) continue;
+				if (!player.canModifyAt(world, logPos)) continue;
 				world.breakBlock(logPos, true, player, 512);
 			}
 
 			for (BlockPos leafPos : leaves) {
-				if (!world.canPlayerModifyAt(player, leafPos)) continue;
+				if (!player.canModifyAt(world, leafPos)) continue;
 				world.breakBlock(leafPos, true, player, 512);
 			}
 

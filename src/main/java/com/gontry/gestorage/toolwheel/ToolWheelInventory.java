@@ -1,6 +1,7 @@
 package com.gontry.gestorage.toolwheel;
 
 import com.gontry.gestorage.network.ToolWheelSyncS2CPacket;
+import net.minecraft.entity.ContainerUser;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
@@ -71,7 +72,7 @@ public class ToolWheelInventory implements Inventory {
 	}
 
 	@Override
-	public void onClose(PlayerEntity player) {
+	public void onClose(ContainerUser user) {
 		state.forceSave();
 		ToolWheelSyncS2CPacket.sendTo(owner);
 	}

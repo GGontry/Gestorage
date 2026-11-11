@@ -4,6 +4,7 @@ import com.gontry.gestorage.Gestorage;
 import com.gontry.gestorage.client.config.ModuleConfig;
 import com.gontry.gestorage.mixin.HandledScreenAccessor;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gl.RenderPipelines;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ingame.GenericContainerScreen;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
@@ -52,7 +53,7 @@ public class InventorySortingRenderer {
 			texture = SORT_ICON;
 		}
 
-		context.drawTexture(texture, buttonX, buttonY, 0, 0, BUTTON_SIZE, BUTTON_SIZE, 12, 12);
+		context.drawTexture(RenderPipelines.GUI_TEXTURED, texture, buttonX, buttonY, 0.0F, 0.0F, BUTTON_SIZE, BUTTON_SIZE, 12, 12);
 	}
 
 	private static boolean isPressed() {

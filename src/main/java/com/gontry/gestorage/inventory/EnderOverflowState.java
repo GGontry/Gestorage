@@ -2,18 +2,22 @@ package com.gontry.gestorage.inventory;
 
 import com.gontry.gestorage.Gestorage;
 import com.gontry.gestorage.ModConstants;
+import com.gontry.gestorage.StackCodecs;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
+import net.minecraft.datafixer.DataFixTypes;
 import net.minecraft.inventory.SimpleInventory;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtList;
-import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.world.PersistentState;
 import net.minecraft.world.PersistentStateManager;
+import net.minecraft.world.PersistentStateType;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -39,24 +43,47 @@ public class EnderOverflowState extends PersistentState {
 		this.inventory = inventory;
 	}
 
-	public static EnderOverflowState fromNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup lookup) {
-		int version = nbt.contains("Version") ? nbt.getInt("Version") : 0;
+	/**
+	 * One stored overflow entry. A record codec merges its fields with the item's
+	 * own, so the persisted shape stays the flat {@code {Slot: ..., id: ...}}
+	 * layout this state wrote before the switch to codecs.
+	 */
+	private record StoredItem(int slot, ItemStack stack) {
+		public static final Codec<StoredItem> CODEC = RecordCodecBuilder.create(instance -> instance.group(
+				Codec.INT.fieldOf("Slot").forGetter(StoredItem::slot),
+				StackCodecs.TOLERANT.forGetter(StoredItem::stack)
+		).apply(instance, StoredItem::new));
+	}
 
-		int size;
-		NbtList items;
+	/**
+	 * Mirrors the NBT layout written before the switch to codecs, including the
+	 * legacy version-0 files (which logged and loaded the same fields).
+	 */
+	public static final Codec<EnderOverflowState> CODEC = RecordCodecBuilder.create(instance -> instance.group(
+			Codec.INT.optionalFieldOf("Version", 0).forGetter(state -> CURRENT_VERSION),
+			Codec.INT.optionalFieldOf("Size", 0).forGetter(state -> state.inventory.size()),
+			StoredItem.CODEC.listOf().optionalFieldOf("Items", List.of()).forGetter(EnderOverflowState::storedItems)
+	).apply(instance, EnderOverflowState::fromStored));
 
+	private static List<StoredItem> storedItems(EnderOverflowState state) {
+		List<StoredItem> items = new ArrayList<>(state.inventory.size());
+		for (int i = 0; i < state.inventory.size(); i++) {
+			ItemStack stack = state.inventory.getStack(i);
+			if (!stack.isEmpty()) {
+				items.add(new StoredItem(i, stack));
+			}
+		}
+		return items;
+	}
+
+	private static EnderOverflowState fromStored(int version, int size, List<StoredItem> items) {
 		if (version == 0) {
-			size = nbt.getInt("Size");
-			items = nbt.contains("Items") ? nbt.getList("Items", 10) : new NbtList();
 			Gestorage.LOGGER.info("[Overflow] Loaded legacy data (version 0), size={}, entries={}", size, items.size());
-		} else {
-			size = nbt.getInt("Size");
-			items = nbt.contains("Items") ? nbt.getList("Items", 10) : new NbtList();
 		}
 
 		if (size <= 0) {
+			Gestorage.LOGGER.warn("[Overflow] Invalid size {} in stored data, defaulting to 201", size);
 			size = 201;
-			Gestorage.LOGGER.warn("[Overflow] Invalid size {} in NBT, defaulting to 201", nbt.getInt("Size"));
 		}
 
 		if (size > ModConstants.EXTRA_LARGE_ENDER_SIZE) {
@@ -72,17 +99,14 @@ public class EnderOverflowState extends PersistentState {
 		SimpleInventory inv = new SimpleInventory(size);
 		int loadedCount = 0;
 		int skippedCount = 0;
-		for (int i = 0; i < items.size(); i++) {
-			NbtCompound itemNbt = items.getCompound(i);
-			int slot = itemNbt.getInt("Slot");
-			if (slot < 0 || slot >= size) {
-				Gestorage.LOGGER.warn("[Overflow] Slot index {} out of range [0,{}), skipping item", slot, size);
+		for (StoredItem item : items) {
+			if (item.slot() < 0 || item.slot() >= size) {
+				Gestorage.LOGGER.warn("[Overflow] Slot index {} out of range [0,{}), skipping item", item.slot(), size);
 				skippedCount++;
 				continue;
 			}
-			ItemStack stack = ItemStack.fromNbtOrEmpty(lookup, itemNbt);
-			if (!stack.isEmpty()) {
-				inv.setStack(slot, stack);
+			if (!item.stack().isEmpty()) {
+				inv.setStack(item.slot(), item.stack());
 				loadedCount++;
 			}
 		}
@@ -95,27 +119,13 @@ public class EnderOverflowState extends PersistentState {
 		return new EnderOverflowState(inv);
 	}
 
-	@Override
-	public NbtCompound writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup lookup) {
-		nbt.putInt("Version", CURRENT_VERSION);
-		nbt.putInt("Size", inventory.size());
-		NbtList items = new NbtList();
-		int savedCount = 0;
-		for (int i = 0; i < inventory.size(); i++) {
-			ItemStack stack = inventory.getStack(i);
-			if (!stack.isEmpty()) {
-				NbtCompound itemNbt = (NbtCompound) stack.encodeAllowEmpty(lookup);
-				itemNbt.putInt("Slot", i);
-				items.add(itemNbt);
-				savedCount++;
-			}
-		}
-		nbt.put("Items", items);
-		return nbt;
-	}
-
 	public static String getKey(UUID playerUuid) {
 		return "gestorage_ender_overflow_" + playerUuid.toString();
+	}
+
+	/** State type for this player; identity is the save key, so fresh instances match loaded ones. */
+	private static PersistentStateType<EnderOverflowState> createType(UUID playerUuid) {
+		return new PersistentStateType<>(getKey(playerUuid), EnderOverflowState::new, CODEC, DataFixTypes.SAVED_DATA_COMMAND_STORAGE);
 	}
 
 	public void flush(PersistentStateManager manager) {
@@ -140,14 +150,7 @@ public class EnderOverflowState extends PersistentState {
 	}
 
 	public static EnderOverflowState load(PersistentStateManager manager, UUID playerUuid) {
-		return manager.getOrCreate(
-				new PersistentState.Type<>(
-						EnderOverflowState::new,
-						EnderOverflowState::fromNbt,
-						null
-				),
-				getKey(playerUuid)
-		);
+		return manager.getOrCreate(createType(playerUuid));
 	}
 
 	public static void resetSessionBackups() {

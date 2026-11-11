@@ -116,7 +116,7 @@ public final class SlotLockManager {
 	public static boolean shouldPreventDrop(ServerPlayerEntity player) {
 		Settings settings = settings(player);
 		if (!settings.enabled() || !settings.preventDrop()) return false;
-		return isPlayerSlotLocked(player, player.getInventory().selectedSlot);
+		return isPlayerSlotLocked(player, player.getInventory().getSelectedSlot());
 	}
 
 	/** Called from the THROW slot action (Q while a screen is open, or dragging an item out). */
@@ -135,7 +135,7 @@ public final class SlotLockManager {
 		Settings settings = settings(player);
 		if (!settings.enabled() || !settings.preventUse()) return false;
 		int slot = hand == Hand.MAIN_HAND
-				? player.getInventory().selectedSlot
+				? player.getInventory().getSelectedSlot()
 				: PlayerInventory.OFF_HAND_SLOT;
 		return isPlayerSlotLocked(player, slot);
 	}

@@ -19,7 +19,7 @@ public class OpenEnderChestC2SPacket {
 	public static void handle(ModNetworking.OpenEnderChestC2S payload, net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.Context ctx) {
 		ctx.server().execute(() -> {
 			var player = ctx.player();
-			var gameRules = player.getWorld().getGameRules();
+			var gameRules = player.getEntityWorld().getGameRules();
 
 			int sizeMode = ModGameRules.getEnderChestSize(gameRules);
 
@@ -64,6 +64,7 @@ public class OpenEnderChestC2SPacket {
 				}
 				default -> {
 					var enderChest = player.getEnderChestInventory();
+					if (enderChest == null) return;
 					player.openHandledScreen(new net.minecraft.screen.SimpleNamedScreenHandlerFactory(
 							(syncId, inventory, p) -> GenericContainerScreenHandler.createGeneric9x3(syncId, inventory, enderChest),
 							Text.translatable("container.enderchest")

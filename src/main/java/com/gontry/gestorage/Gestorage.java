@@ -65,6 +65,9 @@ public class Gestorage implements ModInitializer {
 		// (including a plain /gamerule) to the clients.
 		ServerLifecycleEvents.SERVER_STARTED.register(server -> {
 			ShulkerStackRule.onServerStarted(server);
+			// Import the values saved under the pre-1.21.11 rule names, then the
+			// retired config flag (which can only turn stacking on).
+			GameRuleNameMigration.apply(server);
 			ShulkerStackMigration.run(server);
 		});
 

@@ -16,7 +16,7 @@ public class ToolWheelSwapC2SPacket {
 			boolean changed = ToolWheelLogic.swapWithHand(player, payload.slot());
 			if (changed) {
 				ToolWheelSyncS2CPacket.sendTo(player);
-				ItemStack hand = player.getInventory().getStack(player.getInventory().selectedSlot);
+				ItemStack hand = player.getInventory().getStack(player.getInventory().getSelectedSlot());
 				if (!hand.isEmpty()) {
 					player.sendMessage(Text.literal("§7Tool Wheel: §f").copy().append(hand.getName()), true);
 				}

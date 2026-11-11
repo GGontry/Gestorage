@@ -2,6 +2,7 @@ package com.gontry.gestorage.screen;
 
 import com.gontry.gestorage.Gestorage;
 import com.gontry.gestorage.menu.LargeEnderMenu;
+import net.minecraft.client.gl.RenderPipelines;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.entity.player.PlayerInventory;
@@ -20,7 +21,8 @@ public class LargeEnderScreen extends HandledScreen<LargeEnderMenu> implements I
 
 	@Override
 	protected void drawBackground(DrawContext context, float delta, int mouseX, int mouseY) {
-		context.drawTexture(TEXTURE, this.x, this.y, 0, 0, this.backgroundWidth, this.backgroundHeight);
+		context.drawTexture(RenderPipelines.GUI_TEXTURED, TEXTURE, this.x, this.y, 0.0F, 0.0F,
+				this.backgroundWidth, this.backgroundHeight, 256, 256);
 	}
 
 	@Override
