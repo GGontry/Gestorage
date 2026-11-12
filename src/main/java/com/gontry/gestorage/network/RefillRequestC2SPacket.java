@@ -8,9 +8,11 @@ import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.ContainerComponent;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.packet.s2c.play.ScreenHandlerSlotUpdateS2CPacket;
+import net.minecraft.screen.PlayerScreenHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.collection.DefaultedList;
 
@@ -124,13 +126,40 @@ public class RefillRequestC2SPacket {
 			// sees no change and the client keeps its predicted, lower count, making the
 			// stack look like it is being consumed. Push the corrected stack directly.
 			if (targetInv == player.getInventory() && player.networkHandler != null) {
-				ItemStack synced = targetInv.getStack(payload.targetSlot());
-				player.networkHandler.sendPacket(new ScreenHandlerSlotUpdateS2CPacket(
-						player.playerScreenHandler.syncId,
-						player.playerScreenHandler.nextRevision(),
-						payload.targetSlot(), synced.copy()));
+				int screenSlot = playerScreenSlot(payload.targetSlot());
+				if (screenSlot >= 0) {
+					ItemStack synced = targetInv.getStack(payload.targetSlot());
+					player.networkHandler.sendPacket(new ScreenHandlerSlotUpdateS2CPacket(
+							player.playerScreenHandler.syncId,
+							player.playerScreenHandler.nextRevision(),
+							screenSlot, synced.copy()));
+				}
 			}
 		});
+	}
+
+	/**
+	 * Maps a {@link PlayerInventory} index to its slot in {@link PlayerScreenHandler}.
+	 * They are not the same: the player screen starts with the crafting result and grid,
+	 * so the hotbar, armor and offhand slots are shifted. Sending the raw inventory index
+	 * would update an unrelated slot on the client (hotbar slot 0 showed up as a phantom
+	 * crafting result, for example) and leave the real slot stale.
+	 */
+	private static int playerScreenSlot(int inventorySlot) {
+		if (inventorySlot >= 0 && inventorySlot < PlayerInventory.HOTBAR_SIZE) {
+			return PlayerScreenHandler.HOTBAR_START + inventorySlot;
+		}
+		if (inventorySlot < PlayerInventory.MAIN_SIZE) {
+			return inventorySlot;
+		}
+		if (inventorySlot < PlayerInventory.OFF_HAND_SLOT) {
+			// Armor is stored feet-to-head (36-39) but displayed head-to-feet (5-8).
+			return PlayerScreenHandler.EQUIPMENT_START + (PlayerInventory.OFF_HAND_SLOT - 1 - inventorySlot);
+		}
+		if (inventorySlot == PlayerInventory.OFF_HAND_SLOT) {
+			return PlayerScreenHandler.OFFHAND_ID;
+		}
+		return -1;
 	}
 
 	private static int orderedIndex(int idx, int size, boolean reverse) {
