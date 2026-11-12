@@ -427,6 +427,7 @@ public class GestorageConfigScreen extends Screen {
 				() -> serverOptionState(optionId),
 				v -> {},
 				() -> ModNetworkingClient.sendToggleCarefulBreak(optionId));
+		cb.active = ModNetworkingClient.isInWorld();
 		detailRows.add(new DetailRow(cb, 0, cbW, baseY));
 		attachKeyButton(baseY, currentKey, targetId);
 	}
@@ -438,6 +439,7 @@ public class GestorageConfigScreen extends Screen {
 				() -> ClientToolWheelState.autoTool,
 				v -> {},
 				() -> ModNetworkingClient.sendToggleAutoTool());
+		cb.active = ModNetworkingClient.isInWorld();
 		detailRows.add(new DetailRow(cb, 0, cbW, baseY));
 		attachKeyButton(baseY, ModuleConfig.toolWheel().autoToolKey(), 53);
 	}
@@ -452,6 +454,7 @@ public class GestorageConfigScreen extends Screen {
 		ConfigCycleButton btn = new ConfigCycleButton(detailX, optionsTop, btnW, ROW_H,
 				() -> Text.literal("Prefer: " + enchPrefLabel(ClientToolWheelState.enchPref)),
 				() -> ModNetworkingClient.sendEnchPref(ClientToolWheelState.nextEnchPref()));
+		btn.active = ModNetworkingClient.isInWorld();
 		detailRows.add(new DetailRow(btn, 0, btnW, baseY));
 		attachKeyButton(baseY, ModuleConfig.toolWheel().enchPrefKey(), 54);
 	}
