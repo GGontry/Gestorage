@@ -44,12 +44,10 @@ public final class BetterHarvesting {
 
 		CarefulBreakManager.suppressBlockEffects = true;
 		try {
-			int broken = 0;
 			for (BlockPos cropPos : crops) {
 				if (cropPos.equals(pos)) continue;
 				if (!player.canModifyAt(world, cropPos)) continue;
 				world.breakBlock(cropPos, true, player, 512);
-				broken++;
 			}
 
 			if (CarefulBreakServerConfig.autoReplantCrops) {

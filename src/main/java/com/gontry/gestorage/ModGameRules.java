@@ -6,6 +6,7 @@ import com.mojang.serialization.Codec;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.resource.featuretoggle.FeatureSet;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.Identifier;
 import net.minecraft.world.rule.GameRule;
 import net.minecraft.world.rule.GameRuleCategory;
@@ -53,6 +54,15 @@ public class ModGameRules {
 				new GameRule<>(GameRuleCategory.MISC, GameRuleType.INT, IntegerArgumentType.integer(minValue, maxValue),
 						GameRuleVisitor::visitInt, Codec.intRange(minValue, maxValue), value -> value,
 						defaultValue, FeatureSet.empty()));
+	}
+
+	/**
+	 * The rules Gestorage treats as server-wide. 1.21.11 stores game rules per
+	 * world, but Gestorage's settings keep their 1.21.1 meaning, so every read and
+	 * write resolves to the overworld regardless of the dimension the player is in.
+	 */
+	public static GameRules getGlobalRules(MinecraftServer server) {
+		return server.getOverworld().getGameRules();
 	}
 
 	public static int getEnderChestSize(GameRules gameRules) {

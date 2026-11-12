@@ -119,7 +119,8 @@ public final class AutoToolManager {
 		return !MODULE_OFF.contains(player.getUuid());
 	}
 
-	private static void evaluate(ServerPlayerEntity player, ServerWorld world, BlockPos pos) {		if (player.isCreative() || player.isSpectator()) return;
+	private static void evaluate(ServerPlayerEntity player, ServerWorld world, BlockPos pos) {
+		if (player.isCreative() || player.isSpectator()) return;
 		UUID id = player.getUuid();
 		Session session = SESSIONS.get(id);
 		ToolWheelState state = ToolWheelState.getExisting(player);

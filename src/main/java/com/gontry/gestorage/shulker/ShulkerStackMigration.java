@@ -32,7 +32,7 @@ public final class ShulkerStackMigration {
 	public static void run(MinecraftServer server) {
 		if (Files.exists(LEGACY_CONFIG)) {
 			if (wasEnabled(LEGACY_CONFIG)) {
-				server.getOverworld().getGameRules().setValue(ModGameRules.STACKABLE_SHULKERS, true, server);
+				ModGameRules.getGlobalRules(server).setValue(ModGameRules.STACKABLE_SHULKERS, true, server);
 				Gestorage.LOGGER.info("Migrated shulker_stack.json (enabled=true) to the gestorage:stackable_shulkers game rule");
 			}
 			rename(LEGACY_CONFIG);

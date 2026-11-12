@@ -19,7 +19,7 @@ public class OpenEnderChestC2SPacket {
 	public static void handle(ModNetworking.OpenEnderChestC2S payload, net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.Context ctx) {
 		ctx.server().execute(() -> {
 			var player = ctx.player();
-			var gameRules = player.getEntityWorld().getGameRules();
+			var gameRules = ModGameRules.getGlobalRules(ctx.server());
 
 			int sizeMode = ModGameRules.getEnderChestSize(gameRules);
 

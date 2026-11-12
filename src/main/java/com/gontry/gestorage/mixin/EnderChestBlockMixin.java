@@ -35,7 +35,7 @@ public class EnderChestBlockMixin {
 		var enderChest = player.getEnderChestInventory();
 		if (enderChest == null) return;
 
-		int sizeMode = ModGameRules.getEnderChestSize(serverWorld.getGameRules());
+		int sizeMode = ModGameRules.getEnderChestSize(ModGameRules.getGlobalRules(serverWorld.getServer()));
 		if (sizeMode == ModConstants.MODE_NORMAL) return;
 
 		// Server-side only, so the previous success(world.isClient) maps to CONSUME.

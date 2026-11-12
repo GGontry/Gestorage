@@ -370,7 +370,7 @@ public class ModNetworking {
 	/**
 	 * Mirrors the {@code gestorage:stackable_shulkers} and
 	 * {@code gestorage:hopper_stackable_shulkers} game rules to clients, which do not
-	 * receive game rules from the server on Minecraft 1.21.1.
+	 * receive game rules from the server on Minecraft 1.21.11.
 	 */
 	public record ShulkerStackStateS2C(boolean enabled, boolean hoppersAllowed) implements CustomPayload {
 		@Override

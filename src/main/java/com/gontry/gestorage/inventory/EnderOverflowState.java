@@ -77,6 +77,10 @@ public class EnderOverflowState extends PersistentState {
 	}
 
 	private static EnderOverflowState fromStored(int version, int size, List<StoredItem> items) {
+		if (version < 0 || version > CURRENT_VERSION) {
+			Gestorage.LOGGER.warn("[Overflow] Unknown state version {} (expected {}), starting fresh", version, CURRENT_VERSION);
+			return new EnderOverflowState();
+		}
 		if (version == 0) {
 			Gestorage.LOGGER.info("[Overflow] Loaded legacy data (version 0), size={}, entries={}", size, items.size());
 		}

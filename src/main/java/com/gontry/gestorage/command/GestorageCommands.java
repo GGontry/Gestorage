@@ -70,7 +70,7 @@ public class GestorageCommands {
 										return 0;
 									}
 
-									source.getWorld().getGameRules().setValue(ModGameRules.ENDER_CHEST_SIZE, mode, source.getServer());
+									ModGameRules.getGlobalRules(source.getServer()).setValue(ModGameRules.ENDER_CHEST_SIZE, mode, source.getServer());
 									EnderSizeChangedS2CPacket.broadcast(source.getServer());
 
 									MutableText confirm = Text.empty();
@@ -95,7 +95,7 @@ public class GestorageCommands {
 						)
 						.executes(context -> {
 							ServerCommandSource source = context.getSource();
-							int current = ModGameRules.getEnderChestSize(source.getWorld().getGameRules());
+							int current = ModGameRules.getEnderChestSize(ModGameRules.getGlobalRules(source.getServer()));
 							source.sendFeedback(() -> Text.literal("Current ender chest size: " + SIZE_MODES[current] + " (" + SIZE_VALUES[current] + " slots)"), false);
 							return 1;
 						})
@@ -167,8 +167,8 @@ public class GestorageCommands {
 	}
 
 	private static int reportShulkerStack(ServerCommandSource source) {
-		boolean players = ModGameRules.isStackableShulkers(source.getWorld().getGameRules());
-		boolean hoppers = ModGameRules.isHopperStackableShulkers(source.getWorld().getGameRules());
+		boolean players = ModGameRules.isStackableShulkers(ModGameRules.getGlobalRules(source.getServer()));
+		boolean hoppers = ModGameRules.isHopperStackableShulkers(ModGameRules.getGlobalRules(source.getServer()));
 		source.sendFeedback(() -> Text.literal("[Gestorage] Players: " + state(players)
 				+ " | Hoppers: " + hopperState(players, hoppers)), false);
 		if (!hoppers) {
@@ -182,16 +182,16 @@ public class GestorageCommands {
 	}
 
 	private static int reportPlayersStack(ServerCommandSource source) {
-		boolean players = ModGameRules.isStackableShulkers(source.getWorld().getGameRules());
-		boolean hoppers = ModGameRules.isHopperStackableShulkers(source.getWorld().getGameRules());
+		boolean players = ModGameRules.isStackableShulkers(ModGameRules.getGlobalRules(source.getServer()));
+		boolean hoppers = ModGameRules.isHopperStackableShulkers(ModGameRules.getGlobalRules(source.getServer()));
 		source.sendFeedback(() -> Text.literal("[Gestorage] Players can stack empty shulkers: " + state(players)
 				+ " | Hoppers: " + hopperState(players, hoppers)), false);
 		return 1;
 	}
 
 	private static int reportHoppersStack(ServerCommandSource source) {
-		boolean players = ModGameRules.isStackableShulkers(source.getWorld().getGameRules());
-		boolean hoppers = ModGameRules.isHopperStackableShulkers(source.getWorld().getGameRules());
+		boolean players = ModGameRules.isStackableShulkers(ModGameRules.getGlobalRules(source.getServer()));
+		boolean hoppers = ModGameRules.isHopperStackableShulkers(ModGameRules.getGlobalRules(source.getServer()));
 		source.sendFeedback(() -> Text.literal("[Gestorage] Hoppers can stack empty shulkers: " + hopperState(players, hoppers)
 				+ " | Players: " + state(players)), false);
 		if (!hoppers) {
@@ -205,8 +205,8 @@ public class GestorageCommands {
 	}
 
 	private static int setPlayersStack(ServerCommandSource source, boolean value) {
-		source.getWorld().getGameRules().setValue(ModGameRules.STACKABLE_SHULKERS, value, source.getServer());
-		boolean hoppers = ModGameRules.isHopperStackableShulkers(source.getWorld().getGameRules());
+		ModGameRules.getGlobalRules(source.getServer()).setValue(ModGameRules.STACKABLE_SHULKERS, value, source.getServer());
+		boolean hoppers = ModGameRules.isHopperStackableShulkers(ModGameRules.getGlobalRules(source.getServer()));
 
 		MutableText confirm = Text.empty();
 		confirm.append(Text.literal("[Gestorage] ").styled(s -> s.withColor(TextColor.fromFormatting(Formatting.GREEN))));
@@ -226,7 +226,7 @@ public class GestorageCommands {
 	}
 
 	private static int setHoppersStack(ServerCommandSource source, boolean value) {
-		var rules = source.getWorld().getGameRules();
+		var rules = ModGameRules.getGlobalRules(source.getServer());
 		boolean players = ModGameRules.isStackableShulkers(rules);
 		rules.setValue(ModGameRules.HOPPER_STACKABLE_SHULKERS, value, source.getServer());
 

@@ -42,8 +42,15 @@
 - Keybind capture in the config screen now reads the live modifier state. Modifiers held before capture started are included, and a modifier released during capture is no longer stuck in the binding.
 - Careful Break now handles nested deaths correctly: an inner death without a player killer no longer clears the outer death context, so later drops from the outer kill are still collected.
 - Legacy (version 0) shulker link files with a malformed entry now skip only that entry instead of discarding every link.
-- The client-side ender chest size mirror now updates on join and whenever `gestorage:ender_chest_size` changes (including a plain `/gamerule`), not only when an ender chest is opened.
+- The server now pushes the ender chest size to clients on join and whenever `gestorage:ender_chest_size` changes (including a plain `/gamerule`), not only when an ender chest is opened.
 - Tool Wheel sync now also reads state that is still pending in memory, so a change made before the next world save is no longer sent to the client as empty.
+- **Game rules now apply from every dimension.** 1.21.11 stores game rules per world, but `/gestorage endersize` and `/gestorage shulkerstack` were writing the current dimension's copy while the mod read the overworld's copy, so running them in the Nether or the End reported success without changing anything. Gestorage's rules keep their 1.21.1 server-wide meaning and always read/write the overworld copy; opening an ender chest uses the same rules.
+- **Careful Break toggles now run on the server thread.** The client toggle packet used to save the config and broadcast its state directly on the network thread, unlike every other C2S handler.
+- **Tree Capitator no longer destroys a neighbouring tree's canopy.** A leaf still within leaf-decay range of a log outside the felled tree is left in place instead of being removed with the harvested tree.
+- **Shulker Restock detects shulker boxes more reliably.** Vanilla shulker boxes are recognised by their block type and modded ones by a strict block-id match, so unrelated ids containing `shulker_box` are no longer treated as shulkers.
+- Ender chest overflow data now rejects unknown or newer save versions and starts fresh, instead of loading a format it does not understand.
+- The Careful Break keybind file is now versioned; an unknown version resets to defaults instead of being read as the current layout.
+- Opening the settings screen from Mod Menu and toggling a server-side option (Careful Break, Auto Tool or the enchantment preference) without joining a world no longer crashes the game. Client packets are only sent while connected, and those options are disabled until a world is joined.
 
 ## Compatibility
 

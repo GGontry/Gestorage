@@ -32,7 +32,7 @@ public final class EnderSizeChangedS2CPacket {
 	}
 
 	public static void syncIfChanged(MinecraftServer server) {
-		int current = ModGameRules.getEnderChestSize(server.getOverworld().getGameRules());
+		int current = ModGameRules.getEnderChestSize(ModGameRules.getGlobalRules(server));
 		if (current == lastBroadcast) return;
 		broadcast(server);
 	}
@@ -42,6 +42,6 @@ public final class EnderSizeChangedS2CPacket {
 	}
 
 	private static ModNetworking.EnderSizeChangedS2C buildState(MinecraftServer server) {
-		return new ModNetworking.EnderSizeChangedS2C(ModGameRules.getEnderChestSize(server.getOverworld().getGameRules()));
+		return new ModNetworking.EnderSizeChangedS2C(ModGameRules.getEnderChestSize(ModGameRules.getGlobalRules(server)));
 	}
 }

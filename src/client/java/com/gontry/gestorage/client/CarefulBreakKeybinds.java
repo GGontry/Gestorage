@@ -12,10 +12,12 @@ import net.minecraft.client.MinecraftClient;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 
 public class CarefulBreakKeybinds {
 	private static final Path CONFIG_PATH = Path.of("config", "gestorage", "careful_break_keybinds.json");
 	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+	private static final int CURRENT_VERSION = 1;
 
 	public static String carefulBreakKey = "";
 	public static String carefulDropKey = "";
@@ -70,10 +72,19 @@ public class CarefulBreakKeybinds {
 				save();
 				return;
 			}
+			backup();
 			String content = Files.readString(CONFIG_PATH);
 			if (content.isBlank()) { save(); return; }
 			JsonObject json = GSON.fromJson(content, JsonObject.class);
 			if (json == null) { save(); return; }
+			int version = getInt(json, "version", CURRENT_VERSION);
+			if (version != CURRENT_VERSION) {
+				Gestorage.LOGGER.warn("Unknown careful_break keybind config version {} (expected {}), resetting to defaults",
+						version, CURRENT_VERSION);
+				resetToDefaults();
+				save();
+				return;
+			}
 			carefulBreakKey = getString(json, "carefulBreakKey");
 			carefulDropKey = getString(json, "carefulDropKey");
 			alwaysCarefulKey = getString(json, "alwaysCarefulKey");
@@ -91,6 +102,7 @@ public class CarefulBreakKeybinds {
 		try {
 			Files.createDirectories(CONFIG_PATH.getParent());
 			JsonObject json = new JsonObject();
+			json.addProperty("version", CURRENT_VERSION);
 			json.addProperty("carefulBreakKey", carefulBreakKey);
 			json.addProperty("carefulDropKey", carefulDropKey);
 			json.addProperty("alwaysCarefulKey", alwaysCarefulKey);
@@ -105,7 +117,32 @@ public class CarefulBreakKeybinds {
 		}
 	}
 
+	private static void backup() {
+		try {
+			Path backup = CONFIG_PATH.resolveSibling(CONFIG_PATH.getFileName() + ".backup");
+			Files.copy(CONFIG_PATH, backup, StandardCopyOption.REPLACE_EXISTING);
+			Gestorage.LOGGER.debug("Created config backup: {}", backup.getFileName());
+		} catch (IOException e) {
+			Gestorage.LOGGER.warn("Failed to create config backup for {}", CONFIG_PATH, e);
+		}
+	}
+
+	private static void resetToDefaults() {
+		carefulBreakKey = "";
+		carefulDropKey = "";
+		alwaysCarefulKey = "";
+		treeCapitatorKey = "";
+		betterHarvestingKey = "";
+		autoReplantTreesKey = "";
+		autoReplantCropsKey = "";
+		enabledKey = "";
+	}
+
 	private static String getString(JsonObject json, String key) {
 		return json.has(key) && json.get(key).isJsonPrimitive() ? json.get(key).getAsString() : "";
+	}
+
+	private static int getInt(JsonObject json, String key, int fallback) {
+		return json.has(key) && json.get(key).isJsonPrimitive() ? json.get(key).getAsInt() : fallback;
 	}
 }

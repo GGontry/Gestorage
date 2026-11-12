@@ -41,7 +41,8 @@ public abstract class ItemFrameEntityMixin {
 		self.setHeldItemStack(ItemStack.EMPTY);
 
 		if (!world.getGameRules().getValue(GameRules.ENTITY_DROPS)) {
-			if (entity == null) this.removeFromFrame(held);
+			// Vanilla only calls removeFromFrame here when there is no entity, and this
+			// path is player-only, so the held stack simply disappears as in vanilla.
 			ci.cancel();
 			return;
 		}

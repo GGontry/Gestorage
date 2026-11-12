@@ -31,7 +31,7 @@ public final class ShulkerStackStateS2CPacket {
 	 * turning player stacking off also has to split stacks that no longer fit.
 	 */
 	public static void syncIfChanged(MinecraftServer server) {
-		GameRules rules = server.getOverworld().getGameRules();
+		GameRules rules = ModGameRules.getGlobalRules(server);
 		boolean players = ModGameRules.isStackableShulkers(rules);
 		boolean hoppers = ModGameRules.isHopperStackableShulkers(rules);
 		if (players == lastBroadcast && hoppers == lastHoppersBroadcast) return;
@@ -55,7 +55,7 @@ public final class ShulkerStackStateS2CPacket {
 	}
 
 	private static ModNetworking.ShulkerStackStateS2C buildState(MinecraftServer server) {
-		GameRules rules = server.getOverworld().getGameRules();
+		GameRules rules = ModGameRules.getGlobalRules(server);
 		return new ModNetworking.ShulkerStackStateS2C(
 				ModGameRules.isStackableShulkers(rules),
 				ModGameRules.isHopperStackableShulkers(rules)

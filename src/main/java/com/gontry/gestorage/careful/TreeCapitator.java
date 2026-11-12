@@ -26,6 +26,8 @@ public final class TreeCapitator {
 	private static final int MAX_LOGS = 256;
 	private static final int MAX_LEAVES = 512;
 	private static final int LEAF_RADIUS = 3;
+	/** Vanilla leaves decay when the nearest log is within this many blocks. */
+	private static final int LEAF_SUPPORT_RADIUS = 6;
 	private static final Map<Block, Item> LOG_TO_SAPLING = new HashMap<>();
 
 	static {
@@ -186,16 +188,32 @@ public final class TreeCapitator {
 			for (BlockPos leafPos : BlockPos.iterate(
 					new BlockPos(logPos.getX() - LEAF_RADIUS, logPos.getY() - LEAF_RADIUS, logPos.getZ() - LEAF_RADIUS),
 					new BlockPos(logPos.getX() + LEAF_RADIUS, logPos.getY() + LEAF_RADIUS, logPos.getZ() + LEAF_RADIUS))) {
-				BlockState state = world.getBlockState(leafPos);
-				if (state.getBlock() instanceof LeavesBlock && !state.get(persistent)) {
-					leaves.add(new BlockPos(leafPos));
-					if (leaves.size() >= MAX_LEAVES) {
-						Gestorage.LOGGER.warn("[TreeCapitator] leaf cap ({}) reached, truncating", MAX_LEAVES);
-						return leaves;
-					}
+				BlockPos immutable = new BlockPos(leafPos);
+				if (leaves.contains(immutable)) continue;
+				BlockState state = world.getBlockState(immutable);
+				if (!(state.getBlock() instanceof LeavesBlock) || state.get(persistent)) continue;
+				// A leaf that another tree's log can still support belongs to that
+				// tree, even if it happens to sit inside this tree's radius.
+				if (isSupportedByOtherTree(world, immutable, logs)) continue;
+				leaves.add(immutable);
+				if (leaves.size() >= MAX_LEAVES) {
+					Gestorage.LOGGER.warn("[TreeCapitator] leaf cap ({}) reached, truncating", MAX_LEAVES);
+					return leaves;
 				}
 			}
 		}
 		return leaves;
+	}
+
+	/** Whether a log outside the felled tree is close enough to keep the leaf alive. */
+	private static boolean isSupportedByOtherTree(ServerWorld world, BlockPos leafPos, Set<BlockPos> logs) {
+		for (BlockPos pos : BlockPos.iterate(
+				leafPos.add(-LEAF_SUPPORT_RADIUS, -LEAF_SUPPORT_RADIUS, -LEAF_SUPPORT_RADIUS),
+				leafPos.add(LEAF_SUPPORT_RADIUS, LEAF_SUPPORT_RADIUS, LEAF_SUPPORT_RADIUS))) {
+			BlockPos immutable = new BlockPos(pos);
+			if (logs.contains(immutable)) continue;
+			if (world.getBlockState(immutable).isIn(BlockTags.LOGS)) return true;
+		}
+		return false;
 	}
 }

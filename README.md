@@ -49,7 +49,7 @@ All modules ship **disabled by default** and are activated from the in-game conf
 - While hoppers are off, a hopper only moves an empty shulker into an **empty** slot. A destination with one shulker in every slot is treated as full; once slots are emptied (shift-clicked or taken by hand), the hopper resumes moving items into them. The rule is enforced everywhere: normal transfers, item-entity pickup/collision, hopper minecarts and shift-clicking into a hopper screen all move at most one shulker at a time. Picking up a dropped stack leaves the rest of the stack in the world instead of deleting it.
 - This also works with Lithium: Gestorage keeps Lithium's cached full-slot count in sync when hoppers are off, and invalidates that cache when either rule changes, so an emptied destination does not leave the hopper stuck (and toggling the rule does not leave a stale count behind).
 - Turning player stacking off splits any existing over-max stacks in the player inventory, cursor and ender chest into singles; whatever does not fit is dropped at the player's feet. The same cleanup runs when joining a world whose rule is already off.
-- Server-authoritative and per world, like the ender chest size: turn player stacking on with `/gestorage shulkerstack players on`, off with `/gestorage shulkerstack players off`, and check both states with `/gestorage shulkerstack` (changing them requires OP level 2). It is the `gestorage:stackable_shulkers` game rule, so plain `/gamerule` works too, and every client is told about a change right away (including the hopper rule, so GUI limits match the server).
+- Server-authoritative and server-wide, like the ender chest size: turn player stacking on with `/gestorage shulkerstack players on`, off with `/gestorage shulkerstack players off`, and check both states with `/gestorage shulkerstack` (changing them requires OP level 2). It is the `gestorage:stackable_shulkers` game rule, so plain `/gamerule` works too when run in the overworld, and every client is told about a change right away (including the hopper rule, so GUI limits match the server). The `/gestorage` commands always target the overworld rules, so they work from any dimension.
 - There is no config entry for it: it used to be toggled from the config screen, and if you had it enabled your old `shulker_stack.json` is imported into the game rule the first time you start your world.
 - Upgrading a 1.21.1 world keeps its settings: the values saved under the old `gestorage:stackableShulkers` / `gestorage:hopperStackableShulkers` names are imported once into the new snake_case rules. Vanilla logs the old keys it has to drop while opening the world; that message is expected.
 
@@ -78,7 +78,7 @@ Server-side flags, synced to all clients and toggleable with OP level 2 (or as t
 
 - **Careful Break** — mined blocks go straight into your inventory (sneak to activate).
 - **Careful Drop / Always Careful** — block and entity drops (items, loot tables, worn equipment, minecart contents) are collected into your inventory instead of being scattered.
-- **Tree Capitator** — fell whole trees by breaking the base log (with tree/leaf caps).
+- **Tree Capitator** — fell whole trees by breaking the base log (with tree/leaf caps). Leaves still supported by a neighbouring tree are left untouched.
 - **Better Harvesting** — break entire cactus, sugarcane, bamboo and kelp chains in one swing.
 - **Auto Replant** — automatically replant trees and crops after harvesting.
 
@@ -142,7 +142,7 @@ The config screen draws its window, buttons and checkboxes with real transparenc
 - Game rule `gestorage:stackable_shulkers` — `true`/`false`, the single authority for Stackable Shulkers on the server.
 - Game rule `gestorage:hopper_stackable_shulkers` — `true`/`false`, default `false`; lets hoppers treat empty shulkers as stackable when `gestorage:stackable_shulkers` is also on.
 
-Game rules use snake_case because 1.21.11 requires rule ids to be valid identifiers (no uppercase letters), the same way vanilla renamed all of its own rules. Worlds from the 1.21.1 line keep their values: the old camelCase keys are imported automatically on first load.
+Game rules use snake_case because 1.21.11 requires rule ids to be valid identifiers (no uppercase letters), the same way vanilla renamed all of its own rules. Worlds from the 1.21.1 line keep their values: the old camelCase keys are imported automatically on first load. Although 1.21.11 stores game rules per dimension, Gestorage's three rules keep their 1.21.1 server-wide meaning: the mod always reads and writes the overworld copy, so a change applies in every dimension.
 
 ---
 

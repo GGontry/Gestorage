@@ -8,11 +8,11 @@ import net.minecraft.world.rule.GameRules;
  * Resolves the {@code gestorage:stackable_shulkers} game rule for call sites that have no
  * world at hand, such as {@code ItemStack.getMaxCount()}.
  *
- * <p>Game rules are per-world since 1.21.11, so the server holds a live reference to
- * the overworld's {@link GameRules}; the nether and the end delegate to the same save
- * properties, so the overworld behaves like the old server-wide rules. Rule objects
- * mutate in place, so the reference always returns the current value, including after
- * a vanilla {@code /gamerule} change, with no cache to invalidate.
+ * <p>Game rules are per-world since 1.21.11, but Gestorage keeps its 1.21.1
+ * server-wide meaning by always resolving the overworld's {@link GameRules}; commands
+ * and the mirror packets use the same overworld rules. Rule objects mutate in place,
+ * so the reference always returns the current value, including after a vanilla
+ * {@code /gamerule} change, with no cache to invalidate.
  *
  * <p>A client has no server instance and Minecraft does not sync game rules to it,
  * so the client reads the mirror the server pushes with the {@code shulker_stack_state}
@@ -21,12 +21,12 @@ import net.minecraft.world.rule.GameRules;
 public final class ShulkerStackRule {
 	private static volatile GameRules serverRules;
 	private static volatile boolean clientMirror;
-	private static volatile boolean clientHoppersMirror = true;
+	private static volatile boolean clientHoppersMirror;
 
 	private ShulkerStackRule() {}
 
 	public static void onServerStarted(MinecraftServer server) {
-		serverRules = server.getOverworld().getGameRules();
+		serverRules = ModGameRules.getGlobalRules(server);
 	}
 
 	public static void onServerStopped() {
@@ -62,6 +62,6 @@ public final class ShulkerStackRule {
 	/** Drops the mirrored state when leaving a world. */
 	public static void resetClientMirror() {
 		clientMirror = false;
-		clientHoppersMirror = true;
+		clientHoppersMirror = false;
 	}
 }

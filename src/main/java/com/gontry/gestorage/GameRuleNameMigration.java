@@ -84,7 +84,7 @@ public final class GameRuleNameMigration {
 		// data is only read once per world.
 		stateManager.getOrCreate(MARKER_TYPE);
 
-		GameRules rules = server.getOverworld().getGameRules();
+		GameRules rules = ModGameRules.getGlobalRules(server);
 		if (legacy.enderChestSize() != null) {
 			int value = legacy.enderChestSize();
 			if (value >= ModConstants.MODE_NORMAL && value <= ModConstants.MODE_EXTRA_LARGE) {
