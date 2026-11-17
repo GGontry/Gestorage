@@ -46,9 +46,10 @@ public class Gestorage implements ModInitializer {
 		// 3. Server-side configs loaded before their first read.
 		CarefulBreakServerConfig.load();
 
-		// Push the current Careful Break state to every player on join, so the
-		// client always shows the server-authoritative configuration.
+		// Push each player's own Careful Break state on join, so the client always
+		// shows the server-authoritative configuration for that player.
 		ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
+			CarefulBreakServerConfig.remember(handler.player);
 			CarefulBreakStateS2CPacket.sendTo(handler.player);
 			// A world whose rule is already off may still hold legacy over-max
 			// stacks from before the rule changed; split them before syncing.

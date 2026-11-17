@@ -8,6 +8,8 @@
 
 ## Added
 
+- **Careful Break is now per player.** Each player owns the eight toggles (Enabled, Careful Break, Careful Drop, Always Careful, Tree Capitator, Better Harvesting and both Auto Replant options), stored by UUID in `config/gestorage/careful_break.json`, so one player's keybinds no longer change anyone else's gameplay and fake players are never affected. Only operators, the singleplayer host and players an operator permits can change their own copy; without permission the options are shown off and have no effect. Existing global settings from 6.0.0 pre-release builds are reset to off, so each player opts in again.
+- **New `/gestorage careful` commands:** `allow <players>` and `deny <players>` grant or revoke permission per player (deny also turns their saved options off), `allowall [on|off]` grants it to everyone, and `list` reports the current permissions (all OP level 2).
 - **Slot Lock** module: hold a configurable key and left-click a slot to lock it.
   - Lockable slots: the whole player inventory (main inventory, hotbar, armor and offhand) and the ender chest while it is open.
   - Holding the key outlines lockable slots in yellow; locked slots keep a red outline.
@@ -26,6 +28,13 @@
 
 ## Fixed
 
+- **Storage Overlay, the sorting button and slot-lock highlights now appear in the player inventory, crafting table and furnace screens.** Those screens render through `RecipeBookScreen`, which calls `renderMain` directly and never ran the hook on `render`, so the overlay was missing exactly where it was most used.
+- **Storage Overlay: the Inventory Name and Item Name options now work while the item icon is on.** Icon mode used to force the item name on and suppress the inventory title, so both options did nothing at their defaults; each line now follows its own toggle, and the icon gets its own row when no name line is shown.
+- **Config backups are now actually created.** The backup helper looked for `.json`, but owo writes `.json5`, so no backup was ever written. Each module config is now copied to `<name>.json5.backup` on startup before it is loaded.
+- Careful Break config loading is now defensive: a malformed or non-boolean field no longer aborts the whole load, and missing values fall back to off.
+- **Auto Replant now handles pale oak trees.**
+- **Auto Tool: a different tool of the same item moved into the tool slot is no longer rotated into the wheel.** The pending swap now checks the exact stack that was swapped in (ignoring durability used while mining) instead of matching by item only.
+- **Shulker Restock: per-link client state is now pruned every tick**, so replacing a link with another one no longer leaves a stale entry behind.
 - A hopper picking up a dropped stack of empty shulkers while hopper stacking was off could delete most of the stack: the whole entity stack was copied, the destination capped it to 1, and the entity was discarded. The pickup now moves at most the effective limit and leaves the remainder in the item entity.
 - Hopper-rule bypasses through item-entity collision and hopper minecart ticks were closed; both now run inside the hopper context. Shift-clicking or manually inserting into a hopper screen is also capped to one shulker per slot while hopper stacking is off.
 - Empty shulkers carrying a loot table (`CONTAINER_LOOT`) were treated as empty and could stack, which risked duplicating structure loot when placed. They are now always treated as non-empty.

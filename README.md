@@ -17,10 +17,10 @@ All modules ship **disabled by default** and are activated from the in-game conf
 | **Expanded Ender Chest** | Grows the ender chest from 27 to 54 (Large) or 228 (Extra Large) slots, selectable server-wide via a game rule, with per-player overflow persistence and keybind access. |
 | **Shulker Restock** | Auto-refill for inventories: bind a hotbar/inventory slot to a shulker box and it is topped up automatically when it runs low. |
 | **Stackable Shulkers** | Empty shulker boxes stack up to 64 for players; hopper stacking is a separate server-side option (off by default). Controlled with `/gestorage shulkerstack`. |
-| **Storage Overlay** | Informational panel shown next to any open inventory: inventory name, item name, stack counts, item counts and free-slot count. |
+| **Storage Overlay** | Informational panel shown next to any open inventory (including the player inventory, crafting table and furnaces): inventory name, item name, stack counts, item counts and free-slot count. |
 | **Inventory Sorting** | Sort button and keybind for containers, shulker boxes, ender chests and the player inventory, with configurable merge, name and direction options. |
 | **Slot Lock** | Hold a key to mark inventory or ender chest slots as locked (red border). Locked slots can be skipped by sorting and protected from drop/use. |
-| **Careful Break** | Server-authoritative mining suite: careful break to hand, careful drop to inventory, tree capitator, better harvesting (cactus/sugarcane/bamboo/kelp chains) and auto replant for trees and crops. |
+| **Careful Break** | Per-player, permission-gated mining suite: careful break to hand, careful drop to inventory, tree capitator, better harvesting (cactus/sugarcane/bamboo/kelp chains) and auto replant for trees and crops. |
 | **Tool Wheel** | Radial tool selector bound to a key: a persistent 9-slot wheel that swaps real items between the wheel and your hand, with an optional server-side Auto Tool that instantly swaps the best tool while mining. |
 
 ---
@@ -39,7 +39,7 @@ All modules ship **disabled by default** and are activated from the in-game conf
 - Mark two slots (source shulker and target) with the configured marking key to create a persistent per-world link.
 - The target slot is refilled from the shulker up to default stack size whenever it falls below the configured threshold, with adaptive back-off.
 - **Reverse Order** — choose whether items are pulled from the first shulker slot to the last (default) or from the last to the first. Available in the module settings and as its own assignable keybind.
-- Links are saved per world in `config/gestorage/links.json` and survive restarts; they are shared across players.
+- Links are client-side and stored in each player's own `config/gestorage/links.json`, grouped by world key rather than by UUID. The server neither stores nor uses them.
 
 ### Stackable Shulkers
 
@@ -55,7 +55,7 @@ All modules ship **disabled by default** and are activated from the in-game conf
 
 ### Storage Overlay
 
-- Renders a panel adjacent to the open inventory showing inventory name, hovered item name, icon, stack and item counts, and remaining free slots.
+- Renders a panel adjacent to the open inventory showing inventory name, hovered item name, icon, stack and item counts, and remaining free slots. It works in the player inventory, crafting table and furnace screens, including when their recipe book is open (the panel then moves to the right side).
 - Every element can be shown or hidden individually, each with its own assignable toggle keybind.
 
 ### Inventory Sorting
@@ -74,13 +74,20 @@ All modules ship **disabled by default** and are activated from the in-game conf
 
 ### Careful Break
 
-Server-side flags, synced to all clients and toggleable with OP level 2 (or as the singleplayer host):
+Per-player, server-authoritative flags, synced to each player's own client. Only players with permission can change their own copy; for everyone else the options show as off and have no effect. All eight toggles are independent and available in the config screen:
 
-- **Careful Break** — mined blocks go straight into your inventory (sneak to activate).
-- **Careful Drop / Always Careful** — block and entity drops (items, loot tables, worn equipment, minecart contents) are collected into your inventory instead of being scattered.
+- **Enabled** — master switch; while it is off, none of the other options apply.
+- **Careful Break** — while sneaking, mined block drops go straight into your inventory.
+- **Careful Drop** — while sneaking, entity drops (items, loot tables, worn equipment, minecart contents) go straight into your inventory instead of being scattered.
+- **Always Careful** — applies both careful behaviours without needing to sneak.
 - **Tree Capitator** — fell whole trees by breaking the base log (with tree/leaf caps). Leaves still supported by a neighbouring tree are left untouched.
 - **Better Harvesting** — break entire cactus, sugarcane, bamboo and kelp chains in one swing.
-- **Auto Replant** — automatically replant trees and crops after harvesting.
+- **Auto Replant Trees** — automatically replant trees after harvesting.
+- **Auto Replant Crops** — automatically replant crops after harvesting.
+
+Tree Capitator, Better Harvesting and both Auto Replant options only apply while careful block collection is active (Careful Break while sneaking, or Always Careful).
+
+Operators and the singleplayer host can always toggle their own options. On a server, an operator grants permission to specific players with `/gestorage careful allow <player>` (revoke with `deny`) or to everyone with `/gestorage careful allowall on`. Settings are stored per UUID in `config/gestorage/careful_break.json` and follow the player across worlds; fake players never have a profile, so they are never affected.
 
 ### Tool Wheel
 
@@ -123,10 +130,10 @@ All configuration lives in `config/gestorage/`:
 | `storage_overlay.json5` | Overlay element visibility and toggle keybinds |
 | `inventory_sorting.json5` | Sorting options and toggle keybinds |
 | `slot_lock.json5` | Slot Lock key, behaviour switches and module enabled flag |
-| `careful_break.json` | Server-authoritative Careful Break flags (written by the server only) |
+| `careful_break.json` | Per-player Careful Break flags and permissions (written by the server only) |
 | `careful_break_keybinds.json` | Client-side Careful Break keybinds |
 | `tool_wheel.json5` | Tool Wheel keys and module enabled flag |
-| `links.json` | Shulker link definitions |
+| `links.json` | Client-side Shulker link definitions grouped by world |
 
 The config screen draws its window, buttons and checkboxes with real transparency, so it blends with the world behind it without an external translucency mod.
 
@@ -138,6 +145,10 @@ The config screen draws its window, buttons and checkboxes with real transparenc
 - `/gestorage shulkerstack players [on|off]` — turns player/global empty-shulker stacking on or off (OP level 2).
 - `/gestorage shulkerstack hoppers [on|off]` — allows hoppers to stack empty shulkers (OP level 2); off by default. Turning them on also enables player stacking if needed; turning them off keeps hoppers at the vanilla limit of 1.
 - `/gestorage toolslot [<1-9>|clear]` — pins (or unpins) the hotbar slot Auto Tool swaps into. Personal, no OP level needed.
+- `/gestorage careful allow <players>` — lets those players change their own Careful Break options (OP level 2).
+- `/gestorage careful deny <players>` — revokes that permission and turns their saved options off (OP level 2).
+- `/gestorage careful allowall [on|off]` — lets every player change their own Careful Break options (OP level 2); without an argument it reports the current state.
+- `/gestorage careful list` — reports whether everyone is allowed and lists explicitly allowed players (OP level 2).
 - Game rule `gestorage:ender_chest_size` — accepts `0` (normal), `1` (large) or `2` (extra large); the game rule is the single authority for the ender chest size on the server.
 - Game rule `gestorage:stackable_shulkers` — `true`/`false`, the single authority for Stackable Shulkers on the server.
 - Game rule `gestorage:hopper_stackable_shulkers` — `true`/`false`, default `false`; lets hoppers treat empty shulkers as stackable when `gestorage:stackable_shulkers` is also on.

@@ -39,6 +39,7 @@ public final class TreeCapitator {
 		LOG_TO_SAPLING.put(net.minecraft.block.Blocks.DARK_OAK_LOG, Items.DARK_OAK_SAPLING);
 		LOG_TO_SAPLING.put(net.minecraft.block.Blocks.MANGROVE_LOG, Items.MANGROVE_PROPAGULE);
 		LOG_TO_SAPLING.put(net.minecraft.block.Blocks.CHERRY_LOG, Items.CHERRY_SAPLING);
+		LOG_TO_SAPLING.put(net.minecraft.block.Blocks.PALE_OAK_LOG, Items.PALE_OAK_SAPLING);
 	}
 
 	private TreeCapitator() {}
@@ -63,7 +64,7 @@ public final class TreeCapitator {
 				world.breakBlock(leafPos, true, player, 512);
 			}
 
-			if (CarefulBreakServerConfig.autoReplantTrees) {
+			if (CarefulBreakServerConfig.isOptionActive(player, CarefulBreakServerConfig.OPTION_AUTO_REPLANT_TREES)) {
 				replantTree(player, world, logs, state);
 			}
 		} finally {

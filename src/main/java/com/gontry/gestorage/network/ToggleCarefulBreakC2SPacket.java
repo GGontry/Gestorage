@@ -3,8 +3,6 @@ package com.gontry.gestorage.network;
 import com.gontry.gestorage.Gestorage;
 import com.gontry.gestorage.config.CarefulBreakServerConfig;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
-import net.minecraft.command.DefaultPermissions;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 
@@ -14,46 +12,38 @@ public class ToggleCarefulBreakC2SPacket {
 			ServerPlayerEntity player = ctx.player();
 			if (player == null) return;
 
-			MinecraftServer server = ctx.server();
-			boolean allowed = player.getPermissions().hasPermission(DefaultPermissions.GAMEMASTERS)
-					|| (server.isSingleplayer() && server.isHost(player.getPlayerConfigEntry()));
-			if (!allowed) {
-				player.sendMessage(Text.literal("§cYou don't have permission to change Careful Break settings"), false);
+			int option = payload.option();
+			if (option < 0 || option > CarefulBreakServerConfig.OPTION_ENABLED) {
+				Gestorage.LOGGER.warn("[ToggleCarefulBreak] Unknown option: {}", option);
 				return;
 			}
 
-			String name;
-			switch (payload.option()) {
-				case 0 -> { name = "Careful Break"; CarefulBreakServerConfig.carefulBreak = !CarefulBreakServerConfig.carefulBreak; }
-				case 1 -> { name = "Careful Drop"; CarefulBreakServerConfig.carefulDrop = !CarefulBreakServerConfig.carefulDrop; }
-				case 2 -> { name = "Always Careful"; CarefulBreakServerConfig.alwaysCareful = !CarefulBreakServerConfig.alwaysCareful; }
-				case 3 -> { name = "Tree Capitator"; CarefulBreakServerConfig.treeCapitator = !CarefulBreakServerConfig.treeCapitator; }
-				case 4 -> { name = "Better Harvesting"; CarefulBreakServerConfig.betterHarvesting = !CarefulBreakServerConfig.betterHarvesting; }
-				case 5 -> { name = "Auto Replant Trees"; CarefulBreakServerConfig.autoReplantTrees = !CarefulBreakServerConfig.autoReplantTrees; }
-				case 6 -> { name = "Auto Replant Crops"; CarefulBreakServerConfig.autoReplantCrops = !CarefulBreakServerConfig.autoReplantCrops; }
-				case 7 -> { name = "Enabled"; CarefulBreakServerConfig.enabled = !CarefulBreakServerConfig.enabled; }
-				default -> {
-					Gestorage.LOGGER.warn("[ToggleCarefulBreak] Unknown option: {}", payload.option());
-					return;
-				}
+			if (!CarefulBreakServerConfig.isPermitted(player)) {
+				player.sendMessage(Text.literal("§c[Gestorage] You don't have permission to change your Careful Break settings. "
+						+ "Ask an operator to run /gestorage careful allow <player>."), false);
+				// Force the client back to the effective (all-off) state.
+				CarefulBreakStateS2CPacket.sendTo(player);
+				return;
 			}
-			CarefulBreakServerConfig.save();
 
-			CarefulBreakStateS2CPacket.broadcast(server);
-			player.sendMessage(Text.literal("§7" + name + ": " + (isOptionEnabled(payload.option()) ? "§aON" : "§cOFF")), true);
+			CarefulBreakServerConfig.Profile profile = CarefulBreakServerConfig.toggle(player, option);
+			CarefulBreakStateS2CPacket.sendTo(player);
+			player.sendMessage(Text.literal("§7" + optionName(option) + ": "
+					+ (profile.option(option) ? "§aON" : "§cOFF")), true);
 		});
 	}
 
-	private static boolean isOptionEnabled(int option) {
+	private static String optionName(int option) {
 		return switch (option) {
-			case 0 -> CarefulBreakServerConfig.carefulBreak;
-			case 1 -> CarefulBreakServerConfig.carefulDrop;
-			case 2 -> CarefulBreakServerConfig.alwaysCareful;
-			case 3 -> CarefulBreakServerConfig.treeCapitator;
-			case 4 -> CarefulBreakServerConfig.betterHarvesting;
-			case 5 -> CarefulBreakServerConfig.autoReplantTrees;
-			case 6 -> CarefulBreakServerConfig.autoReplantCrops;
-			default -> CarefulBreakServerConfig.enabled;
+			case CarefulBreakServerConfig.OPTION_CAREFUL_BREAK -> "Careful Break";
+			case CarefulBreakServerConfig.OPTION_CAREFUL_DROP -> "Careful Drop";
+			case CarefulBreakServerConfig.OPTION_ALWAYS_CAREFUL -> "Always Careful";
+			case CarefulBreakServerConfig.OPTION_TREE_CAPITATOR -> "Tree Capitator";
+			case CarefulBreakServerConfig.OPTION_BETTER_HARVESTING -> "Better Harvesting";
+			case CarefulBreakServerConfig.OPTION_AUTO_REPLANT_TREES -> "Auto Replant Trees";
+			case CarefulBreakServerConfig.OPTION_AUTO_REPLANT_CROPS -> "Auto Replant Crops";
+			case CarefulBreakServerConfig.OPTION_ENABLED -> "Enabled";
+			default -> "Option";
 		};
 	}
 }

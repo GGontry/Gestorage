@@ -23,12 +23,14 @@ public class HandledScreenMixin {
 		SlotLockRenderer.renderSlotBorder(context, slot, screen);
 	}
 
-	@Inject(at = @At("HEAD"), method = "render")
+	// Hook renderMain instead of render: RecipeBookScreen (player inventory, crafting
+	// table, furnaces) calls renderMain directly and never goes through render().
+	@Inject(at = @At("HEAD"), method = "renderMain")
 	private void gestorage_beforeRender(DrawContext context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
 		SlotLockRenderer.beginFrame();
 	}
 
-	@Inject(at = @At("TAIL"), method = "render")
+	@Inject(at = @At("TAIL"), method = "renderMain")
 	private void gestorage_onRender(DrawContext context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
 		HandledScreen<?> screen = (HandledScreen<?>) (Object) this;
 		StorageOverlayRenderer.render(context, screen, mouseX, mouseY);

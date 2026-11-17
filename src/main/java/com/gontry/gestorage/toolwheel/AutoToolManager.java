@@ -4,11 +4,11 @@ import com.gontry.gestorage.Gestorage;
 import com.gontry.gestorage.ModConstants;
 import com.gontry.gestorage.network.ToolWheelSyncS2CPacket;
 import net.minecraft.block.BlockState;
+import net.minecraft.component.DataComponentTypes;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.packet.s2c.play.UpdateSelectedSlotS2CPacket;
 import net.minecraft.registry.DynamicRegistryManager;
@@ -168,7 +168,7 @@ public final class AutoToolManager {
 
 		ItemStack displaced = inv.getStack(handSlot);
 		applySwap(player, state, inv, handSlot, wheelSlot);
-		session.beginPending(wheelSlot, handSlot, inv.getStack(handSlot).getItem(), displaced);
+		session.beginPending(wheelSlot, handSlot, inv.getStack(handSlot), displaced);
 	}
 
 	/**
@@ -215,7 +215,7 @@ public final class AutoToolManager {
 	private static void revert(ServerPlayerEntity player, Session session) {
 		int wheelSlot = session.wheelSlot;
 		int handSlot = session.handSlot;
-		Item toolItem = session.toolItem;
+		ItemStack tool = session.toolStack;
 		ItemStack displaced = session.displaced;
 		session.clearPending();
 		ToolWheelState state = ToolWheelState.getExisting(player);
@@ -223,7 +223,7 @@ public final class AutoToolManager {
 		if (wheelSlot < 0 || wheelSlot >= ToolWheelState.SIZE) return;
 		PlayerInventory inv = player.getInventory();
 		ItemStack toolNow = inv.getStack(handSlot);
-		if (toolNow.isEmpty() || !toolNow.isOf(toolItem)) return;
+		if (!isSameTool(toolNow, tool)) return;
 		ItemStack parked = state.stacks.get(wheelSlot);
 		if (!holdsDisplaced(parked, displaced)) return;
 		inv.setStack(handSlot, parked);
@@ -324,8 +324,22 @@ public final class AutoToolManager {
 	}
 
 	private static boolean handHoldsTool(ServerPlayerEntity player, Session session) {
-		ItemStack hand = player.getInventory().getStack(session.handSlot);
-		return !hand.isEmpty() && hand.isOf(session.toolItem);
+		return isSameTool(player.getInventory().getStack(session.handSlot), session.toolStack);
+	}
+
+	/**
+	 * Whether the hand stack is still the exact tool Auto Tool swapped in. Durability
+	 * used while mining is ignored; a different stack of the same item does not match,
+	 * so a tool the player moved there is never rotated into the wheel.
+	 */
+	private static boolean isSameTool(ItemStack hand, ItemStack swapped) {
+		if (hand.isEmpty() || swapped.isEmpty()) return false;
+		if (hand == swapped) return true;
+		ItemStack handCopy = hand.copy();
+		ItemStack swappedCopy = swapped.copy();
+		handCopy.remove(DataComponentTypes.DAMAGE);
+		swappedCopy.remove(DataComponentTypes.DAMAGE);
+		return ItemStack.areItemsAndComponentsEqual(handCopy, swappedCopy);
 	}
 
 	private static Enchants enchants(ServerPlayerEntity player, int pref) {
@@ -395,7 +409,7 @@ public final class AutoToolManager {
 		volatile long lastMineTime = System.currentTimeMillis();
 		int wheelSlot = -1;
 		int handSlot = -1;
-		Item toolItem = null;
+		ItemStack toolStack = ItemStack.EMPTY;
 		ItemStack displaced = ItemStack.EMPTY;
 
 		Session() {}
@@ -406,13 +420,13 @@ public final class AutoToolManager {
 
 		/**
 		 * Records the rotation as it happened: the wheel slot the auto tool came from,
-		 * the tool slot it was written to, the auto tool item and the stack it displaced,
-		 * which is the one {@link #revert} hands back.
+		 * the tool slot it was written to, the tool stack that was swapped in and the
+		 * stack it displaced, which is the one {@link #revert} hands back.
 		 */
-		void beginPending(int wheelSlot, int handSlot, Item toolItem, ItemStack displaced) {
+		void beginPending(int wheelSlot, int handSlot, ItemStack toolStack, ItemStack displaced) {
 			this.wheelSlot = wheelSlot;
 			this.handSlot = handSlot;
-			this.toolItem = toolItem;
+			this.toolStack = toolStack.copy();
 			this.displaced = displaced.copy();
 			this.lastMineTime = System.currentTimeMillis();
 		}
@@ -420,12 +434,12 @@ public final class AutoToolManager {
 		void clearPending() {
 			this.wheelSlot = -1;
 			this.handSlot = -1;
-			this.toolItem = null;
+			this.toolStack = ItemStack.EMPTY;
 			this.displaced = ItemStack.EMPTY;
 		}
 
 		boolean hasPending() {
-			return toolItem != null;
+			return !toolStack.isEmpty();
 		}
 	}
 }

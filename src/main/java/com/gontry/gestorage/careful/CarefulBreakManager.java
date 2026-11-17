@@ -66,28 +66,28 @@ public final class CarefulBreakManager {
 	}
 
 	public static boolean shouldCollectBlockDrops(ServerPlayerEntity player) {
-		if (!CarefulBreakServerConfig.enabled) return false;
-		boolean cbActive = CarefulBreakServerConfig.carefulBreak && player.isSneaking();
-		boolean acActive = CarefulBreakServerConfig.alwaysCareful;
+		CarefulBreakServerConfig.Profile profile = CarefulBreakServerConfig.getEffectiveProfile(player);
+		if (!profile.enabled()) return false;
+		boolean cbActive = profile.carefulBreak() && player.isSneaking();
+		boolean acActive = profile.alwaysCareful();
 		return cbActive || acActive;
 	}
 
 	public static boolean shouldCollectEntityDrops(ServerPlayerEntity player) {
-		if (!CarefulBreakServerConfig.enabled) return false;
-		boolean cdActive = CarefulBreakServerConfig.carefulDrop && player.isSneaking();
-		boolean acActive = CarefulBreakServerConfig.alwaysCareful;
+		CarefulBreakServerConfig.Profile profile = CarefulBreakServerConfig.getEffectiveProfile(player);
+		if (!profile.enabled()) return false;
+		boolean cdActive = profile.carefulDrop() && player.isSneaking();
+		boolean acActive = profile.alwaysCareful();
 		return cdActive || acActive;
 	}
 
 	public static boolean isTreeCapitatorActive(ServerPlayerEntity player) {
-		if (!CarefulBreakServerConfig.enabled) return false;
-		if (!CarefulBreakServerConfig.treeCapitator) return false;
+		if (!CarefulBreakServerConfig.isOptionActive(player, CarefulBreakServerConfig.OPTION_TREE_CAPITATOR)) return false;
 		return shouldCollectBlockDrops(player);
 	}
 
 	public static boolean isBetterHarvestingActive(ServerPlayerEntity player) {
-		if (!CarefulBreakServerConfig.enabled) return false;
-		if (!CarefulBreakServerConfig.betterHarvesting) return false;
+		if (!CarefulBreakServerConfig.isOptionActive(player, CarefulBreakServerConfig.OPTION_BETTER_HARVESTING)) return false;
 		return shouldCollectBlockDrops(player);
 	}
 

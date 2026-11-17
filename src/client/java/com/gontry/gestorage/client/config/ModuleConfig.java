@@ -25,13 +25,13 @@ public final class ModuleConfig {
 	private ModuleConfig() {}
 
 	public static void initialize() {
-		// Back up each json once, then bootstrap every module config.
-		createBackup(Path.of("config", "gestorage", "ender_chest.json"));
-		createBackup(Path.of("config", "gestorage", "shulker_refill.json"));
-		createBackup(Path.of("config", "gestorage", "storage_overlay.json"));
-		createBackup(Path.of("config", "gestorage", "inventory_sorting.json"));
-		createBackup(Path.of("config", "gestorage", "tool_wheel.json"));
-		createBackup(Path.of("config", "gestorage", "slot_lock.json"));
+		// Back up each config once, then bootstrap every module config.
+		createBackup(Path.of("config", "gestorage", "ender_chest.json5"));
+		createBackup(Path.of("config", "gestorage", "shulker_refill.json5"));
+		createBackup(Path.of("config", "gestorage", "storage_overlay.json5"));
+		createBackup(Path.of("config", "gestorage", "inventory_sorting.json5"));
+		createBackup(Path.of("config", "gestorage", "tool_wheel.json5"));
+		createBackup(Path.of("config", "gestorage", "slot_lock.json5"));
 		ENDER_CHEST = EnderChestConfig.createAndLoad();
 		SHULKER_REFILL = ShulkerRefillConfig.createAndLoad();
 		STORAGE_OVERLAY = StorageOverlayConfig.createAndLoad();

@@ -50,7 +50,7 @@ public final class BetterHarvesting {
 				world.breakBlock(cropPos, true, player, 512);
 			}
 
-			if (CarefulBreakServerConfig.autoReplantCrops) {
+			if (CarefulBreakServerConfig.isOptionActive(player, CarefulBreakServerConfig.OPTION_AUTO_REPLANT_CROPS)) {
 				replantCrop(player, world, crops, block);
 			}
 		} finally {

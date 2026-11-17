@@ -40,10 +40,13 @@ public class StorageOverlayRenderer {
 
 		ItemStack focusedStack = focused.getStack();
 		Counts counts = countInventory(screen, focused);
-		boolean iconMode = !focusedStack.isEmpty() && ModuleConfig.storageOverlay().showItemIcon();
+		var config = ModuleConfig.storageOverlay();
+		boolean iconMode = !focusedStack.isEmpty() && config.showItemIcon();
+		// The icon labels the item-name line when that line exists; otherwise it gets its own row.
+		int iconLine = iconMode && config.showItemName() ? (config.showInventoryName() ? 1 : 0) : -1;
 
-		List<Text> lines = buildLines(screen, focusedStack, counts, iconMode);
-		if (lines.isEmpty()) return;
+		List<Text> lines = buildLines(screen, focusedStack, counts);
+		if (lines.isEmpty() && !iconMode) return;
 
 		TextRenderer renderer = MinecraftClient.getInstance().textRenderer;
 		int textWidth = 0;
@@ -51,12 +54,18 @@ public class StorageOverlayRenderer {
 			textWidth = Math.max(textWidth, renderer.getWidth(line));
 		}
 
-		int contentWidth = iconMode ? Math.max(textWidth + ICON_SIZE + ICON_GAP, ICON_SIZE) : textWidth;
-		int contentHeight = iconMode ? ICON_SIZE + (lines.size() - 1) * LINE_HEIGHT : lines.size() * LINE_HEIGHT;
+		int contentWidth = textWidth;
+		int contentHeight = lines.size() * LINE_HEIGHT;
+		if (iconLine >= 0) {
+			contentWidth = Math.max(textWidth + ICON_SIZE + ICON_GAP, ICON_SIZE);
+			contentHeight += ICON_SIZE - LINE_HEIGHT;
+		} else if (iconMode) {
+			contentWidth = Math.max(contentWidth, ICON_SIZE);
+			contentHeight += ICON_SIZE;
+		}
 		int panelWidth = contentWidth + PAD_X * 2;
 		int panelHeight = contentHeight + PAD_Y * 2;
 
-		var config = ModuleConfig.storageOverlay();
 		int screenX = accessor.gestorage_getX();
 		int screenY = accessor.gestorage_getY();
 		int y = screenY + config.offsetY();
@@ -74,17 +83,19 @@ public class StorageOverlayRenderer {
 
 		int textX = x + PAD_X;
 		int textY = y + PAD_Y;
-		if (iconMode) {
+		if (iconMode && iconLine < 0) {
 			context.drawItem(focusedStack, textX, textY);
-			context.drawText(renderer, lines.get(0), textX + ICON_SIZE + ICON_GAP, textY + 3, TEXT_COLOR, true);
 			textY += ICON_SIZE;
-			for (int i = 1; i < lines.size(); i++) {
-				context.drawText(renderer, lines.get(i), x + PAD_X, textY, SUB_COLOR, true);
-				textY += LINE_HEIGHT;
-			}
-		} else {
-			for (int i = 0; i < lines.size(); i++) {
-				int color = i == 0 ? TEXT_COLOR : SUB_COLOR;
+		}
+
+		for (int i = 0; i < lines.size(); i++) {
+			int color = i == 0 ? TEXT_COLOR : SUB_COLOR;
+			if (i == iconLine) {
+				context.drawItem(focusedStack, textX, textY);
+				context.drawText(renderer, lines.get(i), textX + ICON_SIZE + ICON_GAP,
+						textY + 3, color, true);
+				textY += ICON_SIZE;
+			} else {
 				context.drawText(renderer, lines.get(i), textX, textY, color, true);
 				textY += LINE_HEIGHT;
 			}
@@ -130,23 +141,9 @@ public class StorageOverlayRenderer {
 		return Text.translatable("overlay.gestorage.stacks", fullStacks);
 	}
 
-	private static List<Text> buildLines(HandledScreen<?> screen, ItemStack focusedStack, Counts counts, boolean iconMode) {
+	private static List<Text> buildLines(HandledScreen<?> screen, ItemStack focusedStack, Counts counts) {
 		var config = ModuleConfig.storageOverlay();
 		List<Text> lines = new ArrayList<>();
-
-		if (iconMode) {
-			lines.add(focusedStack.getName());
-			if (config.showStackCount()) {
-				lines.add(stacksLine(focusedStack, counts));
-			}
-			if (config.showItemCount()) {
-				lines.add(Text.translatable("overlay.gestorage.items", counts.matchingItems()));
-			}
-			if (config.showFreeSlots()) {
-				lines.add(Text.translatable("overlay.gestorage.free", counts.freeSlots(), counts.totalSlots()));
-			}
-			return lines;
-		}
 
 		if (config.showInventoryName()) {
 			lines.add(screen.getTitle());

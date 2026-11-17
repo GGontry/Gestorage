@@ -17,8 +17,10 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.screen.slot.Slot;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Client-side ticking of shulker refill links.
@@ -87,9 +89,11 @@ public class ShulkerRefillTickHandler {
 				}
 			}
 
-			if (linkStates.size() > links.size()) {
-				linkStates.keySet().removeIf(key -> links.stream().noneMatch(l -> linkKey(l).equals(key)));
+			Set<String> activeKeys = new HashSet<>();
+			for (ShulkerLink link : links) {
+				activeKeys.add(linkKey(link));
 			}
+			linkStates.keySet().removeIf(key -> !activeKeys.contains(key));
 
 			for (ShulkerLink link : links) {
 				ItemStack source = clientStack(link.sourceSlot(), link.sourceType(), screenStacks, playerInv);

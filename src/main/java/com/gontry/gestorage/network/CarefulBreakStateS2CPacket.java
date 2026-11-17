@@ -8,21 +8,23 @@ import net.minecraft.server.network.ServerPlayerEntity;
 public final class CarefulBreakStateS2CPacket {
 	private CarefulBreakStateS2CPacket() {}
 
-	public static ModNetworking.CarefulBreakStateS2C buildState() {
+	/** The player's own effective state; all off while they lack permission. */
+	public static ModNetworking.CarefulBreakStateS2C buildState(ServerPlayerEntity player) {
+		CarefulBreakServerConfig.Profile profile = CarefulBreakServerConfig.getEffectiveProfile(player);
 		return new ModNetworking.CarefulBreakStateS2C(
-				CarefulBreakServerConfig.enabled,
-				CarefulBreakServerConfig.carefulBreak,
-				CarefulBreakServerConfig.carefulDrop,
-				CarefulBreakServerConfig.alwaysCareful,
-				CarefulBreakServerConfig.treeCapitator,
-				CarefulBreakServerConfig.betterHarvesting,
-				CarefulBreakServerConfig.autoReplantTrees,
-				CarefulBreakServerConfig.autoReplantCrops
+				profile.enabled(),
+				profile.carefulBreak(),
+				profile.carefulDrop(),
+				profile.alwaysCareful(),
+				profile.treeCapitator(),
+				profile.betterHarvesting(),
+				profile.autoReplantTrees(),
+				profile.autoReplantCrops()
 		);
 	}
 
 	public static void sendTo(ServerPlayerEntity player) {
-		ServerPlayNetworking.send(player, buildState());
+		ServerPlayNetworking.send(player, buildState(player));
 	}
 
 	public static void broadcast(MinecraftServer server) {

@@ -2,6 +2,8 @@ package com.gontry.gestorage.command;
 
 import com.gontry.gestorage.ModConstants;
 import com.gontry.gestorage.ModGameRules;
+import com.gontry.gestorage.config.CarefulBreakServerConfig;
+import com.gontry.gestorage.network.CarefulBreakStateS2CPacket;
 import com.gontry.gestorage.network.EnderSizeChangedS2CPacket;
 import com.gontry.gestorage.network.ModNetworking;
 import com.gontry.gestorage.network.ToolWheelSyncS2CPacket;
@@ -10,8 +12,12 @@ import com.gontry.gestorage.toolwheel.ToolWheelState;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
+import com.mojang.brigadier.context.CommandContext;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.minecraft.command.argument.GameProfileArgumentType;
+import net.minecraft.server.PlayerConfigEntry;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -19,6 +25,11 @@ import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.text.TextColor;
 import net.minecraft.util.Formatting;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class GestorageCommands {
 	private static final String[] SIZE_MODES = {"normal", "large", "extra_large"};
@@ -100,6 +111,28 @@ public class GestorageCommands {
 							return 1;
 						})
 				)
+				.then(CommandManager.literal("careful")
+						.then(CommandManager.literal("allow")
+								.then(CommandManager.argument("targets", GameProfileArgumentType.gameProfile())
+										.requires(CommandManager.requirePermissionLevel(CommandManager.GAMEMASTERS_CHECK))
+										.executes(context -> setCarefulPermission(context, true))))
+						.then(CommandManager.literal("deny")
+								.then(CommandManager.argument("targets", GameProfileArgumentType.gameProfile())
+										.requires(CommandManager.requirePermissionLevel(CommandManager.GAMEMASTERS_CHECK))
+										.executes(context -> setCarefulPermission(context, false))))
+						.then(CommandManager.literal("allowall")
+								.requires(CommandManager.requirePermissionLevel(CommandManager.GAMEMASTERS_CHECK))
+								.executes(context -> reportCarefulAllowAll(context.getSource()))
+								.then(CommandManager.literal("on")
+										.requires(CommandManager.requirePermissionLevel(CommandManager.GAMEMASTERS_CHECK))
+										.executes(context -> setCarefulAllowAll(context.getSource(), true)))
+								.then(CommandManager.literal("off")
+										.requires(CommandManager.requirePermissionLevel(CommandManager.GAMEMASTERS_CHECK))
+										.executes(context -> setCarefulAllowAll(context.getSource(), false))))
+						.then(CommandManager.literal("list")
+								.requires(CommandManager.requirePermissionLevel(CommandManager.GAMEMASTERS_CHECK))
+								.executes(context -> listCarefulPermissions(context.getSource())))
+				)
 				.then(CommandManager.literal("shulkerstack")
 						.then(CommandManager.literal("players")
 								.executes(context -> reportPlayersStack(context.getSource()))
@@ -164,6 +197,73 @@ public class GestorageCommands {
 						)
 				)
 		);
+	}
+
+	private static int setCarefulPermission(CommandContext<ServerCommandSource> context, boolean allow)
+			throws CommandSyntaxException {
+		ServerCommandSource source = context.getSource();
+		Collection<PlayerConfigEntry> targets = GameProfileArgumentType.getProfileArgument(context, "targets");
+		List<String> names = new ArrayList<>();
+
+		for (PlayerConfigEntry target : targets) {
+			if (allow) {
+				CarefulBreakServerConfig.permit(target.id(), target.name());
+			} else {
+				CarefulBreakServerConfig.revoke(target.id());
+				CarefulBreakServerConfig.clearProfile(target.id());
+			}
+			names.add(target.name());
+
+			ServerPlayerEntity online = source.getServer().getPlayerManager().getPlayer(target.id());
+			if (online != null) {
+				CarefulBreakStateS2CPacket.sendTo(online);
+				online.sendMessage(Text.literal(allow
+						? "§a[Gestorage] You can now enable Careful Break options yourself."
+						: "§c[Gestorage] Your Careful Break options are now managed by an operator."), false);
+			}
+		}
+
+		CarefulBreakServerConfig.save();
+		String label = allow ? "Allowed" : "Denied";
+		String list = String.join(", ", names);
+		source.sendFeedback(() -> Text.literal("[Gestorage] " + label + " Careful Break for " + list), true);
+		return 1;
+	}
+
+	private static int reportCarefulAllowAll(ServerCommandSource source) {
+		source.sendFeedback(() -> Text.literal("[Gestorage] Everyone can change their own Careful Break settings: "
+				+ state(CarefulBreakServerConfig.isAllowAll())
+				+ " (operators, the host and explicitly allowed players can always do it)"), false);
+		return 1;
+	}
+
+	private static int setCarefulAllowAll(ServerCommandSource source, boolean value) {
+		CarefulBreakServerConfig.setAllowAll(value);
+		CarefulBreakServerConfig.save();
+		// Permission just changed for everyone; refresh each client's effective state.
+		CarefulBreakStateS2CPacket.broadcast(source.getServer());
+		source.sendFeedback(() -> Text.literal("[Gestorage] Everyone can change their own Careful Break settings: "
+				+ state(value)), true);
+		return 1;
+	}
+
+	private static int listCarefulPermissions(ServerCommandSource source) {
+		source.sendFeedback(() -> Text.literal("[Gestorage] Everyone allowed: "
+				+ state(CarefulBreakServerConfig.isAllowAll())), false);
+
+		var allowed = CarefulBreakServerConfig.getAllowed();
+		if (allowed.isEmpty()) {
+			source.sendFeedback(() -> Text.literal("[Gestorage] Allowed players: none "
+					+ "(operators, the host and explicitly allowed players can always toggle)"), false);
+			return 1;
+		}
+
+		String names = allowed.values().stream()
+				.map(name -> name == null || name.isBlank() ? "?" : name)
+				.sorted(String.CASE_INSENSITIVE_ORDER)
+				.collect(Collectors.joining(", "));
+		source.sendFeedback(() -> Text.literal("[Gestorage] Allowed players: " + names), false);
+		return 1;
 	}
 
 	private static int reportShulkerStack(ServerCommandSource source) {

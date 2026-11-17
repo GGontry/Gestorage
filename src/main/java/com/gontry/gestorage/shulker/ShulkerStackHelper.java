@@ -50,6 +50,6 @@ public final class ShulkerStackHelper {
 	 */
 	public static int stackedMaxCount(ItemStack stack) {
 		int vanilla = vanillaMaxCount(stack);
-		return vanilla <= 1 ? 64 : Math.min(vanilla, 64);
+		return vanilla <= 1 ? 64 : vanilla;
 	}
 }
