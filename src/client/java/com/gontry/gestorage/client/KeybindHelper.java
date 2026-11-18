@@ -6,12 +6,16 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * String-based keybind DSL shared by every module (e.g. "ctrl+shift+e", "mouse.2").
+ * String-based keybind DSL shared by every module (e.g. "ctrl+shift+e", "mouse.2",
+ * "left_alt"). A modifier can be the whole binding, not just a prefix: those keys
+ * use stable side-specific names so a hand-edited config stays readable.
  *
  * Keybinds are plain config strings rather than vanilla KeyBinding objects so
  * they survive config round-trips unchanged. Invariants:
  * - encode()/decode() are each other's inverse for keys written by the config UI.
  * - decode() and getKeyName() must never throw: config files can be hand-edited.
+ * - Configured modifiers are required, but unrelated ones are ignored, so a
+ *   binding still works while sneaking (Shift) or holding any other modifier.
  */
 public class KeybindHelper {
 	public static final int MOD_CTRL = 1;
@@ -19,23 +23,57 @@ public class KeybindHelper {
 	public static final int MOD_ALT = 4;
 	public static final int MOD_SUPER = 8;
 
+	/** Stable names for modifier keys, which must stay bindable on their own. */
+	private static final Map<Integer, String> MODIFIER_NAMES = Map.of(
+			GLFW.GLFW_KEY_LEFT_CONTROL, "left_ctrl",
+			GLFW.GLFW_KEY_RIGHT_CONTROL, "right_ctrl",
+			GLFW.GLFW_KEY_LEFT_SHIFT, "left_shift",
+			GLFW.GLFW_KEY_RIGHT_SHIFT, "right_shift",
+			GLFW.GLFW_KEY_LEFT_ALT, "left_alt",
+			GLFW.GLFW_KEY_RIGHT_ALT, "right_alt",
+			GLFW.GLFW_KEY_LEFT_SUPER, "left_super",
+			GLFW.GLFW_KEY_RIGHT_SUPER, "right_super"
+	);
+
+	private static final Map<String, Integer> MODIFIER_CODES = Map.of(
+			"left_ctrl", GLFW.GLFW_KEY_LEFT_CONTROL,
+			"right_ctrl", GLFW.GLFW_KEY_RIGHT_CONTROL,
+			"left_shift", GLFW.GLFW_KEY_LEFT_SHIFT,
+			"right_shift", GLFW.GLFW_KEY_RIGHT_SHIFT,
+			"left_alt", GLFW.GLFW_KEY_LEFT_ALT,
+			"right_alt", GLFW.GLFW_KEY_RIGHT_ALT,
+			"left_super", GLFW.GLFW_KEY_LEFT_SUPER,
+			"right_super", GLFW.GLFW_KEY_RIGHT_SUPER
+	);
+
 	private static final Map<String, Integer> keyCodeCache = new HashMap<>();
 
+	/**
+	 * Encodes a key and its modifiers. When the key itself is a modifier its own
+	 * family is removed from the prefix bits, so Left Alt alone becomes
+	 * {@code "left_alt"} instead of the redundant {@code "alt+left_alt"}.
+	 */
 	public static String encode(int keyCode, int modifiers) {
 		if (keyCode == -1) return "";
+		int prefixMods = modifiers & ~modifierFamily(keyCode);
 		StringBuilder sb = new StringBuilder();
-		if ((modifiers & MOD_CTRL) != 0) sb.append("ctrl+");
-		if ((modifiers & MOD_SHIFT) != 0) sb.append("shift+");
-		if ((modifiers & MOD_ALT) != 0) sb.append("alt+");
-		if ((modifiers & MOD_SUPER) != 0) sb.append("super+");
+		if ((prefixMods & MOD_CTRL) != 0) sb.append("ctrl+");
+		if ((prefixMods & MOD_SHIFT) != 0) sb.append("shift+");
+		if ((prefixMods & MOD_ALT) != 0) sb.append("alt+");
+		if ((prefixMods & MOD_SUPER) != 0) sb.append("super+");
 		if (keyCode < 0) {
 			sb.append("mouse.").append(-keyCode);
 		} else {
-			String name = GLFW.glfwGetKeyName(keyCode, 0);
-			if (name != null) {
-				sb.append(name.toLowerCase());
+			String modifierName = MODIFIER_NAMES.get(keyCode);
+			if (modifierName != null) {
+				sb.append(modifierName);
 			} else {
-				sb.append("key_").append(keyCode);
+				String name = GLFW.glfwGetKeyName(keyCode, 0);
+				if (name != null) {
+					sb.append(name.toLowerCase());
+				} else {
+					sb.append("key_").append(keyCode);
+				}
 			}
 		}
 		return sb.toString();
@@ -50,7 +88,10 @@ public class KeybindHelper {
 		if (keyPart.startsWith("alt+")) { modifiers |= MOD_ALT; keyPart = keyPart.substring(4); }
 		if (keyPart.startsWith("super+")) { modifiers |= MOD_SUPER; keyPart = keyPart.substring(6); }
 		int keyCode;
-		if (keyPart.startsWith("mouse.")) {
+		Integer modifierCode = modifierCode(keyPart);
+		if (modifierCode != null) {
+			keyCode = modifierCode;
+		} else if (keyPart.startsWith("mouse.")) {
 			keyCode = parseMouseKey(keyPart.substring(6));
 		} else if (keyPart.startsWith("key_")) {
 			keyCode = parseKeyNumber(keyPart.substring(4));
@@ -58,6 +99,22 @@ public class KeybindHelper {
 			keyCode = getKeyCodeByName(keyPart);
 		}
 		return new int[]{keyCode, modifiers};
+	}
+
+	/** Accepts both the canonical {@code left_alt} and the GLFW-style {@code Left Alt}. */
+	private static Integer modifierCode(String name) {
+		return MODIFIER_CODES.get(name.trim().toLowerCase().replace(' ', '_'));
+	}
+
+	/** Modifier family a key belongs to, or 0 for ordinary keys and mouse buttons. */
+	private static int modifierFamily(int keyCode) {
+		return switch (keyCode) {
+			case GLFW.GLFW_KEY_LEFT_CONTROL, GLFW.GLFW_KEY_RIGHT_CONTROL -> MOD_CTRL;
+			case GLFW.GLFW_KEY_LEFT_SHIFT, GLFW.GLFW_KEY_RIGHT_SHIFT -> MOD_SHIFT;
+			case GLFW.GLFW_KEY_LEFT_ALT, GLFW.GLFW_KEY_RIGHT_ALT -> MOD_ALT;
+			case GLFW.GLFW_KEY_LEFT_SUPER, GLFW.GLFW_KEY_RIGHT_SUPER -> MOD_SUPER;
+			default -> 0;
+		};
 	}
 
 	/**
@@ -120,14 +177,13 @@ public class KeybindHelper {
 		boolean alt = altState == GLFW.GLFW_PRESS || rAltState == GLFW.GLFW_PRESS;
 		boolean super_ = superState == GLFW.GLFW_PRESS || rSuperState == GLFW.GLFW_PRESS;
 
+		// Only the configured modifiers are required. Extra ones are ignored so
+		// bindings keep working while sneaking or while another module's modifier
+		// is held; a modifier bound as the key is covered by its own GLFW state.
 		if ((requiredMods & MOD_CTRL) != 0 && !ctrl) return false;
 		if ((requiredMods & MOD_SHIFT) != 0 && !shift) return false;
 		if ((requiredMods & MOD_ALT) != 0 && !alt) return false;
 		if ((requiredMods & MOD_SUPER) != 0 && !super_) return false;
-		if ((requiredMods & MOD_CTRL) == 0 && ctrl) return false;
-		if ((requiredMods & MOD_SHIFT) == 0 && shift) return false;
-		if ((requiredMods & MOD_ALT) == 0 && alt) return false;
-		if ((requiredMods & MOD_SUPER) == 0 && super_) return false;
 
 		if (keyCode < 0) {
 			int mouseButton = -keyCode - 1;
@@ -139,7 +195,7 @@ public class KeybindHelper {
 
 	public static String getKeyName(String keybind) {
 		if (keybind == null || keybind.isEmpty()) return "NONE";
-		String display = keybind.toUpperCase().replace("+", " + ");
+		String display = keybind.toUpperCase().replace('_', ' ').replace("+", " + ");
 		if (display.contains("MOUSE.")) {
 			try {
 				String prefix = display.substring(0, display.indexOf("MOUSE."));

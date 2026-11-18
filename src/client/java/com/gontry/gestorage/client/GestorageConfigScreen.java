@@ -31,6 +31,8 @@ public class GestorageConfigScreen extends Screen {
 	private int selectedModule = 0;
 	private boolean waitingForKey = false;
 	private int keybindTarget = -1;
+	/** First modifier pressed during capture; bound on release if no other key follows. */
+	private int pendingModifier = -1;
 	private boolean swallowNextChar = false;
 	private String searchText = "";
 	private String originalSearchText = "";
@@ -62,7 +64,7 @@ public class GestorageConfigScreen extends Screen {
 	private static final int KEY_W = 84;
 	private static final int DETAIL_HEADER_H = 32;
 	private static final int CHROME_H = PAD * 2 + HEADER_H + HEADER_GAP + SEARCH_H + SEARCH_GAP;
-	private static final int MODULE_COUNT = 7;
+	private static final int MODULE_COUNT = 8;
 	private static final int DESIGNED_WINDOW_H = CHROME_H + MODULE_COUNT * ROW_H
 			+ (MODULE_COUNT - 1) * ROW_GAP + DETAIL_HEADER_H;
 
@@ -167,6 +169,7 @@ public class GestorageConfigScreen extends Screen {
 		selectedModule = idx;
 		waitingForKey = false;
 		keybindTarget = -1;
+		pendingModifier = -1;
 		scrollOffset = 0;
 		rebuildContent();
 		searchField.setFocused(true);
@@ -376,6 +379,30 @@ public class GestorageConfigScreen extends Screen {
 						v -> ModuleConfig.slotLock().preventUse(v),
 						GestorageConfigScreen::saveSlotLock);
 			}
+			case 7 -> {
+				addOptionWithKey(baseY, "Enabled",
+						() -> ModuleConfig.inspector().enabled(),
+						v -> ModuleConfig.inspector().enabled(v),
+						ModuleConfig.inspector()::save,
+						ModuleConfig.inspector().toggleEnabledKey(), 71);
+				baseY += ROW_H + ROW_GAP;
+				keybindButton = new ConfigButton(detailX, optionsTop, detailW, ROW_H,
+						Text.literal("Inspect Key: " + KeybindHelper.getKeyName(ModuleConfig.inspector().inspectKey())),
+						() -> startKeybindCapture(70));
+				detailRows.add(new DetailRow(keybindButton, 0, detailW, baseY));
+				baseY += ROW_H + ROW_GAP;
+				addOptionWithKey(baseY, "Toggle Mode",
+						() -> ModuleConfig.inspector().toggleMode(),
+						v -> ModuleConfig.inspector().toggleMode(v),
+						ModuleConfig.inspector()::save,
+						ModuleConfig.inspector().toggleModeKey(), 72);
+				baseY += ROW_H + ROW_GAP;
+				addOptionWithKey(baseY, "Show Info Box",
+						() -> ModuleConfig.inspector().showInfo(),
+						v -> ModuleConfig.inspector().showInfo(v),
+						ModuleConfig.inspector()::save,
+						ModuleConfig.inspector().toggleShowInfoKey(), 73);
+			}
 		}
 	}
 
@@ -515,6 +542,7 @@ public class GestorageConfigScreen extends Screen {
 	private void startKeybindCapture(int target) {
 		waitingForKey = true;
 		keybindTarget = target;
+		pendingModifier = -1;
 		if (keybindButton != null) {
 			keybindButton.setMessage(Text.literal("[Press key...]"));
 		}
@@ -529,9 +557,11 @@ public class GestorageConfigScreen extends Screen {
 				clearKeybind();
 				return true;
 			}
-			// A modifier on its own is only part of the combination, never the
-			// binding: swallow it and wait for the final key.
+			// Remember the first modifier instead of finishing immediately: if a
+			// normal key follows it becomes a combination, otherwise tick() binds
+			// the modifier alone once it is released.
 			if (isModifier(keyCode)) {
+				if (pendingModifier == -1) pendingModifier = keyCode;
 				return true;
 			}
 			// The event carries the modifier state at the time of the press, so a
@@ -552,6 +582,20 @@ public class GestorageConfigScreen extends Screen {
 		}
 		if (waitingForKey) return true;
 		return super.charTyped(input);
+	}
+
+	@Override
+	public void tick() {
+		super.tick();
+		if (!waitingForKey || pendingModifier == -1 || client == null) return;
+		long handle = client.getWindow() != null ? client.getWindow().getHandle() : 0;
+		if (handle != 0 && GLFW.glfwGetKey(handle, pendingModifier) == GLFW.GLFW_PRESS) return;
+		// The modifier was released without a following key: bind it by itself.
+		// encode() strips the key's own modifier family, so this is "left_alt",
+		// never the redundant "alt+left_alt".
+		applyKeybind(KeybindHelper.encode(pendingModifier, 0));
+		// Modifiers produce no char event, so there is nothing to swallow.
+		swallowNextChar = false;
 	}
 
 	@Override
@@ -590,6 +634,7 @@ public class GestorageConfigScreen extends Screen {
 	private void cancelKeybindCapture() {
 		waitingForKey = false;
 		keybindTarget = -1;
+		pendingModifier = -1;
 		if (this.client != null && this.client.player != null) {
 			this.client.player.sendMessage(Text.literal("§7Keybind capture cancelled."), false);
 		}
@@ -600,6 +645,7 @@ public class GestorageConfigScreen extends Screen {
 		writeKeybind(keybindTarget, encoded);
 		waitingForKey = false;
 		keybindTarget = -1;
+		pendingModifier = -1;
 		swallowNextChar = true;
 		selectModule(selectedModule);
 	}
@@ -608,6 +654,7 @@ public class GestorageConfigScreen extends Screen {
 		writeKeybind(keybindTarget, "");
 		waitingForKey = false;
 		keybindTarget = -1;
+		pendingModifier = -1;
 		selectModule(selectedModule);
 	}
 
@@ -642,6 +689,10 @@ public class GestorageConfigScreen extends Screen {
 			case 53 -> { ModuleConfig.toolWheel().autoToolKey(encoded); ModuleConfig.toolWheel().save(); }
 			case 54 -> { ModuleConfig.toolWheel().enchPrefKey(encoded); ModuleConfig.toolWheel().save(); }
 			case 60 -> { ModuleConfig.slotLock().lockKey(encoded); ModuleConfig.slotLock().save(); }
+			case 70 -> { ModuleConfig.inspector().inspectKey(encoded); ModuleConfig.inspector().save(); }
+			case 71 -> { ModuleConfig.inspector().toggleEnabledKey(encoded); ModuleConfig.inspector().save(); }
+			case 72 -> { ModuleConfig.inspector().toggleModeKey(encoded); ModuleConfig.inspector().save(); }
+			case 73 -> { ModuleConfig.inspector().toggleShowInfoKey(encoded); ModuleConfig.inspector().save(); }
 			default -> applyCBKeybind(encoded);
 		}
 	}
@@ -765,6 +816,7 @@ public class GestorageConfigScreen extends Screen {
 			case 4 -> "Careful Break";
 			case 5 -> "Tool Wheel";
 			case 6 -> "Slot Lock";
+			case 7 -> "Inspector";
 			default -> "";
 		};
 	}
@@ -778,6 +830,7 @@ public class GestorageConfigScreen extends Screen {
 			case 4 -> "Collect blocks and drops directly to inventory";
 			case 5 -> "Radial tool wheel + auto tool. /gestorage toolslot picks the slot Auto Tool uses";
 			case 6 -> "Hold a key and click slots to lock them. Locked slots can be skipped by sorting and protected from drop/use";
+			case 7 -> "Hold or toggle a key to preview the inventory you are looking at, with optional block/entity info";
 			default -> "";
 		};
 	}

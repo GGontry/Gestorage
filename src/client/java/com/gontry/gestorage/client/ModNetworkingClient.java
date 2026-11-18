@@ -17,11 +17,14 @@ public class ModNetworkingClient {
 		ClientPlayNetworking.registerGlobalReceiver(ModNetworking.TOOL_WHEEL_ENCH_PREF_STATE,
 				ToolWheelEnchPrefS2CPacket::handle);
 		ClientPlayNetworking.registerGlobalReceiver(ModNetworking.SLOT_LOCK_SYNC, SlotLockSyncS2CPacket::handle);
+		ClientPlayNetworking.registerGlobalReceiver(ModNetworking.INSPECT_DATA, InspectorDataS2CPacket::handle);
 
 		// Mirrored server state belongs to a world: drop it when leaving one.
 		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
 			ShulkerStackRule.resetClientMirror();
 			ClientSlotLockState.clear();
+			// Disconnect can arrive on the network thread; touch HUD state on the client thread.
+			client.execute(InspectorTickHandler::clearCache);
 		});
 	}
 
@@ -88,5 +91,11 @@ public class ModNetworkingClient {
 				ModuleConfig.slotLock().preventDrop(),
 				ModuleConfig.slotLock().preventUse()
 		));
+	}
+
+	public static boolean sendInspectRequest(ModNetworking.InspectRequestC2S request) {
+		if (!isInWorld()) return false;
+		ClientPlayNetworking.send(request);
+		return true;
 	}
 }

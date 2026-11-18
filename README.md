@@ -8,6 +8,8 @@
 
 All modules ship **disabled by default** and are activated from the in-game config screen (`/gestorage config`), by keybind, or by editing `config/gestorage/`.
 
+Every assignable key accepts a modifier on its own, not just as a prefix: while capturing, press and release a single modifier (for example **Left Alt**) to bind it alone, or hold it and press another key for a combination. Side-specific modifiers are stored as `left_alt`, `right_ctrl`, etc. in the config files. Configured modifiers are required when the key is pressed, but any other modifier held at the same time (for example **Shift** while sneaking) is ignored, so every binding works in that situation.
+
 ---
 
 ## Features
@@ -20,6 +22,7 @@ All modules ship **disabled by default** and are activated from the in-game conf
 | **Storage Overlay** | Informational panel shown next to any open inventory (including the player inventory, crafting table and furnaces): inventory name, item name, stack counts, item counts and free-slot count. |
 | **Inventory Sorting** | Sort button and keybind for containers, shulker boxes, ender chests and the player inventory, with configurable merge, name and direction options. |
 | **Slot Lock** | Hold a key to mark inventory or ender chest slots as locked (red border). Locked slots can be skipped by sorting and protected from drop/use. |
+| **Inspector** | Hold or toggle a key to preview the inventory under your crosshair (blocks and entities), with an optional info box for any targeted block or entity. |
 | **Careful Break** | Per-player, permission-gated mining suite: careful break to hand, careful drop to inventory, tree capitator, better harvesting (cactus/sugarcane/bamboo/kelp chains) and auto replant for trees and crops. |
 | **Tool Wheel** | Radial tool selector bound to a key: a persistent 9-slot wheel that swaps real items between the wheel and your hand, with an optional server-side Auto Tool that instantly swaps the best tool while mining. |
 
@@ -71,6 +74,13 @@ All modules ship **disabled by default** and are activated from the in-game conf
 - **Sorting Skips Locks** — the sort button ignores locked slots and packs the remaining items around them.
 - **Prevent Drop** — blocks Q drops and drag-out drops from locked slots. **Prevent Use** — blocks right-click use and block placement with an item in a locked hand. It does not block attacks, and opening chests or doors still works.
 - Locks are stored per player and per world, and are server-authoritative: the client only mirrors the lock set to draw the borders.
+
+### Inspector
+
+- Enable the module and bind an **Inspect Key** (modifiers can be bound alone or with another key, and other modifiers held at the same time do not block it). In **Press** mode (default, `toggleMode=false`) the preview is visible only while the key is held; in **Toggle Mode** each press turns it on or off. Requests retry after 3 ticks, time out after 20 ticks, and the last 32 targets are cached per dimension with a 5-tick refresh.
+- Looking at a block or entity with an inventory shows a live grid of its contents inside a single framed panel (no separate box around every slot), with the target's own icon beside its name (the block's picked item, or the entity's spawn egg). The vanilla crosshair picks the target and the server resolves its contents without re-checking reach, so anything you can select works from any angle: chests, hoppers, shulker boxes, storage minecarts and other inventory blocks/entities. Double chests always show their full 54 slots, no matter which half you aim at, even if the chest is covered by a block or a cat. Mob inventories (villagers, piglins, pillagers, allays) and player inventories, including fake players, are shown too. It also works with **Tweakeroo freecam**, including with its player-inputs option enabled: the Inspector picks the target from the camera itself, so you can inspect blocks and entities while flying the camera away from your body.
+- The preview and the optional **Show Info Box** use the mod's translucent GUI texture and share the same centered width, so the whole panel stays symmetric. The info box adds the target's name, id, position, block state properties or health, and inventory size; it also works for targets without an inventory, including ordinary blocks and entities.
+- All settings live in `inspector.json5`; the module is off by default.
 
 ### Careful Break
 
@@ -130,6 +140,7 @@ All configuration lives in `config/gestorage/`:
 | `storage_overlay.json5` | Overlay element visibility and toggle keybinds |
 | `inventory_sorting.json5` | Sorting options and toggle keybinds |
 | `slot_lock.json5` | Slot Lock key, behaviour switches and module enabled flag |
+| `inspector.json5` | Inspect key, press/toggle mode, info box and module enabled flag |
 | `careful_break.json` | Per-player Careful Break flags and permissions (written by the server only) |
 | `careful_break_keybinds.json` | Client-side Careful Break keybinds |
 | `tool_wheel.json5` | Tool Wheel keys and module enabled flag |

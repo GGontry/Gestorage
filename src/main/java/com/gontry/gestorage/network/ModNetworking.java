@@ -10,6 +10,10 @@ import net.minecraft.network.RegistryByteBuf;
 import net.minecraft.network.codec.PacketCodec;
 import net.minecraft.network.packet.CustomPayload;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.BlockPos;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Central packet registry.
@@ -82,6 +86,12 @@ public class ModNetworking {
 
 	public static final CustomPayload.Id<SlotLockSyncS2C> SLOT_LOCK_SYNC =
 			new CustomPayload.Id<>(Identifier.of(Gestorage.MOD_ID, "slot_lock_sync"));
+
+	public static final CustomPayload.Id<InspectRequestC2S> INSPECT_REQUEST =
+			new CustomPayload.Id<>(Identifier.of(Gestorage.MOD_ID, "inspect_request"));
+
+	public static final CustomPayload.Id<InspectDataS2C> INSPECT_DATA =
+			new CustomPayload.Id<>(Identifier.of(Gestorage.MOD_ID, "inspect_data"));
 
 	public static final PacketCodec<PacketByteBuf, OpenEnderChestC2S> OPEN_ENDER_CHEST_CODEC =
 			PacketCodec.unit(new OpenEnderChestC2S());
@@ -269,6 +279,66 @@ public class ModNetworking {
 					}
 			);
 
+	/**
+	 * Inspector request: a block position or an entity id, plus a client-side
+	 * request id so late replies for an older crosshair target can be discarded.
+	 */
+	public static final PacketCodec<PacketByteBuf, InspectRequestC2S> INSPECT_REQUEST_CODEC =
+			PacketCodec.of(
+					(InspectRequestC2S p, PacketByteBuf buf) -> {
+						buf.writeInt(p.requestId());
+						buf.writeBoolean(p.entity());
+						if (p.entity()) {
+							buf.writeInt(p.entityId());
+						} else {
+							buf.writeBlockPos(p.blockPos());
+						}
+					},
+					buf -> {
+						int requestId = buf.readInt();
+						if (buf.readBoolean()) {
+							return new InspectRequestC2S(requestId, true, BlockPos.ORIGIN, buf.readInt());
+						}
+						return new InspectRequestC2S(requestId, false, buf.readBlockPos(), -1);
+					}
+			);
+
+	/** Inventory contents and info lines; items need a registry-aware buffer. */
+	public static final PacketCodec<RegistryByteBuf, InspectDataS2C> INSPECT_DATA_CODEC =
+			PacketCodec.of(
+					(InspectDataS2C p, RegistryByteBuf buf) -> {
+						buf.writeInt(p.requestId());
+						buf.writeString(p.title(), 128);
+						buf.writeInt(p.stacks().size());
+						for (ItemStack stack : p.stacks()) {
+							ItemStack.OPTIONAL_PACKET_CODEC.encode(buf, stack);
+						}
+						buf.writeInt(p.infoLines().size());
+						for (String line : p.infoLines()) {
+							buf.writeString(line, 256);
+						}
+						// Appended at the end: the icon of the target block or entity.
+						ItemStack.OPTIONAL_PACKET_CODEC.encode(buf, p.icon());
+					},
+					buf -> {
+						int requestId = buf.readInt();
+						String title = buf.readString(128);
+						// Clamp untrusted counts so a bad packet cannot allocate huge lists.
+						int stackCount = Math.clamp(buf.readInt(), 0, 1024);
+						List<ItemStack> stacks = new ArrayList<>(stackCount);
+						for (int i = 0; i < stackCount; i++) {
+							stacks.add(ItemStack.OPTIONAL_PACKET_CODEC.decode(buf));
+						}
+						int lineCount = Math.clamp(buf.readInt(), 0, 32);
+						List<String> infoLines = new ArrayList<>(lineCount);
+						for (int i = 0; i < lineCount; i++) {
+							infoLines.add(buf.readString(256));
+						}
+						ItemStack icon = ItemStack.OPTIONAL_PACKET_CODEC.decode(buf);
+						return new InspectDataS2C(requestId, title, stacks, infoLines, icon);
+					}
+			);
+
 	public static void register() {
 		// C2S first, then S2C; group each packet with its handler below.
 		PayloadTypeRegistry.playC2S().register(OPEN_ENDER_CHEST, OPEN_ENDER_CHEST_CODEC);
@@ -292,6 +362,8 @@ public class ModNetworking {
 		PayloadTypeRegistry.playC2S().register(SLOT_LOCK_TOGGLE, SLOT_LOCK_TOGGLE_CODEC);
 		PayloadTypeRegistry.playC2S().register(SLOT_LOCK_CONFIG, SLOT_LOCK_CONFIG_CODEC);
 		PayloadTypeRegistry.playS2C().register(SLOT_LOCK_SYNC, SLOT_LOCK_SYNC_CODEC);
+		PayloadTypeRegistry.playC2S().register(INSPECT_REQUEST, INSPECT_REQUEST_CODEC);
+		PayloadTypeRegistry.playS2C().register(INSPECT_DATA, INSPECT_DATA_CODEC);
 
 		// Each receiver is bound to its handler class (one static handle() per packet).
 		ServerPlayNetworking.registerGlobalReceiver(OPEN_ENDER_CHEST, OpenEnderChestC2SPacket::handle);
@@ -307,6 +379,7 @@ public class ModNetworking {
 		ServerPlayNetworking.registerGlobalReceiver(TOOL_WHEEL_ENCH_PREF, ToolWheelEnchPrefC2SPacket::handle);
 		ServerPlayNetworking.registerGlobalReceiver(SLOT_LOCK_TOGGLE, SlotLockToggleC2SPacket::handle);
 		ServerPlayNetworking.registerGlobalReceiver(SLOT_LOCK_CONFIG, SlotLockConfigC2SPacket::handle);
+		ServerPlayNetworking.registerGlobalReceiver(INSPECT_REQUEST, InspectRequestC2SPacket::handle);
 	}
 
 	public record OpenEnderChestC2S() implements CustomPayload {
@@ -496,6 +569,24 @@ public class ModNetworking {
 		@Override
 		public Id<? extends CustomPayload> getId() {
 			return SLOT_LOCK_SYNC;
+		}
+	}
+
+	/** Crosshair target of an inspector request; unused fields are sent as defaults. */
+	public record InspectRequestC2S(int requestId, boolean entity, BlockPos blockPos, int entityId)
+			implements CustomPayload {
+		@Override
+		public Id<? extends CustomPayload> getId() {
+			return INSPECT_REQUEST;
+		}
+	}
+
+	/** Item stacks, info lines and a target icon for one request, resolved by the server. */
+	public record InspectDataS2C(int requestId, String title, List<ItemStack> stacks, List<String> infoLines,
+								 ItemStack icon) implements CustomPayload {
+		@Override
+		public Id<? extends CustomPayload> getId() {
+			return INSPECT_DATA;
 		}
 	}
 }
