@@ -24,10 +24,9 @@ import java.util.Set;
 public final class TreeCapitator {
 	private static final int MAX_DISTANCE = 64;
 	private static final int MAX_LOGS = 256;
-	private static final int MAX_LEAVES = 512;
-	private static final int LEAF_RADIUS = 3;
-	/** Vanilla leaves decay when the nearest log is within this many blocks. */
-	private static final int LEAF_SUPPORT_RADIUS = 6;
+	private static final int MAX_LEAVES = 2048;
+	/** Vanilla leaves never sit further than 6 blocks from their nearest log. */
+	private static final int LEAF_RADIUS = 6;
 	private static final Map<Block, Item> LOG_TO_SAPLING = new HashMap<>();
 
 	static {
@@ -48,8 +47,10 @@ public final class TreeCapitator {
 		if (!state.isIn(BlockTags.LOGS)) return;
 
 		Set<BlockPos> logs = findConnectedLogs(world, pos, state);
+		// The connected logs must always be felled, even when every nearby leaf
+		// belongs to a neighbouring tree. Returning early here left whole
+		// trees standing in dense forests just because their canopy overlapped.
 		Set<BlockPos> leaves = findNaturalLeaves(world, logs);
-		if (leaves.isEmpty()) return;
 
 		CarefulBreakManager.suppressBlockEffects = true;
 		try {
@@ -183,38 +184,41 @@ public final class TreeCapitator {
 	}
 
 	private static Set<BlockPos> findNaturalLeaves(ServerWorld world, Set<BlockPos> logs) {
-		Set<BlockPos> leaves = new HashSet<>();
+		// Distance from each candidate leaf to the closest log we are felling.
+		Map<BlockPos, Integer> candidates = new HashMap<>();
 		BooleanProperty persistent = LeavesBlock.PERSISTENT;
 		for (BlockPos logPos : logs) {
-			for (BlockPos leafPos : BlockPos.iterate(
-					new BlockPos(logPos.getX() - LEAF_RADIUS, logPos.getY() - LEAF_RADIUS, logPos.getZ() - LEAF_RADIUS),
-					new BlockPos(logPos.getX() + LEAF_RADIUS, logPos.getY() + LEAF_RADIUS, logPos.getZ() + LEAF_RADIUS))) {
-				BlockPos immutable = new BlockPos(leafPos);
-				if (leaves.contains(immutable)) continue;
-				BlockState state = world.getBlockState(immutable);
-				if (!(state.getBlock() instanceof LeavesBlock) || state.get(persistent)) continue;
-				// A leaf that another tree's log can still support belongs to that
-				// tree, even if it happens to sit inside this tree's radius.
-				if (isSupportedByOtherTree(world, immutable, logs)) continue;
-				leaves.add(immutable);
-				if (leaves.size() >= MAX_LEAVES) {
-					Gestorage.LOGGER.warn("[TreeCapitator] leaf cap ({}) reached, truncating", MAX_LEAVES);
-					return leaves;
+			for (int dx = -LEAF_RADIUS; dx <= LEAF_RADIUS; dx++) {
+				for (int dy = -LEAF_RADIUS; dy <= LEAF_RADIUS; dy++) {
+					for (int dz = -LEAF_RADIUS; dz <= LEAF_RADIUS; dz++) {
+						int distance = Math.abs(dx) + Math.abs(dy) + Math.abs(dz);
+						if (distance > LEAF_RADIUS) continue;
+						BlockPos leafPos = logPos.add(dx, dy, dz);
+						Integer previous = candidates.get(leafPos);
+						if (previous != null && previous <= distance) continue;
+						BlockState state = world.getBlockState(leafPos);
+						if (!(state.getBlock() instanceof LeavesBlock) || state.get(persistent)) continue;
+						candidates.put(leafPos, distance);
+					}
 				}
 			}
 		}
-		return leaves;
-	}
 
-	/** Whether a log outside the felled tree is close enough to keep the leaf alive. */
-	private static boolean isSupportedByOtherTree(ServerWorld world, BlockPos leafPos, Set<BlockPos> logs) {
-		for (BlockPos pos : BlockPos.iterate(
-				leafPos.add(-LEAF_SUPPORT_RADIUS, -LEAF_SUPPORT_RADIUS, -LEAF_SUPPORT_RADIUS),
-				leafPos.add(LEAF_SUPPORT_RADIUS, LEAF_SUPPORT_RADIUS, LEAF_SUPPORT_RADIUS))) {
-			BlockPos immutable = new BlockPos(pos);
-			if (logs.contains(immutable)) continue;
-			if (world.getBlockState(immutable).isIn(BlockTags.LOGS)) return true;
+		Set<BlockPos> leaves = new HashSet<>();
+		for (Map.Entry<BlockPos, Integer> candidate : candidates.entrySet()) {
+			// LeavesBlock.DISTANCE is vanilla's own distance to the nearest log
+			// when the tree grew. If one of our logs is that close, this leaf
+			// belongs to our tree; a smaller value means a neighbouring tree's
+			// log is nearer, so its canopy must be left alone. This also avoids
+			// leaving our own leaves floating further out than a fixed radius.
+			int recorded = world.getBlockState(candidate.getKey()).get(LeavesBlock.DISTANCE);
+			if (recorded != candidate.getValue()) continue;
+			leaves.add(candidate.getKey());
+			if (leaves.size() >= MAX_LEAVES) {
+				Gestorage.LOGGER.warn("[TreeCapitator] leaf cap ({}) reached, truncating", MAX_LEAVES);
+				return leaves;
+			}
 		}
-		return false;
+		return leaves;
 	}
 }
